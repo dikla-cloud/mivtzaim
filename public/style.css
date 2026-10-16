@@ -121,3 +121,17 @@ form > button { margin-top: 8px; }
 #gear:hover svg { transform: rotate(45deg); }
 #gear[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 @media (max-width: 360px) { #gear span { display: none; } }
+
+.count { display: inline-block; min-width: 1.4em; padding: 0 5px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: .75rem; line-height: 1.4em; }
+#homeList { list-style: none; padding: 0; margin: 8px 0; }
+.homeitem { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px; margin-bottom: 6px; }
+.homeitem .check { flex: none; width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 2px solid var(--accent); background: none; color: var(--accent-ink); font-size: 1rem; }
+.homeitem.done .check { background: var(--accent); }
+.hbody { flex: 1; display: flex; align-items: center; gap: 8px; cursor: pointer; min-width: 0; }
+.htext { display: flex; flex-direction: column; min-width: 0; font-size: 1.05rem; }
+.htext small { font-size: .8rem; }
+.homeitem.done .htext > span:first-child { text-decoration: line-through; color: var(--muted); }
+.homeitem.done .food { opacity: .5; }
+.onsale { color: var(--warn); font-weight: 600; }
+.mini { flex: none; border: 0; background: none; padding: 6px; font-size: 1rem; color: var(--muted); }
+nav button { font-size: .95rem; line-height: 1.25; }

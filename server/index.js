@@ -39,9 +39,13 @@ app.use('/api', (req, res, next) => {
 
 const adminOnly = (req, res, next) => (req.user.admin ? next() : res.status(403).json({ error: 'רק למנהל החשבון' }));
 
+const userInfo = (x) => ({ name: x.name, admin: x.admin, household: x.household, lastScan: x.lastScan, location: x.location?.label || null });
+
 const state = (u) => ({
-  me: { name: u.name, admin: u.admin },
-  users: u.admin ? db.users().map((x) => ({ name: x.name, admin: x.admin, lastScan: x.lastScan, location: x.location?.label || null })) : undefined,
+  me: { name: u.name, admin: u.admin, household: db.householdOf(u).id },
+  // המנהל רואה את כל המשתמשים; כל אחד אחר – את בני משק הבית שלו
+  users: db.users().filter((x) => u.admin || x.household === u.household).map(userInfo),
+  home: db.householdOf(u).home,
   list: u.list, location: u.location, radiusKm: u.radiusKm, deals: u.deals,
   lastScan: u.lastScan, lastErrors: u.lastErrors, lastSources: u.lastSources || [], lastReport: u.lastReport || null,
   followLocation: u.followLocation !== false,
@@ -66,14 +70,64 @@ app.put('/api/password', (req, res) => {
 });
 
 // ---------- בני משפחה (מנהל בלבד) ----------
-app.post('/api/users', adminOnly, (req, res) => {
-  const { name, password } = req.body || {};
+// כל משתמש יכול להוסיף מישהו נוסף ממשק הבית שלו (המנהל יכול גם להוסיף משק בית חדש)
+app.post('/api/users', (req, res) => {
+  const { name, password, newHousehold } = req.body || {};
   if (!auth.validName(name)) return res.status(400).json({ error: 'השם צריך להכיל 2–30 תווים' });
   if (!auth.validPassword(password)) return res.status(400).json({ error: 'הסיסמה צריכה להכיל לפחות 6 תווים' });
   if (db.get().users[db.userKey(name)]) return res.status(400).json({ error: 'כבר יש משתמש בשם הזה' });
-  db.newUser(name, { pass: auth.hashPassword(password) });
+  db.newUser(name, {
+    pass: auth.hashPassword(password),
+    household: req.user.admin && newHousehold ? null : db.householdOf(req.user).id,
+  });
   db.save();
   res.json(state(req.user));
+});
+
+// ---------- „חסר בבית”: רשימה משותפת לכל בני משק הבית ----------
+// כל פעולה היא על פריט בודד, כדי שכמה טלפונים יוכלו לעדכן באותו זמן בלי לדרוס זה את זה
+const home = (req) => db.householdOf(req.user).home;
+const homeState = (req) => ({ home: home(req) });
+
+app.get('/api/home', (req, res) => res.json(homeState(req)));
+
+app.post('/api/home', (req, res) => {
+  const texts = [].concat(req.body?.items ?? req.body?.text ?? []).map((t) => String(t).trim()).filter(Boolean);
+  const list = home(req);
+  for (const text of texts.slice(0, 200)) {
+    // פריט שכבר ברשימה (ועוד לא נקנה) לא נוסף פעמיים
+    if (list.some((x) => !x.done && x.text === text)) continue;
+    list.push({ id: crypto.randomUUID(), text, done: false, by: req.user.name, at: new Date().toISOString() });
+  }
+  db.save();
+  res.json(homeState(req));
+});
+
+app.patch('/api/home/:id', (req, res) => {
+  const item = home(req).find((x) => x.id === req.params.id);
+  if (!item) return res.status(404).json({ error: 'הפריט כבר לא ברשימה', ...homeState(req) });
+  if (typeof req.body?.done === 'boolean') {
+    item.done = req.body.done;
+    item.doneBy = req.body.done ? req.user.name : undefined;
+  }
+  if (typeof req.body?.text === 'string' && req.body.text.trim()) item.text = req.body.text.trim();
+  db.save();
+  res.json(homeState(req));
+});
+
+app.delete('/api/home/:id', (req, res) => {
+  const h = db.householdOf(req.user);
+  h.home = h.home.filter((x) => x.id !== req.params.id);
+  db.save();
+  res.json(homeState(req));
+});
+
+// „ניקוי פריטים שנקנו”: נשארים רק מה שעוד לא נקנה. רשימת המבצעים לא מושפעת.
+app.post('/api/home/clear-done', (req, res) => {
+  const h = db.householdOf(req.user);
+  h.home = h.home.filter((x) => !x.done);
+  db.save();
+  res.json(homeState(req));
 });
 
 app.put('/api/users/:name/password', adminOnly, (req, res) => {

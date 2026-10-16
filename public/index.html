@@ -38,7 +38,8 @@
 
   <nav role="tablist">
     <button role="tab" data-tab="deals" aria-selected="true">מבצעים</button>
-    <button role="tab" data-tab="list">רשימת קניות</button>
+    <button role="tab" data-tab="list">רשימה לחיפוש מבצעים</button>
+    <button role="tab" data-tab="home">חסר בבית <span id="homeCount" class="count" hidden></span></button>
   </nav>
 
   <main>
@@ -76,7 +77,22 @@
       <details id="errors" hidden><summary>הערות מהסריקה האחרונה</summary><ul></ul></details>
     </section>
 
+    <section id="tab-home" hidden>
+      <p id="homeShared" class="muted small"></p>
+      <form id="homeAdd" class="row">
+        <input id="homeItem" placeholder="מה חסר בבית? (אפשר כמה, מופרדים בפסיק)" autocomplete="off">
+        <button class="primary">הוספה</button>
+      </form>
+      <ul id="homeList"></ul>
+      <p id="homeEmpty" class="empty muted" hidden>אין כרגע חוסרים 🎉</p>
+      <div class="row" id="homeActions" hidden>
+        <button id="clearDone">🧹 ניקוי פריטים שנקנו</button>
+      </div>
+      <p class="muted small">בסופר: לוחצים על פריט כשהוא נכנס לעגלה. „ניקוי פריטים שנקנו” משאיר ברשימה רק את מה שעוד לא נקנה. הרשימה לחיפוש מבצעים לא משתנה.</p>
+    </section>
+
     <section id="tab-list" hidden>
+      <p class="muted small">המוצרים שהאפליקציה מחפשת עליהם מבצעים ושולחת עליהם התראות. זו רשימה קבועה: היא לא מתרוקנת כשקונים.</p>
       <form id="add" class="row">
         <input id="newItem" placeholder="הוספת מוצר (למשל: חלב 3%, קוטג', או ברקוד)" autocomplete="off">
         <button class="primary">הוספה</button>
@@ -111,15 +127,16 @@
         <div class="row"><button id="logout">יציאה מהחשבון במכשיר הזה</button></div>
       </div>
       <div class="card" id="familyCard" hidden>
-        <h3>בני משפחה</h3>
-        <p class="muted small">לכל בן משפחה חשבון משלו: רשימת קניות, מיקום והתראות נפרדים.</p>
+        <h3>בני הבית</h3>
+        <p class="muted small">כל מי שנמצא במשק הבית שלך רואה ומעדכן את אותה רשימת „חסר בבית”. הרשימה לחיפוש מבצעים, המיקום וההתראות נשארים אישיים לכל אחד.</p>
         <ul id="family"></ul>
         <form id="addUser">
           <label>שם<input id="newUserName" required minlength="2" maxlength="30" autocomplete="off"></label>
           <label>סיסמה ראשונית (לפחות 6 תווים)<input id="newUserPass" required minlength="6" autocomplete="new-password"></label>
-          <button class="primary">הוספת בן משפחה</button>
+          <label class="toggle" id="newHouseholdWrap" hidden><input type="checkbox" id="newHousehold"> משק בית נפרד (בלי רשימת „חסר בבית” משותפת איתי)</label>
+          <button class="primary">שיתוף עם בן בית נוסף</button>
         </form>
-        <p class="muted small">אחרי ההוספה שלחו לבן המשפחה את הכתובת <b id="appUrl"></b>, את השם ואת הסיסמה. אחרי הכניסה הוא יוכל להחליף את הסיסמה בעצמו.</p>
+        <p class="muted small">אחרי ההוספה שלחו לו את הכתובת <b id="appUrl"></b>, את השם ואת הסיסמה. אחרי הכניסה הוא יוכל להחליף את הסיסמה בעצמו.</p>
       </div>
       <div class="card">
         <h3>מיקום</h3>

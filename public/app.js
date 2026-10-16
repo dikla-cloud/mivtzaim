@@ -76,6 +76,7 @@ function render() {
 
   renderDeals();
   renderList();
+  renderHome();
 
   $('#loc').textContent = S.location ? `נוכחי: ${S.location.label}` : 'לא הוגדר מיקום';
   $('#radius').value = S.radiusKm;
@@ -95,7 +96,7 @@ function render() {
 
 function renderDeals() {
   const box = $('#deals');
-  if (!S.list.length) return (box.innerHTML = '<p class="empty muted">הרשימה ריקה. הוסיפו מוצרים בלשונית „רשימת קניות”.</p>');
+  if (!S.list.length) return (box.innerHTML = '<p class="empty muted">הרשימה ריקה. הוסיפו מוצרים בלשונית „רשימה לחיפוש מבצעים”.</p>');
   if (!S.deals.length) return (box.innerHTML = `<p class="empty muted">${S.lastScan ? 'לא נמצאו כרגע מבצעים על מוצרי הרשימה באזור. למטה אפשר לראות בדיוק מה נבדק.' : 'לחצו „בדיקת מבצעים עכשיו”.'}</p>`);
 
   const groups = new Map();
@@ -210,8 +211,8 @@ function renderList() {
 }
 
 function renderFamily() {
-  $('#familyCard').hidden = !S.me.admin;
-  if (!S.me.admin) return;
+  $('#familyCard').hidden = false;
+  $('#newHouseholdWrap').hidden = !S.me.admin;
   $('#appUrl').textContent = location.origin;
   $('#family').replaceChildren(...S.users.map((u) => {
     const li = document.createElement('li');
@@ -219,9 +220,10 @@ function renderFamily() {
     who.append(Object.assign(document.createElement('b'), { textContent: u.name }));
     who.append(Object.assign(document.createElement('span'), {
       className: 'muted small',
-      textContent: ` ${u.admin ? '· מנהל' : ''}${u.location ? ` · 📍 ${u.location}` : ' · עוד לא נכנס'}`,
+      textContent: ` ${u.household === S.me.household ? '· 🏠 משק הבית שלך' : '· משק בית אחר'}${u.admin ? ' · מנהל' : ''}${u.location ? ` · 📍 ${u.location}` : ' · עוד לא נכנס'}`,
     }));
     li.append(who);
+    if (!S.me.admin) return li; // ניהול סיסמאות ומחיקה – למנהל בלבד
     const reset = Object.assign(document.createElement('button'), { textContent: 'סיסמה חדשה' });
     reset.addEventListener('click', async () => {
       const p = prompt(`סיסמה חדשה עבור ${u.name} (לפחות 6 תווים):`);
@@ -246,7 +248,7 @@ function renderFamily() {
 $('#addUser').addEventListener('submit', async (e) => {
   e.preventDefault();
   try {
-    S = await api('POST', '/api/users', { name: $('#newUserName').value, password: $('#newUserPass').value });
+    S = await api('POST', '/api/users', { name: $('#newUserName').value, password: $('#newUserPass').value, newHousehold: $('#newHousehold').checked });
     toast(`${$('#newUserName').value} נוסף/ה`);
     $('#addUser').reset();
     render();
@@ -274,7 +276,97 @@ $('#logout').addEventListener('click', async () => {
   showLogin();
 });
 
-// ---------- רשימת קניות ----------
+// ---------- חסר בבית (משותף לבני הבית) ----------
+const plain = (s) => String(s).split('|')[0].replace(/[׳'"״]/g, '').trim().toLowerCase();
+
+// מבצע מהסריקה האחרונה שמתאים לפריט (לפי הרשימה לחיפוש מבצעים)
+function dealFor(text) {
+  const t = plain(text);
+  const ds = S.deals.filter((d) => {
+    const w = plain(d.listItem);
+    return w && (w.includes(t) || t.includes(w));
+  });
+  return ds.sort((a, b) => (a.promoPrice ?? 1e9) - (b.promoPrice ?? 1e9))[0];
+}
+
+function renderHome() {
+  const items = [...(S.home || [])].sort((a, b) => a.done - b.done);
+  const open = items.filter((x) => !x.done).length;
+  $('#homeCount').hidden = !open;
+  $('#homeCount').textContent = open;
+  const others = S.users.filter((u) => u.household === S.me.household && u.name !== S.me.name).map((u) => u.name);
+  $('#homeShared').textContent = others.length ? `🏠 משותף עם: ${others.join(', ')}` : '🏠 כרגע רק את/ה ברשימה הזו. אפשר לשתף בני בית בהגדרות ← „בני הבית”.';
+  $('#homeEmpty').hidden = items.length > 0;
+  $('#homeActions').hidden = !items.some((x) => x.done);
+  const watched = new Set(S.list.map((x) => plain(x.text)));
+
+  $('#homeList').replaceChildren(...items.map((it) => {
+    const li = document.createElement('li');
+    li.className = 'homeitem' + (it.done ? ' done' : '');
+    const toggle = Object.assign(document.createElement('button'), { className: 'check', ariaLabel: it.done ? 'סימון כלא נקנה' : 'סימון כנקנה', textContent: it.done ? '✔' : '' });
+    const body = Object.assign(document.createElement('span'), { className: 'hbody' });
+    body.append(Object.assign(document.createElement('span'), { className: 'food', textContent: foodIcon(it.text) }));
+    const txt = Object.assign(document.createElement('span'), { className: 'htext' });
+    txt.append(Object.assign(document.createElement('span'), { textContent: it.text }));
+    const meta = [it.by && it.by !== S.me.name ? `הוסיף/ה ${it.by}` : '', it.done && it.doneBy ? `נקנה ע״י ${it.doneBy}` : ''].filter(Boolean).join(' · ');
+    if (meta) txt.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: meta }));
+    const d = !it.done && dealFor(it.text);
+    if (d) txt.append(Object.assign(document.createElement('small'), {
+      className: 'onsale',
+      textContent: `🏷️ במבצע: ${d.promoPrice != null ? `${d.minQty > 1 ? `${d.minQty} ב-` : ''}${money(d.promoPrice, d.currency)}` : d.description} ב${d.chain}`,
+    }));
+    body.append(txt);
+    const flip = async () => {
+      it.done = !it.done; // עדכון מיידי במסך, ואז בשרת
+      renderHome();
+      try { Object.assign(S, await api('PATCH', `/api/home/${it.id}`, { done: it.done })); } catch (e) { toast(e.message); }
+      renderHome();
+    };
+    toggle.addEventListener('click', flip);
+    body.addEventListener('click', flip);
+    li.append(toggle, body);
+    if (!watched.has(plain(it.text))) {
+      const star = Object.assign(document.createElement('button'), { className: 'mini', textContent: '⭐', title: 'להוסיף לרשימה לחיפוש מבצעים' });
+      star.addEventListener('click', async () => {
+        await saveList([...S.list.map((x) => x.text), it.text]);
+        toast(`„${it.text}” נוסף לרשימה לחיפוש מבצעים`);
+      });
+      li.append(star);
+    }
+    const del = Object.assign(document.createElement('button'), { className: 'mini', textContent: '✕', title: 'מחיקה' });
+    del.addEventListener('click', async () => { Object.assign(S, await api('DELETE', `/api/home/${it.id}`)); renderHome(); });
+    li.append(del);
+    return li;
+  }));
+}
+
+$('#homeAdd').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const items = splitItems($('#homeItem').value);
+  if (!items.length) return;
+  $('#homeItem').value = '';
+  Object.assign(S, await api('POST', '/api/home', { items }));
+  renderHome();
+});
+
+$('#clearDone').addEventListener('click', async () => {
+  const n = S.home.filter((x) => x.done).length;
+  if (!confirm(`למחוק מהרשימה ${n} פריטים שנקנו? מה שלא נקנה יישאר.`)) return;
+  Object.assign(S, await api('POST', '/api/home/clear-done'));
+  renderHome();
+  toast('הרשימה נוקתה – נשארו רק הפריטים שעוד לא נקנו');
+});
+
+// סנכרון עם בני הבית: בזמן שהרשימה פתוחה מתעדכנים כל כמה שניות
+async function refreshHome() {
+  if (!S || document.visibilityState !== 'visible') return;
+  try { Object.assign(S, await api('GET', '/api/home')); renderHome(); } catch { /* */ }
+}
+setInterval(() => { if (!$('#tab-home').hidden) refreshHome(); }, 10000);
+document.addEventListener('visibilitychange', refreshHome);
+document.querySelector('nav [data-tab=home]').addEventListener('click', refreshHome);
+
+// ---------- רשימה לחיפוש מבצעים ----------
 const splitItems = (txt) => txt.split(/[\n,;]+/).map((s) => s.replace(/^[\s\-*•\d.)]+(?=\D)/, '').trim()).filter(Boolean);
 
 async function saveList(items) {

@@ -1,4 +1,5 @@
-// אחסון פשוט בקובץ JSON. לכל בן משפחה יש חשבון עם רשימה, מיקום והתראות משלו.
+// אחסון פשוט בקובץ JSON. לכל בן משפחה יש חשבון עם רשימה, מיקום והתראות משלו,
+// ובני אותו משק בית (household) חולקים את רשימת „חסר בבית”.
 const fs = require('fs');
 const path = require('path');
 
@@ -7,6 +8,7 @@ const FILE = path.join(process.env.DATA_DIR || path.join(__dirname, '..', 'data'
 const userDefaults = () => ({
   name: '',
   admin: false,
+  household: null,     // מזהה משק הבית
   pass: null,          // { salt, hash }
   list: [],            // [{ id, text }]
   location: null,      // { lat, lon, label, place }
@@ -23,6 +25,7 @@ const userDefaults = () => ({
 
 const defaults = () => ({
   users: {},           // { key: user }
+  households: {},      // { id: { id, home: [{ id, text, done, by, at }] } }
   sessions: {},        // { token: userKey }
   storesCache: {},     // { chainId: { at, stores } } – משותף לכולם
   translations: {},    // משותף לכולם
@@ -41,9 +44,27 @@ function get() {
       db.legacy = Object.fromEntries(LEGACY.filter((k) => k in raw).map((k) => [k, raw[k]]));
       for (const k of LEGACY) delete db[k];
     }
+    // משתמשים מגרסה קודמת (לפני משקי בית) – כולם נכנסים למשק הבית של המנהל
+    const orphans = Object.values(db.users).filter((u) => !u.household || !db.households[u.household]);
+    if (orphans.length) {
+      const id = Object.values(db.users).find((u) => u.household && db.households[u.household])?.household || newHousehold();
+      for (const u of orphans) u.household = id;
+    }
   }
   return db;
 }
+
+function newHousehold() {
+  const id = 'h' + require('crypto').randomBytes(6).toString('hex');
+  db.households[id] = { id, home: [] };
+  return id;
+}
+
+const householdOf = (u) => {
+  get();
+  if (!u.household || !db.households[u.household]) u.household = newHousehold();
+  return db.households[u.household];
+};
 
 function save() {
   fs.mkdirSync(path.dirname(FILE), { recursive: true });
@@ -55,9 +76,11 @@ const userKey = (name) => String(name || '').trim().toLowerCase();
 const users = () => Object.values(get().users);
 
 function newUser(name, extra = {}) {
+  get();
   const u = { ...userDefaults(), ...extra, name: String(name).trim() };
+  if (!u.household) u.household = newHousehold();
   get().users[userKey(name)] = u;
   return u;
 }
 
-module.exports = { get, save, FILE, userKey, users, newUser, userDefaults, reset: () => (db = null) };
+module.exports = { get, save, FILE, userKey, users, newUser, userDefaults, householdOf, reset: () => (db = null) };

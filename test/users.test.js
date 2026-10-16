@@ -29,7 +29,7 @@ test('family accounts end to end', async () => {
   assert.equal((await call('POST', '/api/login', { name: 'דיקלה', password: 'wrong' })).status, 401);
   const owner = (await call('POST', '/api/login', { name: 'דיקלה', password: 'initial123' })).json.token;
   let s = (await call('GET', '/api/state', null, owner)).json;
-  assert.deepEqual(s.me, { name: 'דיקלה', admin: true });
+  assert.deepEqual([s.me.name, s.me.admin], ['דיקלה', true]);
   assert.equal(s.list[0].text, 'חלב'); // נתונים ישנים עברו
   assert.equal(s.radiusKm, 7);
 
@@ -40,12 +40,15 @@ test('family accounts end to end', async () => {
 
   const yoav = (await call('POST', '/api/login', { name: 'יואב', password: 'yoav123' })).json.token;
   s = (await call('GET', '/api/state', null, yoav)).json;
-  assert.deepEqual(s.me, { name: 'יואב', admin: false });
-  assert.equal(s.users, undefined);
+  assert.deepEqual([s.me.name, s.me.admin], ['יואב', false]);
+  assert.ok(s.users.every((u) => !('pass' in u)));
   assert.equal(s.list.length, 0); // רשימה נפרדת
 
-  // משתמש רגיל לא יכול לנהל משתמשים
-  assert.equal((await call('POST', '/api/users', { name: 'זר', password: 'zzzzzz' }, yoav)).status, 403);
+  // משתמש רגיל יכול לשתף בן בית נוסף, אבל לא למחוק משתמשים או לאפס סיסמאות
+  assert.equal((await call('POST', '/api/users', { name: 'זר', password: 'zzzzzz' }, yoav)).status, 200);
+  assert.equal((await call('DELETE', `/api/users/${encodeURIComponent('זר')}`, null, yoav)).status, 403);
+  assert.equal((await call('PUT', `/api/users/${encodeURIComponent('דיקלה')}/password`, { password: 'hacked1' }, yoav)).status, 403);
+  await call('DELETE', `/api/users/${encodeURIComponent('זר')}`, null, owner);
 
   // הרשימה של יואב לא משפיעה על דיקלה
   await call('PUT', '/api/list', { items: ['במבה'] }, yoav);
@@ -70,3 +73,37 @@ test('family accounts end to end', async () => {
   const raw = fs.readFileSync(path.join(dir, 'db.json'), 'utf8');
   assert.ok(!raw.includes('initial123') && !raw.includes('newpass1'));
 });
+
+test('shared "missing at home" list per household; watch list untouched', async () => {
+  const owner = (await call('POST', '/api/login', { name: 'דיקלה', password: 'initial123' })).json.token
+    || (await call('POST', '/api/login', { name: 'דיקלה', password: 'newowner1' })).json.token;
+  assert.ok(owner);
+  // משתמש רגיל יכול לשתף מישהו נוסף ממשק הבית שלו
+  await call('POST', '/api/users', { name: 'נועה', password: 'noa123' }, owner);
+  const noa = (await call('POST', '/api/login', { name: 'נועה', password: 'noa123' })).json.token;
+  assert.equal((await call('POST', '/api/users', { name: 'סבתא', password: 'savta1' }, noa)).status, 200);
+  const savta = (await call('POST', '/api/login', { name: 'סבתא', password: 'savta1' })).json.token;
+  // מנהל יכול ליצור משק בית נפרד
+  await call('POST', '/api/users', { name: 'שכן', password: 'shachen1', newHousehold: true }, owner);
+  const shachen = (await call('POST', '/api/login', { name: 'שכן', password: 'shachen1' })).json.token;
+
+  const before = (await call('GET', '/api/state', null, owner)).json.list.map((x) => x.text);
+  let h = (await call('POST', '/api/home', { items: ['חלב', 'לחם', 'ביצים', 'חלב'] }, savta)).json.home;
+  assert.deepEqual(h.map((x) => x.text), ['חלב', 'לחם', 'ביצים']); // בלי כפילות
+  assert.equal(h[0].by, 'סבתא');
+  assert.equal((await call('GET', '/api/home', null, owner)).json.home.length, 3); // משותף
+  assert.equal((await call('GET', '/api/home', null, shachen)).json.home.length, 0); // משק בית אחר
+
+  // בסופר: שני פריטים נקנו, אחד לא
+  await call('PATCH', `/api/home/${h[0].id}`, { done: true }, noa);
+  await call('PATCH', `/api/home/${h[2].id}`, { done: true }, owner);
+  h = (await call('POST', '/api/home/clear-done', null, owner)).json.home;
+  assert.deepEqual(h.map((x) => [x.text, x.done]), [['לחם', false]]);
+  // הרשימה לחיפוש מבצעים לא השתנתה
+  assert.deepEqual((await call('GET', '/api/state', null, owner)).json.list.map((x) => x.text), before);
+
+  // משתמש רגיל רואה רק את בני הבית שלו
+  const names = (await call('GET', '/api/state', null, noa)).json.users.map((u) => u.name).sort();
+  assert.deepEqual(names, ['דיקלה', 'נועה', 'סבתא'].sort());
+});
+
