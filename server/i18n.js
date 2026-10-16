@@ -29,6 +29,8 @@ const T = {
   'בדיקת התראה': { de: 'Test-Benachrichtigung', en: 'Test notification' },
   'שלום {name}, ההתראות פועלות ✔': { de: 'Hallo {name}, die Benachrichtigungen funktionieren ✔', en: 'Hi {name}, notifications are working ✔' },
 
+  'ברקוד לא תקין': { de: 'Ungültiger Barcode', en: 'Invalid barcode' },
+
   // סריקה
   'לא הוגדר מיקום': { de: 'Kein Standort festgelegt', en: 'No location set' },
   'אין עדיין מקור מבצעים חינמי ל{country}. נתמכות כרגע: ישראל, אוסטריה, גרמניה ואוסטרליה.': {

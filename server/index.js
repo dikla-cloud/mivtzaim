@@ -38,6 +38,8 @@ app.get('/manifest.webmanifest', (req, res) => {
   res.type('application/manifest+json').send(JSON.stringify(m));
 });
 app.use(express.static(PUBLIC));
+// ספריית קריאת ברקודים (ZXing) – מוגשת מהשרת עצמו, בלי שירות חיצוני
+app.get('/vendor/zxing.min.js', (req, res) => res.sendFile(require.resolve('@zxing/library/umd/index.min.js')));
 // שפת ההודעות: מה שהאפליקציה שולחת, אחרת השפה שנבחרה בחשבון, אחרת ברירת המחדל של ההתקנה
 app.use('/api', (req, res, next) => { req.lang = i18n.pick(req.get('x-app-lang')); next(); });
 
@@ -337,6 +339,33 @@ app.put('/api/settings', async (req, res) => {
   if (Array.isArray(chains)) u.chains = chains;
   db.save();
   res.json(state(u));
+});
+
+// שם מוצר לפי ברקוד (מצילום): מאגר המוצרים החופשי Open Food Facts, עם מטמון בשרת
+const PRODUCT_TTL = 30 * 86400000;
+app.get('/api/product/:code', async (req, res) => {
+  const code = String(req.params.code);
+  if (!/^\d{6,14}$/.test(code)) return res.status(400).json({ error: T(req, 'ברקוד לא תקין') });
+  const d = db.get();
+  const cache = (d.products ||= {});
+  const key = `${code}:${req.lang}`;
+  const hit = cache[key];
+  if (hit && Date.now() - hit.at < PRODUCT_TTL) return res.json({ code, name: hit.name });
+  let name = null;
+  try {
+    const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,product_name_he,product_name_de,product_name_en,brands`, {
+      headers: { 'User-Agent': process.env.GEOCODER_UA || 'MivtzaimApp/1.0' }, signal: AbortSignal.timeout(10000),
+    });
+    const p = (await r.json()).product || {};
+    const base = p[`product_name_${req.lang}`] || p.product_name || p.product_name_en || '';
+    const brand = String(p.brands || '').split(',')[0].trim();
+    name = base ? (brand && !base.toLowerCase().includes(brand.toLowerCase()) ? `${base} ${brand}` : base).trim().slice(0, 80) : null;
+  } catch {
+    return res.json({ code, name: null }); // בלי חיבור – לא שומרים במטמון
+  }
+  cache[key] = { name, at: Date.now() };
+  db.save();
+  res.json({ code, name });
 });
 
 app.post('/api/subscribe', (req, res) => {

@@ -62,3 +62,10 @@ test('terms, privacy-preserving metrics and account deletion', async () => {
   s = (await call('GET', '/api/state', null, owner)).json;
   assert.deepEqual(s.users.map((u) => u.name), ['מנהלת']);
 });
+
+test('product lookup by barcode validates input', async () => {
+  const t = (await call('POST', '/api/login', { name: 'מנהלת', password: 'initial123' })).json.token;
+  assert.equal((await call('GET', '/api/product/abc', null, t)).status, 400);
+  assert.equal((await call('GET', '/api/product/7290011194246')).status, 401);
+  assert.equal((await call('POST', '/api/metrics/event', { type: 'photo' }, t)).status, 200);
+});

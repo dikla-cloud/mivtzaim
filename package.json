@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@zxing/library": "0.21.3",
     "express": "^5.3.0",
     "fast-xml-parser": "^5.11.2",
     "web-push": "^3.6.7"

@@ -82,6 +82,14 @@ const I18N = {
   'ההכתבה נכשלה ({err})': ['Diktieren fehlgeschlagen ({err})', 'Dictation failed ({err})'],
   'בדקו את הפריטים ותקנו אם צריך, ואז „הוספה”': ['Prüfe die Einträge und tippe dann auf „Hinzufügen“', 'Check the items, then tap “Add”'],
 
+  // ---------- הוספה מצילום ----------
+  'הוספה מצילום (ברקוד)': ['Aus Foto hinzufügen (Barcode)', 'Add from photo (barcode)'],
+  '📷 מחפש ברקוד בתמונה…': ['📷 Suche Barcode im Foto…', '📷 Looking for a barcode in the photo…'],
+  'לא נמצא ברקוד בתמונה. צלמו את הברקוד של המוצר מקרוב, ישר ובאור טוב.': ['Kein Barcode im Foto gefunden. Fotografiere den Barcode nah, gerade und bei gutem Licht.', 'No barcode found in the photo. Take it close up, straight and in good light.'],
+  '📷 נמצא: {name}. בדקו ותקנו אם צריך, ואז „הוספה”': ['📷 Gefunden: {name}. Prüfen und dann „Hinzufügen“', '📷 Found: {name}. Check it, then tap “Add”'],
+  '📷 נמצא ברקוד {code}, אבל שם המוצר לא ידוע. אפשר להוסיף שם לפני הברקוד, למשל: „קפה | {code}”': ['📷 Barcode {code} gefunden, aber das Produkt ist unbekannt. Du kannst einen Namen davor schreiben, z. B. „Kaffee | {code}“', '📷 Found barcode {code}, but the product is unknown. You can add a name before it, e.g. “coffee | {code}”'],
+  '📷 נמצא ברקוד {code}, אבל שם המוצר לא ידוע. כתבו את השם בשדה.': ['📷 Barcode {code} gefunden, aber das Produkt ist unbekannt. Bitte den Namen eintippen.', '📷 Found barcode {code}, but the product is unknown. Please type the name.'],
+
   // ---------- רשימה לחיפוש מבצעים ----------
   'המוצרים שהאפליקציה מחפשת עליהם מבצעים ושולחת עליהם התראות. זו רשימה קבועה: היא לא מתרוקנת כשקונים.': [
     'Für diese Produkte sucht die App Angebote und schickt Benachrichtigungen. Die Liste bleibt fix, auch wenn du einkaufst.',

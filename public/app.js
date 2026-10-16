@@ -674,6 +674,85 @@ function dictation(btn, input, hintEl, example) {
 dictation($('#mic'), $('#homeItem'), $('#voiceHint'), 'אמרו מה חסר, למשל: „חלב, לחם וביצים”');
 dictation($('#micList'), $('#newItem'), $('#listHint'), 'אמרו אילו מוצרים להוסיף, למשל: „חלב, קפה ושמן זית”');
 
+// ---------- הוספה מצילום: קריאת ברקוד מתמונה (מצלמה, גלריה או קובץ מהמחשב) ----------
+// הברקוד נקרא במכשיר עצמו. אם הדפדפן יודע לקרוא ברקודים (BarcodeDetector) – משתמשים בו,
+// ואחרת בספריית ZXing שהשרת מגיש. את שם המוצר מחפשים במאגר החופשי Open Food Facts.
+const loadScript = (src) => new Promise((ok, fail) => {
+  if (document.querySelector(`script[src="${src}"]`)) return ok();
+  document.head.append(Object.assign(document.createElement('script'), { src, onload: ok, onerror: fail }));
+});
+
+async function imageToCanvas(file, max, rotate = false) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, fail) => Object.assign(new Image(), { onload() { ok(this); }, onerror: fail, src: url }));
+    const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.round(img.naturalWidth * k), h = Math.round(img.naturalHeight * k);
+    const c = Object.assign(document.createElement('canvas'), { width: rotate ? h : w, height: rotate ? w : h });
+    const g = c.getContext('2d', { willReadFrequently: true });
+    if (rotate) { g.translate(h, 0); g.rotate(Math.PI / 2); }
+    g.drawImage(img, 0, 0, w, h);
+    return c;
+  } finally { URL.revokeObjectURL(url); }
+}
+
+const BARCODE_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'];
+async function readBarcode(file) {
+  if ('BarcodeDetector' in window) {
+    try {
+      const det = new BarcodeDetector({ formats: BARCODE_FORMATS });
+      const [hit] = await det.detect(await imageToCanvas(file, 2000));
+      if (hit?.rawValue) return hit.rawValue;
+    } catch { /* ננסה בספרייה */ }
+  }
+  await loadScript('/vendor/zxing.min.js');
+  const Z = window.ZXing;
+  const hints = new Map([[Z.DecodeHintType.TRY_HARDER, true], [Z.DecodeHintType.POSSIBLE_FORMATS,
+    [Z.BarcodeFormat.EAN_13, Z.BarcodeFormat.EAN_8, Z.BarcodeFormat.UPC_A, Z.BarcodeFormat.UPC_E, Z.BarcodeFormat.CODE_128]]]);
+  const reader = new Z.MultiFormatReader();
+  reader.setHints(hints);
+  // כמה ניסיונות: גדלים שונים, וגם מסובב (ברקוד שצולם לאורך)
+  for (const [max, rotate] of [[1600, false], [1000, false], [2400, false], [1600, true], [1000, true]]) {
+    try {
+      const c = await imageToCanvas(file, max, rotate);
+      const bmp = new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(c)));
+      return reader.decode(bmp).getText();
+    } catch { /* לא נמצא בניסיון הזה */ }
+  }
+  return null;
+}
+
+function photoInput(fileInput, input, hintEl, forList) {
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    fileInput.value = '';
+    if (!file) return;
+    track('photo');
+    hintEl.textContent = t('📷 מחפש ברקוד בתמונה…');
+    let code = null;
+    try { code = await readBarcode(file); } catch { /* */ }
+    if (!code || !/^\d{6,14}$/.test(code)) {
+      hintEl.textContent = t('לא נמצא ברקוד בתמונה. צלמו את הברקוד של המוצר מקרוב, ישר ובאור טוב.');
+      return;
+    }
+    let name = null;
+    try { ({ name } = await api('GET', `/api/product/${code}`)); } catch { /* */ }
+    const add = (v) => { input.value = [input.value.trim(), v].filter(Boolean).join(', '); };
+    if (name) {
+      add(forList ? `${name} | ${code}` : name);
+      hintEl.textContent = t('📷 נמצא: {name}. בדקו ותקנו אם צריך, ואז „הוספה”', { name });
+    } else if (forList) {
+      add(code);
+      hintEl.textContent = t('📷 נמצא ברקוד {code}, אבל שם המוצר לא ידוע. אפשר להוסיף שם לפני הברקוד, למשל: „קפה | {code}”', { code });
+    } else {
+      hintEl.textContent = t('📷 נמצא ברקוד {code}, אבל שם המוצר לא ידוע. כתבו את השם בשדה.', { code });
+    }
+    input.focus();
+  });
+}
+photoInput($('#photoHome'), $('#homeItem'), $('#voiceHint'), false);
+photoInput($('#photoList'), $('#newItem'), $('#listHint'), true);
+
 // ביטול מחיקה: אחרי מחיקה מופיע כפתור „ביטול” שמחזיר את הפריטים למקומם
 function offerUndo(msg, entries) {
   toast(msg, {

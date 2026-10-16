@@ -243,3 +243,6 @@ table.stats td:not(:first-child), table.stats th:not(:first-child) { text-align:
 /* שפה */
 select { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; min-width: 180px; }
 body.not-il .il-only { display: none; }
+
+/* הוספה מצילום */
+label.photo { display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
