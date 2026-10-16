@@ -60,6 +60,11 @@ function get() {
       for (const u of Object.values(db.users)) u.followLocation = false;
       db.locationV2 = true;
     }
+    // רשת חדשה (ניצת הדובדבן) נדלקת גם למי שכבר בחר רשתות בעבר
+    if (!db.chainsNizat) {
+      for (const u of Object.values(db.users)) if (Array.isArray(u.chains) && !u.chains.includes('nizat')) u.chains.push('nizat');
+      db.chainsNizat = true;
+    }
   }
   return db;
 }

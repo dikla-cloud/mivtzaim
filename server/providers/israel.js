@@ -6,7 +6,7 @@ const { matches } = require('../match');
 
 const CHAINS = process.env.DEMO === '1'
   ? [require('../chains/demo')]
-  : [require('../chains/shufersal'), ...require('../chains/cerberus').chains, ...require('../chains/weblist').chains];
+  : [require('../chains/shufersal'), ...require('../chains/cerberus').chains, ...require('../chains/weblist').chains, require('../chains/nizat')];
 
 const STORES_TTL = 7 * 86400000;
 const MAX_STORES_PER_CHAIN = Number(process.env.MAX_STORES_PER_CHAIN || 3);
@@ -19,6 +19,37 @@ async function chainStores(chain) {
   d.storesCache[chain.id] = { at: Date.now(), stores };
   db.save();
   return stores;
+}
+
+// רשת שמפרסמת מבצעים באתר (לא בקובצי שקיפות): אותם מבצעים בכל הסניפים, ומשייכים אותם לסניף הקרוב
+function findWebDeals({ list, items, chain, store }) {
+  const deals = [];
+  for (const it of items) {
+    for (const entry of list) {
+      if (!matches(entry.text, it.name, '')) continue;
+      deals.push({
+        key: `${chain.id}|${it.id}|${it.promoPrice}`,
+        listItem: entry.text,
+        product: it.name,
+        itemCode: '',
+        regularPrice: it.regularPrice,
+        promoPrice: it.promoPrice,
+        currency: 'ILS',
+        minQty: 1,
+        description: [it.regularPrice && it.promoPrice ? `${Math.round((1 - it.promoPrice / it.regularPrice) * 100)}% הנחה` : '', it.per100].filter(Boolean).join(' · '),
+        start: null,
+        end: null,
+        clubOnly: true,
+        url: it.url,
+        chain: chain.name,
+        store: store.name,
+        address: [store.address, store.city].filter(Boolean).join(', '),
+        km: store.km,
+        source: 'website',
+      });
+    }
+  }
+  return deals;
 }
 
 // מוצא מבצעים בתוקף שמתאימים לפריטי הרשימה
@@ -62,6 +93,7 @@ module.exports = {
   countries: ['IL'],
   chains: CHAINS,
   findDeals,
+  findWebDeals,
   async scan({ list, location, radiusKm, enabledChains, errors, report }) {
     const deals = [];
     for (const chain of CHAINS.filter((c) => !enabledChains || enabledChains.includes(c.id))) {
@@ -71,6 +103,18 @@ module.exports = {
       try {
         const all = await geo.storesWithin(await chainStores(chain), location, radiusKm);
         r.nearby = all.length;
+        if (chain.web) {
+          const store = all[0];
+          if (!store) continue;
+          const sr = { name: store.name, km: store.km, promos: 0, deals: 0, error: null };
+          r.stores.push(sr);
+          const items = await chain.deals();
+          const found = findWebDeals({ list, items, chain, store });
+          sr.promos = items.length;
+          sr.deals = r.deals = found.length;
+          deals.push(...found);
+          continue;
+        }
         for (const store of all.slice(0, MAX_STORES_PER_CHAIN)) {
           const sr = { name: store.name, km: store.km, promos: 0, deals: 0, error: null };
           r.stores.push(sr);

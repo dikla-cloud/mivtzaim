@@ -11,6 +11,11 @@ const israel = require('./providers/israel');
       const stores = await chain.stores();
       const s = stores[0];
       if (!s) throw new Error('קובץ הסניפים ריק');
+      if (chain.web) {
+        const items = await chain.deals();
+        console.log(`✔ ${stores.length} סניפים (למשל "${s.name}", ${s.city}) · ${items.length} מוצרים במבצע באתר${items[0] ? `, למשל: ${items[0].name} ${items[0].promoPrice} ₪ במקום ${items[0].regularPrice} ₪` : ''}`);
+        continue;
+      }
       const files = await chain.storeFiles(s.storeId);
       console.log(`✔ ${stores.length} סניפים · קבצים של "${s.name}" (${s.city}) ירדו: מבצעים ${files.promos.length} בתים, מחירים ${files.prices.length} בתים`);
     } catch (e) {

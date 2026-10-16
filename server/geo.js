@@ -80,7 +80,8 @@ async function storesWithin(stores, center, radiusKm) {
     let pos = s.lat != null ? { lat: s.lat, lon: s.lon } : null;
     if (!pos) {
       if (!s.city) continue;
-      const city = await geocode(`${s.city}, ישראל`);
+      // עיר שלא זוהתה (למשל „מודיעין מרכז”): מנסים את הכתובת המלאה
+      const city = (await geocode(`${s.city}, ישראל`)) || (s.address && (await geocode(`${s.address}, ${s.city}, ישראל`)));
       if (!city || haversineKm(center, city) > radiusKm + 8) continue;
       pos = (s.address && (await geocode(`${s.address}, ${s.city}, ישראל`))) || city;
     }
