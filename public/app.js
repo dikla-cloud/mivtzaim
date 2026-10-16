@@ -106,32 +106,49 @@ function renderDeals() {
     g.className = 'group';
     g.innerHTML = `<h2></h2>`;
     g.firstChild.textContent = `${foodIcon(item)} ${item} (${deals.length})`;
-    for (const d of deals) {
-      const el = $('#dealTpl').content.cloneNode(true);
-      const price = el.querySelector('.price');
-      price.textContent = d.promoPrice != null ? `${d.minQty > 1 ? `${d.minQty} ב-` : ''}${money(d.promoPrice, d.currency)}` : 'מבצע';
-      if (d.regularPrice) price.append(Object.assign(document.createElement('s'), { textContent: money(d.regularPrice, d.currency) }));
-      el.querySelector('.chain').textContent = d.chain;
-      const prod = el.querySelector('.product');
-      prod.textContent = d.product;
-      if (d.clubOnly) prod.append(Object.assign(document.createElement('span'), { className: 'badge', textContent: 'מועדון' }));
-      el.querySelector('.desc').textContent = d.description;
-      const until = el.querySelector('.until');
-      if (d.end) {
-        const left = daysLeft(d.end);
-        until.textContent = `בתוקף עד ${fmtDate(d.end)}${left <= 2 ? ` · ${left <= 0 ? 'מסתיים היום' : `עוד ${left} ימים`}` : ''}`;
-        until.classList.toggle('soon', left <= 2);
-      } else until.textContent = 'תאריך סיום לא פורסם';
-      if (d.url) {
-        const a = Object.assign(document.createElement('a'), { href: d.url, target: '_blank', rel: 'noopener', textContent: 'מקור ↗' });
-        el.querySelector('.desc').append(' · ', a);
-      }
-      el.querySelector('.where').textContent = `${d.store}${d.km != null ? ` · ${d.km} ק"מ` : ''}`;
-      el.querySelector('.where').title = d.address;
-      g.append(el);
-    }
+    for (const d of deals) g.append(dealCard(d));
     return g;
   }));
+}
+
+// קישור שבו אפשר לראות את המוצר עצמו ולוודא שזה מה שרוצים.
+// בישראל המבצעים מגיעים מקובצי השקיפות הרשמיים (לא דף אינטרנט), ולכן מקשרים לחיפוש המוצר לפי ברקוד באתר הרשת.
+const SHOP_SEARCH = [
+  [/שופרסל/, (q) => `https://www.shufersal.co.il/online/he/search?text=${q}`],
+  [/רמי לוי/, (q) => `https://www.rami-levy.co.il/he/online/search?q=${q}`],
+];
+function dealLink(d) {
+  if (d.url) return { href: d.url, label: 'לדף המבצע באתר הרשת ↗' };
+  const code = /^\d{7,14}$/.test(d.itemCode || '') ? d.itemCode : '';
+  const shop = SHOP_SEARCH.find(([re]) => re.test(d.chain));
+  if (shop && code) return { href: shop[1](encodeURIComponent(code)), label: `לחיפוש המוצר באתר ${d.chain} ↗` };
+  const q = [d.product, code, d.chain, d.currency === 'EUR' ? 'Angebot' : d.currency === 'AUD' ? 'special' : 'מבצע'].filter(Boolean).join(' ');
+  return { href: `https://www.google.com/search?q=${encodeURIComponent(q)}`, label: 'לחיפוש המוצר ברשת ↗' };
+}
+
+function dealCard(d) {
+  const el = $('#dealTpl').content.cloneNode(true);
+  const price = el.querySelector('.price');
+  price.textContent = d.promoPrice != null ? `${d.minQty > 1 ? `${d.minQty} ב-` : ''}${money(d.promoPrice, d.currency)}` : 'מבצע';
+  if (d.regularPrice) price.append(Object.assign(document.createElement('s'), { textContent: money(d.regularPrice, d.currency) }));
+  el.querySelector('.chain').textContent = d.chain;
+  const prod = el.querySelector('.product');
+  prod.textContent = d.product;
+  if (d.clubOnly) prod.append(Object.assign(document.createElement('span'), { className: 'badge', textContent: 'מועדון' }));
+  el.querySelector('.desc').textContent = d.description;
+  const until = el.querySelector('.until');
+  if (d.end) {
+    const left = daysLeft(d.end);
+    until.textContent = `בתוקף עד ${fmtDate(d.end)}${left <= 2 ? ` · ${left <= 0 ? 'מסתיים היום' : `עוד ${left} ימים`}` : ''}`;
+    until.classList.toggle('soon', left <= 2);
+  } else until.textContent = 'תאריך סיום לא פורסם';
+  el.querySelector('.where').textContent = `${d.store}${d.km != null ? ` · ${d.km} ק"מ` : ''}`;
+  el.querySelector('.where').title = d.address;
+  const link = dealLink(d);
+  const src = el.querySelector('.source');
+  if (d.itemCode && /^\d{7,14}$/.test(d.itemCode)) src.append(Object.assign(document.createElement('span'), { className: 'muted', textContent: `ברקוד ${d.itemCode} · ` }));
+  src.append(Object.assign(document.createElement('a'), { href: link.href, target: '_blank', rel: 'noopener', textContent: `🔗 ${link.label}` }));
+  return el;
 }
 
 // „מה נבדק בסריקה האחרונה”: מיקום שזוהה, מקור נתונים, רשתות וסניפים, ומה חופש לכל מוצר
@@ -292,14 +309,26 @@ $('#logout').addEventListener('click', async () => {
 const plain = (s) => String(s).split('|')[0].replace(/[׳'"״]/g, '').trim().toLowerCase();
 
 // מבצע מהסריקה האחרונה שמתאים לפריט (לפי הרשימה לחיפוש מבצעים)
-function dealFor(text) {
+function dealsFor(text) {
   const t = plain(text);
-  const ds = S.deals.filter((d) => {
-    const w = plain(d.listItem);
-    return w && (w.includes(t) || t.includes(w));
-  });
-  return ds.sort((a, b) => (a.promoPrice ?? 1e9) - (b.promoPrice ?? 1e9))[0];
+  return S.deals
+    .filter((d) => {
+      const w = plain(d.listItem);
+      return w && (w.includes(t) || t.includes(w));
+    })
+    .sort((a, b) => (a.promoPrice ?? 1e9) - (b.promoPrice ?? 1e9));
 }
+const dealFor = (text) => dealsFor(text)[0];
+
+// חלון פרטי המבצעים על פריט מ„חסר בבית”, עם קישור לבדיקה
+function openDealSheet(text) {
+  const ds = dealsFor(text);
+  $('#sheetTitle').textContent = `${foodIcon(text)} מבצעים על „${text}”`;
+  $('#sheetBody').replaceChildren(...ds.map(dealCard));
+  $('#dealSheet').showModal();
+}
+$('#sheetClose').addEventListener('click', () => $('#dealSheet').close());
+$('#dealSheet').addEventListener('click', (e) => { if (e.target === $('#dealSheet')) $('#dealSheet').close(); });
 
 function renderHome() {
   const items = [...(S.home || [])].sort((a, b) => a.done - b.done);
@@ -323,10 +352,16 @@ function renderHome() {
     const meta = [it.by && it.by !== S.me.name ? `הוסיף/ה ${it.by}` : '', it.done && it.doneBy ? `נקנה ע״י ${it.doneBy}` : ''].filter(Boolean).join(' · ');
     if (meta) txt.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: meta }));
     const d = !it.done && !it.voice && dealFor(it.text);
-    if (d) txt.append(Object.assign(document.createElement('small'), {
-      className: 'onsale',
-      textContent: `🏷️ במבצע: ${d.promoPrice != null ? `${d.minQty > 1 ? `${d.minQty} ב-` : ''}${money(d.promoPrice, d.currency)}` : d.description} ב${d.chain}`,
-    }));
+    if (d) {
+      const n = dealsFor(it.text).length;
+      const sale = Object.assign(document.createElement('button'), {
+        type: 'button',
+        className: 'onsale',
+        textContent: `🏷️ במבצע: ${d.promoPrice != null ? `${d.minQty > 1 ? `${d.minQty} ב-` : ''}${money(d.promoPrice, d.currency)}` : d.description} ב${d.chain}${n > 1 ? ` (ועוד ${n - 1})` : ''} · פרטים וקישור ‹`,
+      });
+      sale.addEventListener('click', (e) => { e.stopPropagation(); openDealSheet(it.text); });
+      txt.append(sale);
+    }
     body.append(txt);
     const flip = async () => {
       it.done = !it.done; // עדכון מיידי במסך, ואז בשרת

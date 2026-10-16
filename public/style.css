@@ -149,3 +149,13 @@ button.live { background: #dc2626; border-color: #dc2626; color: #fff; animation
 .dup { margin: 0 0 8px; padding: 8px 12px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); font-weight: 600; font-size: .9rem; }
 .homeitem.flash { animation: flash 1s ease-in-out 2; }
 @keyframes flash { 50% { background: var(--warn-soft); border-color: var(--warn); } }
+
+.source { margin-top: 6px; }
+.source a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.source a:hover { text-decoration: underline; }
+button.onsale { display: block; text-align: start; border: 0; background: none; padding: 2px 0; font: inherit; font-size: .8rem; color: var(--warn); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+#dealSheet { width: min(560px, calc(100vw - 24px)); max-height: 85vh; border: 1px solid var(--border); border-radius: 16px; padding: 16px; background: var(--bg); color: var(--text); }
+#dealSheet::backdrop { background: rgb(0 0 0 / .45); }
+.sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.sheet-head h3 { margin: 0; }
+#sheetClose { border: 0; background: none; font-size: 1.2rem; padding: 4px 8px; color: var(--muted); }

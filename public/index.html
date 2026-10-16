@@ -186,6 +186,15 @@
 
   <div id="toast" role="status" hidden></div>
 
+  <dialog id="dealSheet">
+    <div class="sheet-head">
+      <h3 id="sheetTitle"></h3>
+      <button type="button" id="sheetClose" aria-label="סגירה">✕</button>
+    </div>
+    <p class="muted small">הפרטים מגיעים מהמבצע שהרשת פרסמה. בקישור אפשר לראות את המוצר עצמו (תמונה ושם מלא) ולוודא שזה מה שרוצים.</p>
+    <div id="sheetBody"></div>
+  </dialog>
+
   <template id="dealTpl">
     <article class="deal">
       <div class="deal-top">
@@ -198,6 +207,7 @@
         <span class="until"></span>
         <span class="where muted"></span>
       </div>
+      <div class="source small"></div>
     </article>
   </template>
 
