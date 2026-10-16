@@ -107,3 +107,25 @@ test('shared "missing at home" list per household; watch list untouched', async 
   assert.deepEqual(names, ['דיקלה', 'נועה', 'סבתא'].sort());
 });
 
+
+test('invite limits: max users and who may invite', async () => {
+  const owner = (await call('POST', '/api/login', { name: 'דיקלה', password: 'initial123' })).json.token;
+  const noa = (await call('POST', '/api/login', { name: 'נועה', password: 'noa123' })).json.token;
+  let s = (await call('GET', '/api/state', null, owner)).json;
+  assert.equal(s.limits.maxUsers, 20); // ברירת מחדל
+  const count = s.limits.count;
+  // רק מנהל משנה הגבלות
+  assert.equal((await call('PUT', '/api/limits', { maxUsers: 100 }, noa)).status, 403);
+  // תקרה מלאה – אף אחד לא יכול להזמין
+  await call('PUT', '/api/limits', { maxUsers: count }, owner);
+  let r = await call('POST', '/api/users', { name: 'עוד אחד', password: 'abc123' }, noa);
+  assert.equal(r.status, 400);
+  assert.match(r.json.error, /המקסימלי/);
+  assert.equal((await call('POST', '/api/users', { name: 'עוד אחד', password: 'abc123' }, owner)).status, 400);
+  // רק המנהל מזמין
+  await call('PUT', '/api/limits', { maxUsers: count + 5, membersCanInvite: false }, owner);
+  assert.equal((await call('POST', '/api/users', { name: 'עוד אחד', password: 'abc123' }, noa)).status, 403);
+  assert.equal((await call('POST', '/api/users', { name: 'עוד אחד', password: 'abc123' }, owner)).status, 200);
+  s = (await call('GET', '/api/state', null, noa)).json;
+  assert.deepEqual([s.limits.membersCanInvite, s.limits.count], [false, count + 1]);
+});

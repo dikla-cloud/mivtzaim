@@ -68,7 +68,7 @@ function showTab(t) {
 // ---------- תצוגה ----------
 function render() {
   const scanned = S.lastScan ? `נבדק לאחרונה: ${new Date(S.lastScan).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' })}` : 'עוד לא בוצעה בדיקה';
-  $('#status').textContent = S.location ? `📍 ${S.location.label} · רדיוס ${S.radiusKm} ק"מ · ${scanned}` : 'יש להגדיר מיקום בלשונית „הגדרות”';
+  $('#status').textContent = S.location ? `📍 ${S.location.label} · רדיוס ${S.radiusKm} ק"מ · ${scanned}` : 'לחצו על „עדכון מיקום” כדי להתחיל';
   $('#sources').textContent = S.lastSources.length ? `מקור הנתונים: ${S.lastSources.join(', ')}` : '';
   $('#follow').checked = S.followLocation;
   $('#meName').textContent = S.me.name;
@@ -229,6 +229,16 @@ function renderList() {
 
 function renderFamily() {
   $('#familyCard').hidden = false;
+  const L = S.limits;
+  const canInvite = S.me.admin || L.membersCanInvite;
+  const left = Math.max(L.maxUsers - L.count, 0);
+  $('#addUser').hidden = !canInvite || !left;
+  $('#limitsBox').hidden = !S.me.admin;
+  $('#membersCanInvite').checked = L.membersCanInvite;
+  if (document.activeElement !== $('#maxUsers')) $('#maxUsers').value = L.maxUsers;
+  $('#limitsInfo').textContent = !canInvite
+    ? 'הזמנת משתמשים חדשים נעשית דרך מנהל האפליקציה.'
+    : left ? `באפליקציה ${L.count} משתמשים מתוך ${L.maxUsers} אפשריים (נשארו ${left}).` : `הגעתם למספר המשתמשים המקסימלי (${L.maxUsers}).${S.me.admin ? ' אפשר להגדיל אותו למעלה.' : ''}`;
   $('#newHouseholdWrap').hidden = !S.me.admin;
   $('#appUrl').textContent = location.origin;
   $('#family').replaceChildren(...S.users.map((u) => {
@@ -273,6 +283,11 @@ function renderFamily() {
     return li;
   }));
 }
+
+$('#membersCanInvite').addEventListener('change', async (e) => { S = await api('PUT', '/api/limits', { membersCanInvite: e.target.checked }); render(); });
+$('#maxUsers').addEventListener('change', async (e) => {
+  try { S = await api('PUT', '/api/limits', { maxUsers: Number(e.target.value) }); render(); toast(`מספר המשתמשים המקסימלי: ${S.limits.maxUsers}`); } catch (ex) { alert(ex.message); }
+});
 
 $('#addUser').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -346,12 +361,12 @@ function renderHome() {
     li.className = 'homeitem' + (it.done ? ' done' : '');
     const toggle = Object.assign(document.createElement('button'), { className: 'check', ariaLabel: it.done ? 'סימון כלא נקנה' : 'סימון כנקנה', textContent: it.done ? '✔' : '' });
     const body = Object.assign(document.createElement('span'), { className: 'hbody' });
-    body.append(Object.assign(document.createElement('span'), { className: 'food', textContent: it.voice ? '🎙️' : foodIcon(it.text) }));
+    body.append(Object.assign(document.createElement('span'), { className: 'food', textContent: foodIcon(it.text) }));
     const txt = Object.assign(document.createElement('span'), { className: 'htext' });
-    txt.append(Object.assign(document.createElement('span'), { textContent: it.voice ? `הודעה קולית${it.voice.seconds ? ` · ${it.voice.seconds} שנ׳` : ''}` : it.text }));
+    txt.append(Object.assign(document.createElement('span'), { textContent: it.text }));
     const meta = [it.by && it.by !== S.me.name ? `הוסיף/ה ${it.by}` : '', it.done && it.doneBy ? `נקנה ע״י ${it.doneBy}` : ''].filter(Boolean).join(' · ');
     if (meta) txt.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: meta }));
-    const d = !it.done && !it.voice && dealFor(it.text);
+    const d = !it.done && dealFor(it.text);
     if (d) {
       const n = dealsFor(it.text).length;
       const sale = Object.assign(document.createElement('button'), {
@@ -372,11 +387,7 @@ function renderHome() {
     toggle.addEventListener('click', flip);
     body.addEventListener('click', flip);
     li.append(toggle, body);
-    if (it.voice) {
-      const play = Object.assign(document.createElement('button'), { className: 'mini play', textContent: '▶', title: 'השמעה' });
-      play.addEventListener('click', () => playVoice(it.id, play));
-      li.append(play);
-    } else if (!watched.has(plain(it.text))) {
+    if (!watched.has(plain(it.text))) {
       const star = Object.assign(document.createElement('button'), { className: 'mini', textContent: '⭐', title: 'להוסיף לרשימה לחיפוש מבצעים' });
       star.addEventListener('click', async () => {
         await saveList([...S.list.map((x) => x.text), it.text]);
@@ -385,7 +396,12 @@ function renderHome() {
       li.append(star);
     }
     const del = Object.assign(document.createElement('button'), { className: 'mini', textContent: '✕', title: 'מחיקה' });
-    del.addEventListener('click', async () => { Object.assign(S, await api('DELETE', `/api/home/${it.id}`)); renderHome(); });
+    del.addEventListener('click', async () => {
+      const index = S.home.findIndex((x) => x.id === it.id);
+      Object.assign(S, await api('DELETE', `/api/home/${it.id}`));
+      renderHome();
+      offerUndo(`„${it.text}” נמחק מהרשימה`, [{ item: it, index }]);
+    });
     li.append(del);
     return li;
   }));
@@ -408,7 +424,7 @@ function showDuplicates(dups) {
 }
 
 $('#homeItem').addEventListener('input', () => {
-  const open = (S.home || []).filter((x) => !x.done && !x.voice);
+  const open = (S.home || []).filter((x) => !x.done);
   showDuplicates(splitItems($('#homeItem').value).map((t) => open.find((x) => sameItem(x.text, t))).filter(Boolean));
 });
 
@@ -449,7 +465,7 @@ $('#copyLink').addEventListener('click', async () => {
 });
 if (navigator.share) {
   $('#shareLink').hidden = false;
-  $('#shareLink').addEventListener('click', () => navigator.share({ title: 'מבצעים ליד הבית', text: 'הצטרפות לאפליקציה „מבצעים ליד הבית”:', url: location.origin }).catch(() => {}));
+  $('#shareLink').addEventListener('click', () => navigator.share({ title: 'הקניות שלי', text: 'הצטרפות לאפליקציה „הקניות שלי”:', url: location.origin }).catch(() => {}));
 }
 
 // ---------- קול: הכתבה (דיבור ← טקסט) והודעה קולית ----------
@@ -480,7 +496,8 @@ function splitSpoken(text) {
   return items;
 }
 
-// אייקון מיקרופון אחד: הכתבה (דיבור ← פריטים). במכשיר שלא תומך בהכתבה – נשמרת הודעה קולית.
+// אייקון מיקרופון: הכתבה (דיבור ← פריטים). במכשיר שלא תומך בהכתבה האייקון לא מופיע
+// (אפשר להשתמש במיקרופון של המקלדת בטלפון).
 if (SR) {
   $('#mic').hidden = false;
   let rec = null;
@@ -513,72 +530,23 @@ if (SR) {
   });
 }
 
-if (!SR && window.MediaRecorder && navigator.mediaDevices?.getUserMedia) {
-  $('#mic').hidden = false;
-  $('#mic').title = 'הקלטת הודעה קולית';
-  let mr = null;
-  let timer = null;
-  const MAX = 30;
-  $('#mic').addEventListener('click', async () => {
-    if (mr) return mr.stop();
-    let stream;
-    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { return alert('צריך לאשר גישה למיקרופון'); }
-    const type = ['audio/webm', 'audio/mp4', 'audio/ogg'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
-    mr = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
-    const chunks = [];
-    const t0 = Date.now();
-    mr.ondataavailable = (e) => e.data.size && chunks.push(e.data);
-    mr.onstop = async () => {
-      clearInterval(timer);
-      stream.getTracks().forEach((t) => t.stop());
-      const seconds = Math.round((Date.now() - t0) / 1000);
-      const blob = new Blob(chunks, { type: (mr.mimeType || type || 'audio/webm').split(';')[0] });
-      mr = null;
-      $('#mic').classList.remove('live');
-      $('#mic').textContent = '🎤';
-      if (seconds < 1 || !blob.size) return;
-      $('#voiceHint').textContent = 'שומר…';
-      try {
-        const res = await fetch('/api/home/voice', { method: 'POST', headers: { 'Content-Type': blob.type, 'x-voice-seconds': seconds, 'x-app-token': token }, body: blob });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error);
-        Object.assign(S, json);
-        renderHome();
-        $('#voiceHint').textContent = 'ההודעה הקולית נוספה לרשימה';
-      } catch (e) { $('#voiceHint').textContent = `השמירה נכשלה: ${e.message}`; }
-    };
-    mr.start();
-    $('#mic').classList.add('live');
-    timer = setInterval(() => {
-      const s = Math.round((Date.now() - t0) / 1000);
-      $('#mic').textContent = `⏹ ${s}`;
-      if (s >= MAX) mr?.stop();
-    }, 250);
-    $('#voiceHint').textContent = 'מקליט… לחצו שוב לעצירה';
+// ביטול מחיקה: אחרי מחיקה מופיע כפתור „ביטול” שמחזיר את הפריטים למקומם
+function offerUndo(msg, entries) {
+  toast(msg, {
+    label: '↩ ביטול',
+    async run() {
+      Object.assign(S, await api('POST', '/api/home/restore', { items: entries }));
+      renderHome();
+      toast(entries.length === 1 ? `„${entries[0].item.text}” הוחזר לרשימה` : `${entries.length} פריטים הוחזרו לרשימה`);
+    },
   });
 }
 
-const voiceUrls = new Map();
-async function playVoice(id, btn) {
-  try {
-    if (!voiceUrls.has(id)) {
-      const res = await fetch(`/api/home/${id}/voice`, { headers: { 'x-app-token': token } });
-      if (!res.ok) throw new Error('ההקלטה לא נמצאה');
-      voiceUrls.set(id, URL.createObjectURL(await res.blob()));
-    }
-    const a = new Audio(voiceUrls.get(id));
-    btn.textContent = '🔊';
-    a.onended = () => (btn.textContent = '▶');
-    await a.play();
-  } catch (e) { toast(e.message); btn.textContent = '▶'; }
-}
-
 $('#clearDone').addEventListener('click', async () => {
-  const n = S.home.filter((x) => x.done).length;
-  if (!confirm(`למחוק מהרשימה ${n} פריטים שנקנו? מה שלא נקנה יישאר.`)) return;
+  const entries = S.home.map((item, index) => ({ item, index })).filter((e) => e.item.done);
   Object.assign(S, await api('POST', '/api/home/clear-done'));
   renderHome();
-  toast('הרשימה נוקתה – נשארו רק הפריטים שעוד לא נקנו');
+  offerUndo(entries.length === 1 ? 'פריט אחד שנקנה נמחק מהרשימה' : `${entries.length} פריטים שנקנו נמחקו מהרשימה`, entries);
 });
 
 // סנכרון עם בני הבית: בזמן שהרשימה פתוחה מתעדכנים כל כמה שניות
@@ -702,12 +670,21 @@ async function waitForScan(prev) {
 }
 
 let toastTimer;
-function toast(msg) {
+// הודעה קצרה בתחתית המסך; action = { label, run } מוסיף כפתור (למשל „ביטול”)
+function toast(msg, action) {
   const t = $('#toast');
-  t.textContent = msg;
+  t.replaceChildren(Object.assign(document.createElement('span'), { textContent: msg }));
+  if (action) {
+    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'toast-action', textContent: action.label });
+    b.addEventListener('click', async () => {
+      t.hidden = true;
+      try { await action.run(); } catch (e) { alert(e.message); }
+    });
+    t.append(b);
+  }
   t.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (t.hidden = true), 6000);
+  toastTimer = setTimeout(() => (t.hidden = true), action ? 10000 : 6000);
 }
 
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') updateLocation(); });

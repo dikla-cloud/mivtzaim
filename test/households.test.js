@@ -34,30 +34,32 @@ test('existing family members are split into their own households; home list sta
   assert.equal(db.get().users['יואב'].household, 'h1');
 });
 
-test('voice note: upload, play back for household only, removed on clear', async () => {
-  process.env.APP_TOKEN = 'x';
+test('undo: deleted and cleared items come back in place', async () => {
   const app = require('../server/index.js');
   const auth = require('../server/auth');
   const server = app.listen(0);
   const base = `http://127.0.0.1:${server.address().port}`;
+  const call = (method, url, body, token) => fetch(base + url, { method, headers: { 'Content-Type': 'application/json', 'x-app-token': token }, body: body && JSON.stringify(body) }).then((r) => r.json());
   try {
-    const d = db.get();
-    const owner = auth.newSession(d.users['דיקלה']);
-    const other = auth.newSession(d.users['רותי']); // משק בית אחר
-    const audio = Buffer.from('fake-webm-audio');
-    let r = await fetch(base + '/api/home/voice', { method: 'POST', headers: { 'Content-Type': 'audio/webm;codecs=opus', 'x-voice-seconds': '4', 'x-app-token': owner }, body: audio });
-    const item = (await r.json()).home.find((x) => x.voice);
-    assert.equal(item.voice.seconds, 4);
-    r = await fetch(`${base}/api/home/${item.id}/voice`, { headers: { 'x-app-token': owner } });
-    assert.equal(Buffer.from(await r.arrayBuffer()).toString(), 'fake-webm-audio');
-    assert.equal((await fetch(`${base}/api/home/${item.id}/voice`, { headers: { 'x-app-token': other } })).status, 404);
-    assert.equal((await fetch(base + '/api/home/voice', { method: 'POST', headers: { 'Content-Type': 'audio/x-evil', 'x-app-token': owner }, body: audio })).status, 400);
-    const file = path.join(dir, 'voice', `${item.id}.webm`);
-    assert.ok(fs.existsSync(file));
-    await fetch(`${base}/api/home/${item.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-app-token': owner }, body: JSON.stringify({ done: true }) });
-    await fetch(base + '/api/home/clear-done', { method: 'POST', headers: { 'x-app-token': owner } });
-    await new Promise((res) => setTimeout(res, 100));
-    assert.ok(!fs.existsSync(file));
+    const t = auth.newSession(db.get().users['דיקלה']);
+    let h = (await call('POST', '/api/home', { items: ['א1', 'ב2', 'ג3'] }, t)).home;
+    const start = h.map((x) => x.text);
+    const idx = h.findIndex((x) => x.text === 'ב2');
+    const item = h[idx];
+    await call('DELETE', `/api/home/${item.id}`, null, t);
+    h = (await call('POST', '/api/home/restore', { items: [{ item, index: idx }] }, t)).home;
+    assert.deepEqual(h.map((x) => x.text), start);
+    assert.equal(h[idx].id, item.id);
+    // ביטול כפול לא יוצר כפילות
+    h = (await call('POST', '/api/home/restore', { items: [{ item, index: idx }] }, t)).home;
+    assert.equal(h.filter((x) => x.text === 'ב2').length, 1);
+    // ניקוי פריטים שנקנו + ביטול
+    await call('PATCH', `/api/home/${h[idx].id}`, { done: true }, t);
+    h = (await call('GET', '/api/home', null, t)).home;
+    const done = h.map((x, index) => ({ item: x, index })).filter((e) => e.item.done);
+    await call('POST', '/api/home/clear-done', null, t);
+    h = (await call('POST', '/api/home/restore', { items: done }, t)).home;
+    assert.deepEqual(h.map((x) => [x.text, x.done]).filter(([x]) => ['א1', 'ב2', 'ג3'].includes(x)), [['א1', false], ['ב2', true], ['ג3', false]]);
   } finally {
     server.close();
   }

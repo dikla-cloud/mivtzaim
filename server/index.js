@@ -47,6 +47,7 @@ const state = (u) => ({
   // המנהל רואה את כל המשתמשים; כל אחד אחר – את בני משק הבית שלו
   users: db.users().filter((x) => u.admin || x.household === u.household).map(userInfo),
   home: db.householdOf(u).home,
+  limits: { ...db.get().limits, count: db.users().length },
   list: u.list, location: u.location, radiusKm: u.radiusKm, deals: u.deals,
   lastScan: u.lastScan, lastErrors: u.lastErrors, lastSources: u.lastSources || [], lastReport: u.lastReport || null,
   followLocation: u.followLocation === true,
@@ -77,6 +78,11 @@ app.post('/api/users', (req, res) => {
   if (!auth.validName(name)) return res.status(400).json({ error: 'השם צריך להכיל 2–30 תווים' });
   if (!auth.validPassword(password)) return res.status(400).json({ error: 'הסיסמה צריכה להכיל לפחות 6 תווים' });
   if (db.get().users[db.userKey(name)]) return res.status(400).json({ error: 'כבר יש משתמש בשם הזה' });
+  const { maxUsers, membersCanInvite } = db.get().limits;
+  if (!req.user.admin && !membersCanInvite) return res.status(403).json({ error: 'רק מנהל האפליקציה יכול להזמין משתמשים חדשים' });
+  if (db.users().length >= maxUsers) {
+    return res.status(400).json({ error: `הגעתם למספר המשתמשים המקסימלי באפליקציה (${maxUsers}). ${req.user.admin ? 'אפשר להגדיל אותו בהגדרות ← בני הבית.' : 'אפשר לבקש מהמנהל להגדיל אותו.'}` });
+  }
   db.newUser(name, {
     pass: auth.hashPassword(password),
     household: req.user.admin && newHousehold ? null : db.householdOf(req.user).id,
@@ -103,7 +109,7 @@ app.post('/api/home', (req, res) => {
   const list = home(req);
   const duplicates = []; // פריטים שכבר ברשימה – מוחזרים כדי שהאפליקציה תודיע עליהם
   for (const text of texts.slice(0, 200)) {
-    const existing = list.find((x) => !x.done && !x.voice && sameItem(x.text, text));
+    const existing = list.find((x) => !x.done && sameItem(x.text, text));
     if (existing) {
       duplicates.push({ text: existing.text, by: existing.by, at: existing.at });
       continue;
@@ -126,34 +132,42 @@ app.patch('/api/home/:id', (req, res) => {
   res.json(homeState(req));
 });
 
-// הודעות קוליות ב„חסר בבית”: נשמרות כקבצים בתיקיית הנתונים, ונגישות רק לבני משק הבית
-const VOICE_DIR = path.resolve(path.dirname(db.FILE), 'voice');
-const VOICE_TYPES = { 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a', 'audio/mpeg': 'mp3', 'audio/aac': 'aac', 'audio/wav': 'wav' };
-const voiceFile = (item) => path.join(VOICE_DIR, `${item.id}.${item.voice.ext}`);
-const dropVoice = (items) => { for (const x of items) if (x.voice) fs.rm(voiceFile(x), { force: true }, () => {}); };
+// ההודעות הקוליות הוסרו מהאפליקציה – מנקים פריטים וקבצים שנשארו מגרסה קודמת
+{
+  let removed = false;
+  for (const h of Object.values(db.get().households)) {
+    const before = h.home.length;
+    h.home = h.home.filter((x) => !x.voice);
+    removed ||= h.home.length !== before;
+  }
+  if (removed) db.save();
+  fs.rm(path.resolve(path.dirname(db.FILE), 'voice'), { recursive: true, force: true }, () => {});
+}
 
-app.post('/api/home/voice', express.raw({ type: 'audio/*', limit: '3mb' }), (req, res) => {
-  const type = String(req.get('content-type') || '').split(';')[0].trim();
-  const ext = VOICE_TYPES[type];
-  if (!ext || !Buffer.isBuffer(req.body) || !req.body.length) return res.status(400).json({ error: 'פורמט הקלטה לא נתמך' });
-  const seconds = Math.min(Math.round(Number(req.get('x-voice-seconds')) || 0), 120);
-  const item = { id: crypto.randomUUID(), text: 'הודעה קולית', done: false, by: req.user.name, at: new Date().toISOString(), voice: { type, ext, seconds } };
-  fs.mkdirSync(VOICE_DIR, { recursive: true });
-  fs.writeFileSync(voiceFile(item), req.body);
-  home(req).push(item);
+// ביטול מחיקה: מחזירים פריטים שנמחקו (בטעות) למקומם ברשימה
+app.post('/api/home/restore', (req, res) => {
+  const list = home(req);
+  const entries = [].concat(req.body?.items || []).filter((e) => e && e.item).sort((x, y) => (x.index ?? 1e9) - (y.index ?? 1e9));
+  for (const { item, index } of entries.slice(0, 200)) {
+    const text = typeof item.text === 'string' ? item.text.trim().slice(0, 200) : '';
+    if (!text || list.some((x) => x.id === item.id)) continue;
+    const restored = {
+      id: typeof item.id === 'string' && item.id.length <= 64 ? item.id : crypto.randomUUID(),
+      text,
+      done: Boolean(item.done),
+      by: String(item.by || req.user.name).slice(0, 30),
+      at: typeof item.at === 'string' ? item.at : new Date().toISOString(),
+      ...(item.done && item.doneBy ? { doneBy: String(item.doneBy).slice(0, 30) } : {}),
+    };
+    const i = Number.isInteger(index) ? Math.min(Math.max(index, 0), list.length) : list.length;
+    list.splice(i, 0, restored);
+  }
   db.save();
   res.json(homeState(req));
 });
 
-app.get('/api/home/:id/voice', (req, res) => {
-  const item = home(req).find((x) => x.id === req.params.id && x.voice);
-  if (!item || !fs.existsSync(voiceFile(item))) return res.status(404).json({ error: 'ההקלטה לא נמצאה' });
-  res.type(item.voice.type).sendFile(voiceFile(item));
-});
-
 app.delete('/api/home/:id', (req, res) => {
   const h = db.householdOf(req.user);
-  dropVoice(h.home.filter((x) => x.id === req.params.id));
   h.home = h.home.filter((x) => x.id !== req.params.id);
   db.save();
   res.json(homeState(req));
@@ -162,7 +176,6 @@ app.delete('/api/home/:id', (req, res) => {
 // „ניקוי פריטים שנקנו”: נשארים רק מה שעוד לא נקנה. רשימת המבצעים לא מושפעת.
 app.post('/api/home/clear-done', (req, res) => {
   const h = db.householdOf(req.user);
-  dropVoice(h.home.filter((x) => x.done));
   h.home = h.home.filter((x) => !x.done);
   db.save();
   res.json(homeState(req));
@@ -174,6 +187,16 @@ app.put('/api/users/:name/password', adminOnly, (req, res) => {
   if (!auth.validPassword(req.body?.password)) return res.status(400).json({ error: 'הסיסמה צריכה להכיל לפחות 6 תווים' });
   u.pass = auth.hashPassword(req.body.password);
   auth.dropSessions(u, u === req.user ? req.token : undefined);
+  db.save();
+  res.json(state(req.user));
+});
+
+// הגבלות הזמנה – מנהל בלבד
+app.put('/api/limits', adminOnly, (req, res) => {
+  const l = db.get().limits;
+  const max = Number(req.body?.maxUsers);
+  if (Number.isFinite(max)) l.maxUsers = Math.min(Math.max(Math.round(max), 1), 500);
+  if (typeof req.body?.membersCanInvite === 'boolean') l.membersCanInvite = req.body.membersCanInvite;
   db.save();
   res.json(state(req.user));
 });
@@ -303,5 +326,5 @@ module.exports = app;
 
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => console.log(`מבצעים ליד הבית פועל: http://localhost:${PORT}${process.env.DEMO === '1' ? ' (מצב הדגמה)' : ''}`));
+  app.listen(PORT, () => console.log(`„הקניות שלי” פועלת: http://localhost:${PORT}${process.env.DEMO === '1' ? ' (מצב הדגמה)' : ''}`));
 }

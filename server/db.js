@@ -29,6 +29,8 @@ const defaults = () => ({
   sessions: {},        // { token: userKey }
   storesCache: {},     // { chainId: { at, stores } } – משותף לכולם
   translations: {},    // משותף לכולם
+  // הגבלות הזמנה (המנהל משנה בהגדרות): מספר משתמשים מקסימלי, והאם גם משתמשים רגילים יכולים להזמין
+  limits: { maxUsers: 20, membersCanInvite: true },
 });
 
 // גרסה ראשונה של האפליקציה שמרה משתמש יחיד בשורש הקובץ
@@ -40,6 +42,7 @@ function get() {
     let raw = {};
     try { raw = JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch { /* קובץ חדש */ }
     db = { ...defaults(), ...raw };
+    db.limits = { ...defaults().limits, ...(raw.limits || {}) };
     if (LEGACY.some((k) => k in raw)) {
       db.legacy = Object.fromEntries(LEGACY.filter((k) => k in raw).map((k) => [k, raw[k]]));
       for (const k of LEGACY) delete db[k];

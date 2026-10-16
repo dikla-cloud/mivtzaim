@@ -3,19 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>מבצעים ליד הבית</title>
+  <title>הקניות שלי</title>
   <meta name="theme-color" content="#0f766e">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="מבצעים">
+  <meta name="apple-mobile-web-app-title" content="הקניות שלי">
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="logged-out">
   <section id="login">
     <form id="loginForm" class="card">
-      <h1>מבצעים ליד הבית</h1>
+      <h1>הקניות שלי</h1>
       <p id="loginHint" class="muted">כניסה לחשבון שלך</p>
       <label>שם<input id="loginName" autocomplete="username" required></label>
       <label>סיסמה<input id="loginPass" type="password" autocomplete="current-password" required></label>
@@ -26,7 +26,7 @@
 
   <header>
     <div class="topbar">
-      <h1>מבצעים ליד הבית</h1>
+      <h1>הקניות שלי</h1>
       <button id="gear" data-tab="settings" aria-pressed="false" title="הגדרות">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
         <span>הגדרות</span>
@@ -136,6 +136,14 @@
         <h3>בני הבית</h3>
         <p class="muted small">כל מי שנמצא במשק הבית שלך רואה ומעדכן את אותה רשימת „חסר בבית”. הרשימה לחיפוש מבצעים, המיקום וההתראות נשארים אישיים לכל אחד.</p>
         <ul id="family"></ul>
+        <div id="limitsBox" hidden>
+          <h4>הגבלות הזמנה</h4>
+          <label class="toggle"><input type="checkbox" id="membersCanInvite"> גם משתמשים רגילים יכולים להזמין אנשים נוספים</label>
+          <label>מספר המשתמשים המקסימלי באפליקציה
+            <input type="number" id="maxUsers" min="1" max="500" inputmode="numeric">
+          </label>
+        </div>
+        <p id="limitsInfo" class="muted small"></p>
         <form id="addUser">
           <label>שם<input id="newUserName" required minlength="2" maxlength="30" autocomplete="off"></label>
           <label>סיסמה ראשונית (לפחות 6 תווים)<input id="newUserPass" required minlength="6" autocomplete="new-password"></label>
