@@ -145,7 +145,7 @@ function renderReport() {
   body.append(el('p', `📍 מיקום שזוהה: ${where}${p.postcode ? ` · מיקוד ${p.postcode}` : ''} · רדיוס ${R.radiusKm} ק"מ`));
 
   if (!R.providers.length) {
-    body.append(el('p', `⚠️ אין עדיין מקור מבצעים חינמי ל${p.country || 'מדינה הזו'}. נתמכות כרגע: ישראל, אוסטריה וגרמניה.`, 'warn'));
+    body.append(el('p', `⚠️ אין עדיין מקור מבצעים חינמי ל${p.country || 'מדינה הזו'}. נתמכות כרגע: ישראל, אוסטריה, גרמניה ואוסטרליה.`, 'warn'));
     return;
   }
   for (const pr of R.providers) {

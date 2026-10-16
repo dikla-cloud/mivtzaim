@@ -4,9 +4,10 @@ const geo = require('./geo');
 const push = require('./push');
 const israel = require('./providers/israel');
 const marktguru = require('./providers/marktguru');
+const australia = require('./providers/australia');
 
 // מקורות נתונים חינמיים לפי מדינה
-const PROVIDERS = [israel, marktguru];
+const PROVIDERS = [israel, marktguru, australia];
 
 const inIsrael = ({ lat, lon }) => lat > 29.4 && lat < 33.4 && lon > 34.2 && lon < 35.95;
 const inAustria = ({ lat, lon }) => lat > 46.3 && lat < 49.1 && lon > 9.5 && lon < 17.2;
@@ -44,7 +45,7 @@ async function scan(d) {
     const sources = [];
     const providers = PROVIDERS.filter((p) => p.countries.includes(place.countryCode));
     if (!providers.length) {
-      errors.push(`אין עדיין מקור מבצעים חינמי ל${place.country || 'מדינה הזו'}. נתמכות כרגע: ישראל, אוסטריה וגרמניה.`);
+      errors.push(`אין עדיין מקור מבצעים חינמי ל${place.country || 'מדינה הזו'}. נתמכות כרגע: ישראל, אוסטריה, גרמניה ואוסטרליה.`);
     }
     for (const p of providers) {
       try {
