@@ -1,0 +1,72 @@
+:root {
+  --bg: #f6f7f5; --surface: #fff; --text: #1c2321; --muted: #5d6b67; --border: #dde3e0;
+  --accent: #0f766e; --accent-ink: #fff; --accent-soft: #e0f2ef; --warn: #b45309; --warn-soft: #fef3c7;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111615; --surface: #1a2120; --text: #e7ecea; --muted: #9aa8a4; --border: #2c3634;
+    --accent: #2dd4bf; --accent-ink: #062b27; --accent-soft: #123430; --warn: #fbbf24; --warn-soft: #3a2d0f;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+header { padding: calc(16px + env(safe-area-inset-top)) 16px 8px; max-width: 720px; margin: auto; }
+h1 { margin: 0; font-size: 1.4rem; }
+h3 { margin: 0 0 8px; font-size: 1.05rem; }
+.muted { color: var(--muted); }
+#status { margin: 4px 0 0; font-size: .9rem; }
+
+nav { display: flex; gap: 4px; max-width: 720px; margin: 8px auto 0; padding: 0 16px; position: sticky; top: 0; background: var(--bg); z-index: 1; }
+nav button { flex: 1; border: 0; background: none; color: var(--muted); padding: 10px 4px; font: inherit; font-weight: 600; border-bottom: 3px solid transparent; cursor: pointer; }
+nav button[aria-selected="true"] { color: var(--accent); border-color: var(--accent); }
+
+main { max-width: 720px; margin: auto; padding: 16px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+.row input { flex: 1; min-width: 0; }
+input, textarea, button, .file {
+  font: inherit; color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+}
+textarea { width: 100%; resize: vertical; }
+button, .file { cursor: pointer; font-weight: 600; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:disabled { opacity: .6; cursor: progress; }
+input[type=range] { width: 100%; padding: 0; accent-color: var(--accent); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin: 16px 0; }
+.card p { margin: 4px 0 8px; }
+
+#items { list-style: none; padding: 0; margin: 8px 0; }
+#items li { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 6px 12px; margin-bottom: 6px; }
+#items li input { flex: 1; border: 0; padding: 6px 0; background: none; }
+#items li button { border: 0; background: none; color: var(--muted); padding: 6px; font-size: 1.1rem; }
+
+.group h2 { font-size: 1rem; margin: 20px 0 8px; }
+.deal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; }
+.deal-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.price { font-size: 1.35rem; font-weight: 700; color: var(--accent); }
+.price s { font-size: .85rem; color: var(--muted); font-weight: 400; margin-inline-start: 6px; }
+.chain { font-weight: 600; }
+.product { margin-top: 2px; }
+.desc { font-size: .9rem; }
+.meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: .9rem; }
+.until { background: var(--accent-soft); border-radius: 6px; padding: 1px 8px; }
+.until.soon { background: var(--warn-soft); color: var(--warn); }
+.badge { white-space: nowrap; display: inline-block; font-size: .75rem; border: 1px solid var(--border); border-radius: 6px; padding: 0 6px; margin-inline-start: 6px; color: var(--muted); }
+.empty { text-align: center; padding: 32px 8px; }
+#chains label { display: flex; gap: 8px; align-items: center; padding: 4px 0; }
+details { margin-top: 16px; font-size: .9rem; color: var(--muted); }
+
+.small { font-size: .85rem; margin: 2px 0 0; }
+.toggle { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; }
+.toggle input { margin-top: 5px; accent-color: var(--accent); }
+.desc a { color: var(--accent); }
+#toast {
+  position: fixed; bottom: calc(16px + env(safe-area-inset-bottom)); left: 16px; right: 16px; max-width: 520px; margin: auto;
+  background: var(--text); color: var(--bg); padding: 12px 16px; border-radius: 12px; z-index: 5; box-shadow: 0 4px 16px rgb(0 0 0 / .2);
+}

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>מבצעים ליד הבית</title>
+  <meta name="theme-color" content="#0f766e">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="מבצעים">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>מבצעים ליד הבית</h1>
+    <p id="status" class="muted"></p>
+    <p id="sources" class="muted small"></p>
+  </header>
+
+  <nav role="tablist">
+    <button role="tab" data-tab="deals" aria-selected="true">מבצעים</button>
+    <button role="tab" data-tab="list">רשימת קניות</button>
+    <button role="tab" data-tab="settings">הגדרות</button>
+  </nav>
+
+  <main>
+    <section id="tab-deals">
+      <div class="row">
+        <button id="scan" class="primary">בדיקת מבצעים עכשיו</button>
+      </div>
+      <div id="deals"></div>
+      <details id="errors" hidden><summary>הערות מהסריקה האחרונה</summary><ul></ul></details>
+    </section>
+
+    <section id="tab-list" hidden>
+      <form id="add" class="row">
+        <input id="newItem" placeholder="הוספת מוצר (למשל: חלב 3%, קוטג', או ברקוד)" autocomplete="off">
+        <button class="primary">הוספה</button>
+      </form>
+      <ul id="items"></ul>
+      <div class="card">
+        <h3>העלאת רשימה</h3>
+        <p class="muted">מוצר בכל שורה (או מופרדים בפסיקים). אפשר להדביק טקסט או להעלות קובץ ‎.txt / .csv.</p>
+        <p class="muted small">בחו"ל המוצרים מתורגמים אוטומטית. אפשר גם לכתוב שם מקומי אחרי קו: <b>חלב 3% | Milch</b></p>
+        <textarea id="bulk" rows="5" placeholder="חלב 3%&#10;במבה&#10;שמן קנולה"></textarea>
+        <div class="row">
+          <button id="bulkAdd">הוספה לרשימה</button>
+          <button id="bulkReplace">החלפת הרשימה</button>
+          <label class="file">העלאת קובץ<input type="file" id="file" accept=".txt,.csv,text/plain,text/csv" hidden></label>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-settings" hidden>
+      <div class="card">
+        <h3>מיקום</h3>
+        <p id="loc" class="muted"></p>
+        <label class="toggle"><input type="checkbox" id="follow"> לעקוב אחרי המיקום שלי (גם בחו"ל) ולבדוק מחדש כשאני זזה</label>
+        <div class="row"><button id="gps" class="primary">שימוש במיקום הנוכחי</button></div>
+        <form id="addrForm" class="row">
+          <input id="addr" placeholder="או כתובת / עיר (למשל: הרצל 1, חולון / Stephansplatz, Wien)">
+          <button>שמירה</button>
+        </form>
+        <label>רדיוס חיפוש: <b id="radiusVal"></b> ק"מ
+          <input type="range" id="radius" min="1" max="30" step="1">
+        </label>
+      </div>
+      <div class="card">
+        <h3>התראות</h3>
+        <p id="pushState" class="muted"></p>
+        <div class="row">
+          <button id="enablePush" class="primary">הפעלת התראות במכשיר הזה</button>
+          <button id="testPush">שליחת התראת בדיקה</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>רשתות בישראל</h3>
+        <p class="muted small">בחו"ל נתמכות כרגע אוסטריה וגרמניה (כל הרשתות הגדולות, לפי עלוני המבצעים).</p>
+        <div id="chains"></div>
+      </div>
+      <div class="card">
+        <h3>התקנה בטלפון</h3>
+        <p><b>אנדרואיד (Chrome):</b> תפריט ⋮ ← „התקנת אפליקציה” / „הוספה למסך הבית”.</p>
+        <p><b>אייפון (Safari):</b> כפתור השיתוף ← „הוספה למסך הבית”, ואז לפתוח מהאייקון ולהפעיל התראות (נדרש iOS 16.4 ומעלה).</p>
+        <button id="install" hidden>התקנת האפליקציה</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" role="status" hidden></div>
+
+  <template id="dealTpl">
+    <article class="deal">
+      <div class="deal-top">
+        <span class="price"></span>
+        <span class="chain"></span>
+      </div>
+      <div class="product"></div>
+      <div class="desc muted"></div>
+      <div class="meta">
+        <span class="until"></span>
+        <span class="where muted"></span>
+      </div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
