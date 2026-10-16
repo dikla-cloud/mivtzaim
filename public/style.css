@@ -111,3 +111,13 @@ form > button { margin-top: 8px; }
 .report-list { margin: 0; padding-inline-start: 18px; }
 .report-list li { margin: 4px 0; }
 .warn { color: var(--warn); }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#gear {
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  padding: 8px 12px; border-radius: 999px; font-size: .95rem; color: var(--muted);
+}
+#gear svg { width: 20px; height: 20px; fill: currentColor; transition: transform .3s; }
+#gear:hover svg { transform: rotate(45deg); }
+#gear[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+@media (max-width: 360px) { #gear span { display: none; } }

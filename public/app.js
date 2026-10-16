@@ -56,8 +56,12 @@ const daysLeft = (s) => Math.ceil((new Date(s) - Date.now()) / 86400000);
 
 // ---------- לשוניות ----------
 document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+// כפתור גלגל השיניים פותח את ההגדרות, ולחיצה נוספת חוזרת למבצעים
+$('#gear').addEventListener('click', () => showTab($('#gear').getAttribute('aria-pressed') === 'true' ? 'deals' : 'settings'));
 function showTab(t) {
   document.querySelectorAll('nav button').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === t));
+  $('#gear').setAttribute('aria-pressed', t === 'settings');
+  if (t === 'settings') scrollTo({ top: 0 });
   document.querySelectorAll('main > section').forEach((s) => (s.hidden = s.id !== `tab-${t}`));
 }
 
