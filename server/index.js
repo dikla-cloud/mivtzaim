@@ -50,7 +50,6 @@ const state = (u) => ({
   limits: { ...db.get().limits, count: db.users().length },
   list: u.list, location: u.location, radiusKm: u.radiusKm, deals: u.deals,
   lastScan: u.lastScan, lastErrors: u.lastErrors, lastSources: u.lastSources || [], lastReport: u.lastReport || null,
-  followLocation: u.followLocation === true,
   chains: scanner.ALL_CHAINS.map((c) => ({ id: c.id, name: c.name, on: !u.chains || u.chains.includes(c.id) })),
   vapidKey: push.publicKey,
 });
@@ -254,7 +253,6 @@ app.put('/api/settings', async (req, res) => {
     const hit = await geo.geocode(address, { il: false });
     if (!hit) return res.status(400).json({ error: 'הכתובת לא נמצאה' });
     u.location = { lat: hit.lat, lon: hit.lon, label: address };
-    u.followLocation = false; // כתובת ידנית – מפסיקים לעקוב אחרי ה-GPS
     rescanSoon(u);
   } else if (Number.isFinite(lat) && Number.isFinite(lon)) {
     // עדכון מיקום בלחיצה: מזהים עיר ומדינה ובודקים מבצעים מחדש
@@ -263,30 +261,10 @@ app.put('/api/settings', async (req, res) => {
     if (place && !label) u.location.label = [place.city, place.country].filter(Boolean).join(', ') || u.location.label;
     rescanSoon(u);
   }
-  if (typeof req.body.followLocation === 'boolean') u.followLocation = req.body.followLocation;
   if (Number.isFinite(radiusKm)) u.radiusKm = Math.min(Math.max(radiusKm, 1), 50);
   if (Array.isArray(chains)) u.chains = chains;
   db.save();
   res.json(state(u));
-});
-
-// עדכון מיקום אוטומטי מהמכשיר. אם זזת יותר מ-MOVE_KM (או עברת מדינה) – סריקה חדשה ברקע.
-const MOVE_KM = Number(process.env.MOVE_KM || 3);
-
-app.post('/api/location', async (req, res) => {
-  const u = req.user;
-  const { lat, lon } = req.body;
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return res.status(400).json({ error: 'מיקום לא תקין' });
-  if (u.followLocation !== true) return res.json({ moved: false, state: state(u) });
-  const moved = !u.location || geo.haversineKm(u.location, { lat, lon }) > MOVE_KM;
-  if (moved) {
-    u.location = { lat, lon, label: 'המיקום הנוכחי' };
-    const place = await scanner.placeOf(u.location);
-    if (place) u.location.label = [place.city, place.country].filter(Boolean).join(', ') || u.location.label;
-    db.save();
-    rescanSoon(u);
-  }
-  res.json({ moved, state: state(u) });
 });
 
 app.post('/api/subscribe', (req, res) => {

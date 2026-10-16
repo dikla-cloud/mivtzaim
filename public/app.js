@@ -70,7 +70,6 @@ function render() {
   const scanned = S.lastScan ? `נבדק לאחרונה: ${new Date(S.lastScan).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' })}` : 'עוד לא בוצעה בדיקה';
   $('#status').textContent = S.location ? `📍 ${S.location.label} · רדיוס ${S.radiusKm} ק"מ · ${scanned}` : 'לחצו על „עדכון מיקום” כדי להתחיל';
   $('#sources').textContent = S.lastSources.length ? `מקור הנתונים: ${S.lastSources.join(', ')}` : '';
-  $('#follow').checked = S.followLocation;
   $('#meName').textContent = S.me.name;
   renderFamily();
 
@@ -236,6 +235,7 @@ function renderFamily() {
   $('#limitsBox').hidden = !S.me.admin;
   $('#membersCanInvite').checked = L.membersCanInvite;
   if (document.activeElement !== $('#maxUsers')) $('#maxUsers').value = L.maxUsers;
+  $('#maxUsersSave').disabled = Number($('#maxUsers').value) === L.maxUsers;
   $('#limitsInfo').textContent = !canInvite
     ? 'הזמנת משתמשים חדשים נעשית דרך מנהל האפליקציה.'
     : left ? `באפליקציה ${L.count} משתמשים מתוך ${L.maxUsers} אפשריים (נשארו ${left}).` : `הגעתם למספר המשתמשים המקסימלי (${L.maxUsers}).${S.me.admin ? ' אפשר להגדיל אותו למעלה.' : ''}`;
@@ -285,8 +285,20 @@ function renderFamily() {
 }
 
 $('#membersCanInvite').addEventListener('change', async (e) => { S = await api('PUT', '/api/limits', { membersCanInvite: e.target.checked }); render(); });
-$('#maxUsers').addEventListener('change', async (e) => {
-  try { S = await api('PUT', '/api/limits', { maxUsers: Number(e.target.value) }); render(); toast(`מספר המשתמשים המקסימלי: ${S.limits.maxUsers}`); } catch (ex) { alert(ex.message); }
+// מספר המשתמשים המקסימלי: נשמר בלחיצה על „שמירה” (או Enter)
+$('#maxUsers').addEventListener('input', () => {
+  $('#maxUsersSave').disabled = !$('#maxUsers').value || Number($('#maxUsers').value) === S.limits.maxUsers;
+  $('#maxUsersSaved').hidden = true;
+});
+$('#maxUsersForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    S = await api('PUT', '/api/limits', { maxUsers: Number($('#maxUsers').value) });
+    $('#maxUsers').blur();
+    render();
+    $('#maxUsersSaved').hidden = false;
+    setTimeout(() => ($('#maxUsersSaved').hidden = true), 4000);
+  } catch (ex) { alert(ex.message); }
 });
 
 $('#addUser').addEventListener('submit', async (e) => {
@@ -638,29 +650,6 @@ $('#chains').addEventListener('change', async () => {
   render();
 });
 
-$('#follow').addEventListener('change', async (e) => {
-  S = await api('PUT', '/api/settings', { followLocation: e.target.checked });
-  render();
-  if (S.followLocation) updateLocation();
-});
-
-// ---------- מעקב מיקום ----------
-// בכל פתיחה של האפליקציה (ובזמן שהיא פתוחה) נשלח המיקום לשרת. אם זזת – השרת מזהה מדינה ובודק מבצעים מחדש.
-async function sendLocation(p, manual = false) {
-  const r = await api('POST', '/api/location', { lat: p.coords.latitude, lon: p.coords.longitude });
-  S = r.state;
-  render();
-  if (r.moved) {
-    toast(`📍 ${S.location.label} – בודק מבצעים באזור…`);
-    waitForScan(S.lastScan);
-  } else if (manual) toast(`📍 ${S.location.label}`);
-}
-
-function updateLocation() {
-  if (!S?.followLocation || !navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition((p) => sendLocation(p).catch(() => {}), () => {}, { timeout: 20000, maximumAge: 60000 });
-}
-
 async function waitForScan(prev) {
   for (let i = 0; i < 60; i++) {
     await new Promise((r) => setTimeout(r, 5000));
@@ -687,8 +676,6 @@ function toast(msg, action) {
   toastTimer = setTimeout(() => (t.hidden = true), action ? 10000 : 6000);
 }
 
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') updateLocation(); });
-setInterval(updateLocation, 10 * 60000);
 
 // ---------- התראות ----------
 const b64ToBytes = (b64) => {
@@ -731,8 +718,7 @@ async function boot() {
   S = await api('GET', '/api/state');
   document.body.classList.remove('logged-out');
   render();
-  updateLocation();
-  if (!S.location && !S.followLocation) showTab('settings');
+  if (!S.location) showTab('settings');
   else if (!S.list.length) showTab('list');
   updatePushState();
 }

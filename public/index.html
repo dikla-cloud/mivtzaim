@@ -139,9 +139,14 @@
         <div id="limitsBox" hidden>
           <h4>הגבלות הזמנה</h4>
           <label class="toggle"><input type="checkbox" id="membersCanInvite"> גם משתמשים רגילים יכולים להזמין אנשים נוספים</label>
-          <label>מספר המשתמשים המקסימלי באפליקציה
-            <input type="number" id="maxUsers" min="1" max="500" inputmode="numeric">
-          </label>
+          <form id="maxUsersForm">
+            <label for="maxUsers">מספר המשתמשים המקסימלי באפליקציה</label>
+            <div class="row">
+              <input type="number" id="maxUsers" min="1" max="500" inputmode="numeric" required>
+              <button class="primary" id="maxUsersSave" disabled>שמירה</button>
+              <span id="maxUsersSaved" class="saved" hidden>✔ נשמר</span>
+            </div>
+          </form>
         </div>
         <p id="limitsInfo" class="muted small"></p>
         <form id="addUser">
@@ -162,7 +167,6 @@
         <p id="loc" class="muted"></p>
         <div class="row"><button id="gps" class="primary">📍 עדכון לפי המיקום הנוכחי</button></div>
         <p class="muted small">המיקום מתעדכן כשלוחצים על „עדכון מיקום” (גם בראש המסך). מגיעים למקום חדש? לוחצים פעם אחת.</p>
-        <label class="toggle"><input type="checkbox" id="follow"> עדכון אוטומטי בכל פתיחה של האפליקציה (למי שנוסע הרבה)</label>
         <form id="addrForm" class="row">
           <input id="addr" placeholder="או כתובת / עיר (למשל: הרצל 1, חולון / Stephansplatz, Wien)">
           <button>שמירה</button>

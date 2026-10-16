@@ -3,5 +3,10 @@
   <path d="M120 150h40l40 190h170l36-130H186" fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
   <circle cx="220" cy="390" r="24" fill="#fff"/>
   <circle cx="350" cy="390" r="24" fill="#fff"/>
-  <text x="300" y="285" font-family="Arial, sans-serif" font-size="96" font-weight="700" fill="#fbbf24" text-anchor="middle">%</text>
+  <!-- סימן האחוזים, ממורכז בתוך סל העגלה (מרכז הסל: 290,275) -->
+  <g fill="none" stroke="#fbbf24" stroke-width="12" stroke-linecap="round">
+    <line x1="314" y1="236" x2="266" y2="314"/>
+    <circle cx="267" cy="249" r="13"/>
+    <circle cx="313" cy="301" r="13"/>
+  </g>
 </svg>

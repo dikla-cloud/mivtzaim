@@ -180,14 +180,23 @@ button.onsale { display: block; text-align: start; border: 0; background: none; 
 /* הלשונית הפעילה: רקע מלא בצבע הראשי */
 nav { gap: 6px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
 nav button { border-radius: 12px; border-bottom: 0; padding: 10px 6px; transition: background .15s, color .15s; }
-nav button:hover { background: var(--accent-soft); }
 nav button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); box-shadow: 0 2px 6px rgb(0 0 0 / .15); }
 nav button[aria-selected="true"] .count { background: var(--accent-ink); color: var(--accent); }
 
 /* לשוניות לא פעילות: מסגרת ורקע, כדי שיהיה ברור שאפשר ללחוץ עליהן */
 nav button { border: 1.5px solid var(--border); background: var(--surface); color: var(--text); }
-nav button:hover { border-color: var(--accent); background: var(--accent-soft); }
 nav button[aria-selected="true"] { border-color: var(--accent); }
 nav button:not([aria-selected="true"]) { border-color: #a9bdb7; box-shadow: 0 1px 2px rgb(0 0 0 / .06); }
 @media (prefers-color-scheme: dark) { nav button:not([aria-selected="true"]) { border-color: #4b5f5a; } }
-nav button:not([aria-selected="true"]):hover { border-color: var(--accent); }
+/* ריחוף רק במכשירים עם עכבר (בטלפון „ריחוף” נשאר דבוק אחרי לחיצה), ולעולם לא על הלשונית הפעילה */
+@media (hover: hover) {
+  nav button:not([aria-selected="true"]):hover { border-color: var(--accent); background: var(--accent-soft); }
+}
+/* הלשונית הפעילה תמיד בצבע הראשי של האפליקציה */
+nav button[aria-selected="true"], nav button[aria-selected="true"]:hover { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+#maxUsersForm label { margin-bottom: 0; }
+#maxUsersForm .row { margin-top: 4px; flex-wrap: nowrap; }
+#maxUsersForm input { max-width: 110px; flex: none; }
+#maxUsersForm button:disabled { opacity: .45; cursor: default; }
+.saved { color: var(--accent); font-weight: 700; }
