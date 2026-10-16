@@ -480,18 +480,19 @@ function splitSpoken(text) {
   return items;
 }
 
+// אייקון מיקרופון אחד: הכתבה (דיבור ← פריטים). במכשיר שלא תומך בהכתבה – נשמרת הודעה קולית.
 if (SR) {
-  $('#dictate').hidden = false;
+  $('#mic').hidden = false;
   let rec = null;
-  $('#dictate').addEventListener('click', () => {
+  $('#mic').addEventListener('click', () => {
     if (rec) return rec.stop();
     rec = new SR();
     rec.lang = 'he-IL';
     rec.interimResults = true;
     rec.continuous = false;
     const before = $('#homeItem').value.trim();
-    $('#dictate').classList.add('live');
-    $('#dictate').textContent = '⏹ מקשיב…';
+    $('#mic').classList.add('live');
+    $('#mic').textContent = '⏹';
     $('#voiceHint').textContent = 'אמרו מה חסר, למשל: „חלב, לחם וביצים”';
     rec.onresult = (e) => {
       const said = [...e.results].map((r) => r[0].transcript).join(' ');
@@ -501,8 +502,8 @@ if (SR) {
     rec.onerror = (e) => { $('#voiceHint').textContent = e.error === 'not-allowed' ? 'צריך לאשר גישה למיקרופון' : `ההכתבה נכשלה (${e.error})`; };
     rec.onend = () => {
       rec = null;
-      $('#dictate').classList.remove('live');
-      $('#dictate').textContent = '🎤 הכתבה';
+      $('#mic').classList.remove('live');
+      $('#mic').textContent = '🎤';
       if ($('#homeItem').value.trim() !== before) {
         $('#voiceHint').textContent = 'בדקו את הפריטים ותקנו אם צריך, ואז „הוספה”';
         $('#homeItem').focus();
@@ -512,12 +513,13 @@ if (SR) {
   });
 }
 
-if (window.MediaRecorder && navigator.mediaDevices?.getUserMedia) {
-  $('#record').hidden = false;
+if (!SR && window.MediaRecorder && navigator.mediaDevices?.getUserMedia) {
+  $('#mic').hidden = false;
+  $('#mic').title = 'הקלטת הודעה קולית';
   let mr = null;
   let timer = null;
   const MAX = 30;
-  $('#record').addEventListener('click', async () => {
+  $('#mic').addEventListener('click', async () => {
     if (mr) return mr.stop();
     let stream;
     try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { return alert('צריך לאשר גישה למיקרופון'); }
@@ -532,8 +534,8 @@ if (window.MediaRecorder && navigator.mediaDevices?.getUserMedia) {
       const seconds = Math.round((Date.now() - t0) / 1000);
       const blob = new Blob(chunks, { type: (mr.mimeType || type || 'audio/webm').split(';')[0] });
       mr = null;
-      $('#record').classList.remove('live');
-      $('#record').textContent = '🎙️ הודעה קולית';
+      $('#mic').classList.remove('live');
+      $('#mic').textContent = '🎤';
       if (seconds < 1 || !blob.size) return;
       $('#voiceHint').textContent = 'שומר…';
       try {
@@ -546,10 +548,10 @@ if (window.MediaRecorder && navigator.mediaDevices?.getUserMedia) {
       } catch (e) { $('#voiceHint').textContent = `השמירה נכשלה: ${e.message}`; }
     };
     mr.start();
-    $('#record').classList.add('live');
+    $('#mic').classList.add('live');
     timer = setInterval(() => {
       const s = Math.round((Date.now() - t0) / 1000);
-      $('#record').textContent = `⏹ עצירה (${s}/${MAX} שנ׳)`;
+      $('#mic').textContent = `⏹ ${s}`;
       if (s >= MAX) mr?.stop();
     }, 250);
     $('#voiceHint').textContent = 'מקליט… לחצו שוב לעצירה';
@@ -633,17 +635,29 @@ $('#scan').addEventListener('click', async () => {
 });
 
 // ---------- הגדרות ----------
-$('#gps').addEventListener('click', () => {
+// עדכון מיקום בלחיצה (ברירת המחדל): לוקחים את המיקום הנוכחי ובודקים מבצעים מחדש
+function updateMyLocation() {
   if (!navigator.geolocation) return alert('הדפדפן לא תומך באיתור מיקום');
+  const btns = [$('#locBtn'), $('#gps')];
+  btns.forEach((b) => { b.disabled = true; });
+  $('#locBtn').textContent = '📍 מאתר…';
+  const done = () => { btns.forEach((b) => { b.disabled = false; }); $('#locBtn').textContent = '📍 עדכון מיקום'; };
   navigator.geolocation.getCurrentPosition(
     async (p) => {
-      await api('PUT', '/api/settings', { followLocation: true });
-      await sendLocation(p, true);
+      try {
+        const prev = S.lastScan;
+        S = await api('PUT', '/api/settings', { lat: p.coords.latitude, lon: p.coords.longitude });
+        render();
+        toast(`📍 המיקום עודכן: ${S.location.label} – בודק מבצעים באזור…`);
+        waitForScan(prev);
+      } catch (e) { alert(e.message); } finally { done(); }
     },
-    (err) => alert('לא ניתן לקבל מיקום: ' + err.message),
-    { enableHighAccuracy: false, timeout: 15000 },
+    (err) => { done(); alert(err.code === 1 ? 'צריך לאשר לאפליקציה גישה למיקום' : 'לא ניתן לקבל מיקום: ' + err.message); },
+    { enableHighAccuracy: false, timeout: 20000, maximumAge: 0 },
   );
-});
+}
+$('#gps').addEventListener('click', updateMyLocation);
+$('#locBtn').addEventListener('click', updateMyLocation);
 $('#addrForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   try { S = await api('PUT', '/api/settings', { address: $('#addr').value }); render(); } catch (err) { alert(err.message); }

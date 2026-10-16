@@ -32,7 +32,10 @@
         <span>הגדרות</span>
       </button>
     </div>
-    <p id="status" class="muted"></p>
+    <div class="statusrow">
+      <p id="status" class="muted"></p>
+      <button type="button" id="locBtn" title="עדכון המיקום לפי המקום שבו את/ה נמצא/ת עכשיו">📍 עדכון מיקום</button>
+    </div>
     <p id="sources" class="muted small"></p>
   </header>
 
@@ -81,14 +84,11 @@
       <p id="homeShared" class="muted small"></p>
       <form id="homeAdd" class="row">
         <input id="homeItem" placeholder="מה חסר בבית? (אפשר כמה, מופרדים בפסיק)" autocomplete="off">
+        <button type="button" id="mic" class="mic" aria-label="הקלטה" title="הקלטה" hidden>🎤</button>
         <button class="primary">הוספה</button>
       </form>
       <p id="dupHint" class="dup" hidden></p>
-      <div class="row voice-row">
-        <button type="button" id="dictate" hidden>🎤 הכתבה</button>
-        <button type="button" id="record" hidden>🎙️ הודעה קולית</button>
-        <span id="voiceHint" class="muted small"></span>
-      </div>
+      <p id="voiceHint" class="muted small"></p>
       <ul id="homeList"></ul>
       <p id="homeEmpty" class="empty muted" hidden>אין כרגע חוסרים 🎉</p>
       <div class="row" id="homeActions" hidden>
@@ -152,8 +152,9 @@
       <div class="card">
         <h3>מיקום</h3>
         <p id="loc" class="muted"></p>
-        <label class="toggle"><input type="checkbox" id="follow"> לעקוב אחרי המיקום שלי (גם בחו"ל) ולבדוק מחדש כשאני זזה</label>
-        <div class="row"><button id="gps" class="primary">שימוש במיקום הנוכחי</button></div>
+        <div class="row"><button id="gps" class="primary">📍 עדכון לפי המיקום הנוכחי</button></div>
+        <p class="muted small">המיקום מתעדכן כשלוחצים על „עדכון מיקום” (גם בראש המסך). מגיעים למקום חדש? לוחצים פעם אחת.</p>
+        <label class="toggle"><input type="checkbox" id="follow"> עדכון אוטומטי בכל פתיחה של האפליקציה (למי שנוסע הרבה)</label>
         <form id="addrForm" class="row">
           <input id="addr" placeholder="או כתובת / עיר (למשל: הרצל 1, חולון / Stephansplatz, Wien)">
           <button>שמירה</button>

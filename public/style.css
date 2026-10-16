@@ -159,3 +159,11 @@ button.onsale { display: block; text-align: start; border: 0; background: none; 
 .sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .sheet-head h3 { margin: 0; }
 #sheetClose { border: 0; background: none; font-size: 1.2rem; padding: 4px 8px; color: var(--muted); }
+
+.statusrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.statusrow #status { margin: 0; flex: 1; min-width: 180px; }
+#locBtn { padding: 6px 12px; border-radius: 999px; font-size: .85rem; flex: none; }
+
+.mic { flex: none; width: 44px; padding: 10px 0; font-size: 1.15rem; line-height: 1; }
+.mic.live { width: auto; padding: 10px 12px; }
+#voiceHint:empty { display: none; }

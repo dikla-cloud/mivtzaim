@@ -27,6 +27,7 @@ test('existing family members are split into their own households; home list sta
   assert.deepEqual(db.householdOf(u['דיקלה']).home.map((x) => x.text), ['חלב']);
   assert.equal(db.householdOf(u['יואב']).home.length, 0);
   assert.equal(u['דיקלה'].list[0].text, 'במבה'); // הרשימה לחיפוש מבצעים לא נפגעה
+  assert.ok(Object.values(u).every((x) => x.followLocation === false)); // מיקום בלחיצה כברירת מחדל
   // התיקון רץ פעם אחת בלבד: מי שצורף אחר כך נשאר מצורף
   u['יואב'].household = 'h1';
   db.save(); db.reset();

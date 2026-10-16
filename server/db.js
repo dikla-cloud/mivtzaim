@@ -14,7 +14,7 @@ const userDefaults = () => ({
   location: null,      // { lat, lon, label, place }
   radiusKm: 10,
   chains: null,        // null = כל הרשתות
-  followLocation: true,
+  followLocation: false, // ברירת מחדל: מעדכנים מיקום בלחיצה
   subscriptions: [],   // Web Push
   deals: [],           // תוצאות הסריקה האחרונה
   seen: {},            // מפתחות מבצעים שכבר נשלחה עליהם התראה
@@ -51,6 +51,11 @@ function get() {
     if (!db.householdsV2) {
       for (const u of Object.values(db.users)) if (!u.admin) u.household = newHousehold();
       db.householdsV2 = true;
+    }
+    // שינוי ברירת מחדל: מיקום מתעדכן בלחיצה על „עדכון מיקום”, לא אוטומטית (אפשר להפעיל שוב בהגדרות)
+    if (!db.locationV2) {
+      for (const u of Object.values(db.users)) u.followLocation = false;
+      db.locationV2 = true;
     }
   }
   return db;
