@@ -248,3 +248,16 @@ body.not-il .il-only { display: none; }
 label.photo { display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 #loginForm .login-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 #loginForm .lang-mini { min-width: 0; padding: 6px 10px; font-size: .9rem; }
+
+/* שפה בראש המסך */
+.top-actions { display: flex; align-items: center; gap: 8px; }
+.top-actions .lang-mini { min-width: 0; padding: 6px 8px; font-size: .85rem; max-width: 130px; }
+
+/* תפריט 📷: צילום עכשיו / מהגלריה */
+.photo-wrap { position: relative; display: inline-flex; }
+.photo-menu { position: absolute; top: calc(100% + 6px); inset-inline-end: 0; z-index: 5; display: flex; flex-direction: column; min-width: 220px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 6px 20px rgb(0 0 0 / .15); overflow: hidden; }
+.photo-menu[hidden] { display: none; }
+.photo-menu label { padding: 12px 14px; cursor: pointer; font-weight: 600; white-space: nowrap; }
+.photo-menu label + label { border-top: 1px solid var(--border); }
+.photo-menu label:hover { background: var(--accent-soft); }

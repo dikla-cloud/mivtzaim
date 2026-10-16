@@ -86,6 +86,8 @@ const I18N = {
 
   // ---------- הוספה מצילום ----------
   'הוספה מצילום (ברקוד)': ['Aus Foto hinzufügen (Barcode)', 'Add from photo (barcode)'],
+  '📸 צילום עכשיו': ['📸 Jetzt fotografieren', '📸 Take a photo now'],
+  '🖼️ מהגלריה או מהמחשב': ['🖼️ Aus der Galerie oder vom Computer', '🖼️ From the gallery or computer'],
   '📷 מחפש ברקוד בתמונה…': ['📷 Suche Barcode im Foto…', '📷 Looking for a barcode in the photo…'],
   'לא נמצא ברקוד בתמונה. צלמו את הברקוד של המוצר מקרוב, ישר ובאור טוב.': ['Kein Barcode im Foto gefunden. Fotografiere den Barcode nah, gerade und bei gutem Licht.', 'No barcode found in the photo. Take it close up, straight and in good light.'],
   '📷 נמצא: {name}. בדקו ותקנו אם צריך, ואז „הוספה”': ['📷 Gefunden: {name}. Prüfen und dann „Hinzufügen“', '📷 Found: {name}. Check it, then tap “Add”'],
@@ -349,6 +351,8 @@ const I18N_AR = {
   "ההכתבה נכשלה ({err})": "فشل الإملاء ({err})",
   "בדקו את הפריטים ותקנו אם צריך, ואז „הוספה”": "تحقق من الأغراض وصحّحها إذا لزم، ثم اضغط «إضافة»",
   "הוספה מצילום (ברקוד)": "إضافة من صورة (باركود)",
+  "📸 צילום עכשיו": "📸 التقاط صورة الآن",
+  "🖼️ מהגלריה או מהמחשב": "🖼️ من المعرض أو من الحاسوب",
   "📷 מחפש ברקוד בתמונה…": "📷 جارٍ البحث عن باركود في الصورة…",
   "לא נמצא ברקוד בתמונה. צלמו את הברקוד של המוצר מקרוב, ישר ובאור טוב.": "لم يُعثر على باركود في الصورة. صوّر الباركود عن قرب، بشكل مستقيم وفي إضاءة جيدة.",
   "📷 נמצא: {name}. בדקו ותקנו אם צריך, ואז „הוספה”": "📷 تم العثور على: {name}. تحقق منه ثم اضغط «إضافة»",

@@ -751,8 +751,23 @@ function photoInput(fileInput, input, hintEl, forList) {
     input.focus();
   });
 }
-photoInput($('#photoHome'), $('#homeItem'), $('#voiceHint'), false);
-photoInput($('#photoList'), $('#newItem'), $('#listHint'), true);
+for (const [id, input, hint, forList] of [['photoHome', '#homeItem', '#voiceHint', false], ['photoList', '#newItem', '#listHint', true]]) {
+  photoInput($(`#${id}`), $(input), $(hint), forList); // מהגלריה / מהמחשב
+  photoInput($(`#${id}Cam`), $(input), $(hint), forList); // צילום עכשיו
+}
+// כפתור 📷 פותח תפריט קטן: „צילום עכשיו” או „מהגלריה או מהמחשב”
+document.querySelectorAll('.photo-wrap').forEach((w) => {
+  const btn = w.querySelector('.photo-btn');
+  const menu = w.querySelector('.photo-menu');
+  const close = () => { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.hidden = !menu.hidden;
+    btn.setAttribute('aria-expanded', String(!menu.hidden));
+  });
+  menu.addEventListener('change', close);
+  document.addEventListener('click', (e) => { if (!w.contains(e.target)) close(); });
+});
 
 // ביטול מחיקה: אחרי מחיקה מופיע כפתור „ביטול” שמחזיר את הפריטים למקומם
 function offerUndo(msg, entries) {
@@ -926,7 +941,7 @@ window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); inst
 $('#install').addEventListener('click', () => installEvt?.prompt());
 
 // ---------- שפה ----------
-for (const sel of [$('#langSel'), $('#loginLang')]) {
+for (const sel of [$('#topLang'), $('#loginLang')]) {
   sel.replaceChildren(...Object.entries(LANGS).map(([k, name]) => Object.assign(document.createElement('option'), { value: k, textContent: `🌐 ${name}`, selected: k === LANG })));
 }
 $('#loginLang').addEventListener('change', (e) => setLang(e.target.value));
@@ -934,7 +949,7 @@ function setLang(l) {
   try { localStorage.setItem('lang', l); } catch { /* */ }
   location.reload();
 }
-$('#langSel').addEventListener('change', async (e) => {
+$('#topLang').addEventListener('change', async (e) => {
   const l = e.target.value;
   if (S) await api('PUT', '/api/settings', { lang: l }).catch(() => {});
   setLang(l);

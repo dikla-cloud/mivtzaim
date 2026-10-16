@@ -33,10 +33,13 @@
   <header>
     <div class="topbar">
       <h1>הקניות שלי</h1>
+      <div class="top-actions">
+      <select id="topLang" class="lang-mini" aria-label="שפה"></select>
       <button id="gear" data-tab="settings" aria-pressed="false" title="הגדרות">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
         <span>הגדרות</span>
       </button>
+      </div>
     </div>
     <div class="statusrow">
       <p id="status" class="muted"></p>
@@ -91,7 +94,13 @@
       <form id="homeAdd" class="row">
         <input id="homeItem" placeholder="מה חסר בבית?" autocomplete="off">
         <button type="button" id="mic" class="mic" aria-label="הכתבה" title="הכתבה" hidden>🎤</button>
-        <label class="file mic photo" title="הוספה מצילום (ברקוד)" aria-label="הוספה מצילום (ברקוד)">📷<input type="file" id="photoHome" accept="image/*" hidden></label>
+        <span class="photo-wrap">
+          <button type="button" class="mic photo-btn" aria-haspopup="true" aria-expanded="false" title="הוספה מצילום (ברקוד)" aria-label="הוספה מצילום (ברקוד)">📷</button>
+          <span class="photo-menu" hidden>
+            <label>📸 צילום עכשיו<input type="file" id="photoHomeCam" accept="image/*" capture="environment" hidden></label>
+            <label>🖼️ מהגלריה או מהמחשב<input type="file" id="photoHome" accept="image/*" hidden></label>
+          </span>
+        </span>
         <button class="primary">הוספה</button>
       </form>
       <p id="dupHint" class="dup" hidden></p>
@@ -109,7 +118,13 @@
       <form id="add" class="row">
         <input id="newItem" placeholder="הוספת מוצר (למשל: חלב 3%, קוטג', או ברקוד)" autocomplete="off">
         <button type="button" id="micList" class="mic" aria-label="הכתבה" title="הכתבה" hidden>🎤</button>
-        <label class="file mic photo" title="הוספה מצילום (ברקוד)" aria-label="הוספה מצילום (ברקוד)">📷<input type="file" id="photoList" accept="image/*" hidden></label>
+        <span class="photo-wrap">
+          <button type="button" class="mic photo-btn" aria-haspopup="true" aria-expanded="false" title="הוספה מצילום (ברקוד)" aria-label="הוספה מצילום (ברקוד)">📷</button>
+          <span class="photo-menu" hidden>
+            <label>📸 צילום עכשיו<input type="file" id="photoListCam" accept="image/*" capture="environment" hidden></label>
+            <label>🖼️ מהגלריה או מהמחשב<input type="file" id="photoList" accept="image/*" hidden></label>
+          </span>
+        </span>
         <button class="primary">הוספה</button>
       </form>
       <p id="listHint" class="muted small"></p>
@@ -128,10 +143,6 @@
     </section>
 
     <section id="tab-settings" hidden>
-      <div class="card">
-        <h3>שפה</h3>
-        <select id="langSel" aria-label="שפה"></select>
-      </div>
       <div class="card">
         <h3>החשבון שלי</h3>
         <p class="muted">החשבון: <b id="meName"></b></p>
