@@ -40,7 +40,10 @@ fi
 
 echo "==> הורדת האפליקציה מ-GitHub"
 if [ -d "$APP_DIR/.git" ]; then
-  sudo git -C "$APP_DIR" pull --ff-only
+  # מעדכנים בכוח לגרסה שב-GitHub (שינויים מקומיים בקוד, למשל package-lock.json שנכתב מחדש ע"י npm, נדרסים;
+  # הנתונים שמורים ב-/var/lib ובתיקיית data, ולא נפגעים)
+  sudo git -C "$APP_DIR" fetch --quiet origin main
+  sudo git -C "$APP_DIR" reset --hard --quiet origin/main
 else
   sudo git clone "https://github.com/$GH_USER/mivtzaim.git" "$APP_DIR"
 fi
