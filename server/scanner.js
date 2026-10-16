@@ -36,7 +36,9 @@ async function scan(d) {
     const list = d.list.filter((x) => x.text.trim());
     const errors = [];
     const place = (await placeOf(d.location)) || { countryCode: '', country: '', city: '', postcode: '', label: d.location.label };
-    const ctx = { list, location: d.location, place, radiusKm: d.radiusKm, enabledChains: d.chains, errors };
+    // דוח „מה נבדק” – נשמר עם תוצאות הסריקה ומוצג באפליקציה
+    const report = { place: { ...place }, radiusKm: d.radiusKm, providers: [], chains: [], items: {}, note: '' };
+    const ctx = { list, location: d.location, place, radiusKm: d.radiusKm, enabledChains: d.chains, errors, report };
 
     const deals = [];
     const sources = [];
@@ -48,10 +50,17 @@ async function scan(d) {
       try {
         deals.push(...await p.scan(ctx));
         sources.push(p.name);
+        report.providers.push({ name: p.name, error: null });
       } catch (e) {
         errors.push(`${p.name}: ${e.message}`);
+        report.providers.push({ name: p.name, error: e.message });
       }
     }
+    report.items = list.map((x) => ({
+      text: x.text,
+      found: deals.filter((dl) => dl.listItem === x.text).length,
+      ...(report.items[x.text] || {}),
+    }));
 
     // מיון: לפי פריט ברשימה, ואז לפי מחיר מבצע
     deals.sort((a, b) => a.listItem.localeCompare(b.listItem, 'he') || (a.promoPrice ?? 1e9) - (b.promoPrice ?? 1e9));
@@ -63,6 +72,7 @@ async function scan(d) {
     d.lastScan = new Date().toISOString();
     d.lastErrors = errors;
     d.lastSources = sources;
+    d.lastReport = report;
     db.save();
     if (fresh.length) await push.notifyDeals(d, fresh);
     return { deals: deals.length, new: fresh.length, errors, sources };

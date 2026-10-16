@@ -83,6 +83,7 @@ function render() {
     return l;
   }));
 
+  renderReport();
   const errs = S.lastErrors || [];
   $('#errors').hidden = !errs.length;
   $('#errors ul').replaceChildren(...errs.map((e) => Object.assign(document.createElement('li'), { textContent: e })));
@@ -91,7 +92,7 @@ function render() {
 function renderDeals() {
   const box = $('#deals');
   if (!S.list.length) return (box.innerHTML = '<p class="empty muted">הרשימה ריקה. הוסיפו מוצרים בלשונית „רשימת קניות”.</p>');
-  if (!S.deals.length) return (box.innerHTML = `<p class="empty muted">${S.lastScan ? 'לא נמצאו כרגע מבצעים על מוצרי הרשימה באזור.' : 'לחצו „בדיקת מבצעים עכשיו”.'}</p>`);
+  if (!S.deals.length) return (box.innerHTML = `<p class="empty muted">${S.lastScan ? 'לא נמצאו כרגע מבצעים על מוצרי הרשימה באזור. למטה אפשר לראות בדיוק מה נבדק.' : 'לחצו „בדיקת מבצעים עכשיו”.'}</p>`);
 
   const groups = new Map();
   for (const d of S.deals) groups.set(d.listItem, [...(groups.get(d.listItem) || []), d]);
@@ -126,6 +127,64 @@ function renderDeals() {
     }
     return g;
   }));
+}
+
+// „מה נבדק בסריקה האחרונה”: מיקום שזוהה, מקור נתונים, רשתות וסניפים, ומה חופש לכל מוצר
+function renderReport() {
+  const R = S.lastReport;
+  const box = $('#report');
+  box.hidden = !R;
+  if (!R) return;
+  if (!S.deals.length) box.open = true;
+  const el = (tag, text, cls) => Object.assign(document.createElement(tag), { textContent: text, className: cls || '' });
+  const body = $('#reportBody');
+  body.replaceChildren();
+
+  const p = R.place || {};
+  const where = [p.city, p.country].filter(Boolean).join(', ') || 'לא זוהה';
+  body.append(el('p', `📍 מיקום שזוהה: ${where}${p.postcode ? ` · מיקוד ${p.postcode}` : ''} · רדיוס ${R.radiusKm} ק"מ`));
+
+  if (!R.providers.length) {
+    body.append(el('p', `⚠️ אין עדיין מקור מבצעים חינמי ל${p.country || 'מדינה הזו'}. נתמכות כרגע: ישראל, אוסטריה וגרמניה.`, 'warn'));
+    return;
+  }
+  for (const pr of R.providers) {
+    body.append(el('p', pr.error ? `✘ מקור הנתונים: ${pr.name} – נכשל: ${pr.error}` : `✔ מקור הנתונים: ${pr.name}`, pr.error ? 'warn' : ''));
+  }
+  if (R.note) body.append(el('p', R.note, 'muted small'));
+
+  body.append(el('h4', 'רשתות'));
+  const chains = el('ul', '', 'report-list');
+  if (!R.chains.length) chains.append(el('li', 'לא הופיעה אף רשת עם מבצע על מוצרי הרשימה.', 'muted'));
+  for (const c of R.chains) {
+    let line;
+    if (c.error) line = `✘ ${c.name} – לא הצלחנו לבדוק: ${c.error}`;
+    else if (c.nearby === 0) line = `– ${c.name} – אין סניף ברדיוס ${R.radiusKm} ק"מ`;
+    else if (c.nearby == null) line = `✔ ${c.name} – ${c.deals} מבצעים מהרשימה`;
+    else {
+      const st = c.stores.map((s) => (s.error ? `${s.name} (${s.km} ק"מ, שגיאה)` : `${s.name} (${s.km} ק"מ, ${s.promos} מבצעים בסניף)`)).join(' · ');
+      line = `✔ ${c.name} – ${c.nearby} סניפים ברדיוס, נבדקו: ${st} – ${c.deals} התאמות לרשימה`;
+    }
+    chains.append(el('li', line, c.error ? 'warn' : c.nearby === 0 ? 'muted' : ''));
+  }
+  body.append(chains);
+
+  body.append(el('h4', 'מוצרים'));
+  const items = el('ul', '', 'report-list');
+  const abroad = p.countryCode && p.countryCode !== 'IL';
+  for (const it of R.items) {
+    let line = `${foodIcon(it.text)} ${it.text}`;
+    if (it.term && it.term !== it.text) line += ` → חיפוש „${it.term}”`;
+    if (it.offers != null) line += ` · ${it.offers} תוצאות בעלונים`;
+    line += ` · ${it.found ? `${it.found} מבצעים בתוקף` : 'אין מבצע כרגע'}`;
+    const li = el('li', line);
+    if (it.error) li.append(el('div', `שגיאה: ${it.error}`, 'warn small'));
+    else if (abroad && it.offers != null && !it.translated && !/[a-zà-ÿ]/i.test(it.term || '')) {
+      li.append(el('div', 'לא תורגם לשפה המקומית. אפשר להוסיף תרגום ידני: למשל „חלב | Milch”', 'muted small'));
+    }
+    items.append(li);
+  }
+  body.append(items);
 }
 
 function renderList() {

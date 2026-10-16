@@ -59,29 +59,41 @@ module.exports = {
   id: 'marktguru',
   name: 'marktguru (עלוני מבצעים)',
   countries: Object.keys(SITES),
-  async scan({ list, place, errors }) {
-    if (process.env.DEMO === '1') return demoDeals(list);
-    if (!place.postcode) throw new Error('marktguru: חסר מיקוד למיקום הנוכחי');
-    const host = SITES[place.countryCode];
-    const s = new Session();
-    const { apiKey, clientKey } = await apiKeys(s, host);
-    const terms = await translate(list.map((x) => x.text), 'de');
-    const now = new Date();
+  async scan({ list, place, errors, report }) {
+    report.note = `חיפוש בעלוני המבצעים של כל הרשתות באזור המיקוד ${place.postcode || '?'}`;
     const deals = [];
-    for (const entry of list) {
-      const q = terms[entry.text] || entry.text;
-      try {
-        const url = `https://api.${host}/api/v1/offers/search?as=web&limit=30&offset=0&zipCode=${encodeURIComponent(place.postcode)}&q=${encodeURIComponent(q)}`;
-        const res = await s.fetch(url, { headers: { 'x-apikey': apiKey, 'x-clientkey': clientKey, Accept: 'application/json' } });
-        const json = await res.json();
-        for (const o of json.results || []) {
-          const d = toDeal(o, entry, now);
-          if (d) deals.push(d);
+    if (process.env.DEMO === '1') {
+      deals.push(...demoDeals(list));
+      for (const e of list) report.items[e.text] = { term: e.text, translated: true, offers: deals.filter((d) => d.listItem === e.text).length };
+    } else {
+      if (!place.postcode) throw new Error('לא זוהה מיקוד למיקום הנוכחי, ולכן אי אפשר לחפש בעלונים');
+      const host = SITES[place.countryCode];
+      const s = new Session();
+      const { apiKey, clientKey } = await apiKeys(s, host);
+      const terms = await translate(list.map((x) => x.text), 'de');
+      const now = new Date();
+      for (const entry of list) {
+        const q = terms[entry.text] || entry.text;
+        const info = (report.items[entry.text] = { term: q, offers: 0, translated: Boolean(terms[entry.text]) });
+        try {
+          const url = `https://api.${host}/api/v1/offers/search?as=web&limit=30&offset=0&zipCode=${encodeURIComponent(place.postcode)}&q=${encodeURIComponent(q)}`;
+          const res = await s.fetch(url, { headers: { 'x-apikey': apiKey, 'x-clientkey': clientKey, Accept: 'application/json' } });
+          const json = await res.json();
+          info.offers = (json.results || []).length;
+          for (const o of json.results || []) {
+            const d = toDeal(o, entry, now);
+            if (d) deals.push(d);
+          }
+        } catch (e) {
+          info.error = e.message;
+          errors.push(`marktguru / ${q}: ${e.message}`);
         }
-      } catch (e) {
-        errors.push(`marktguru / ${q}: ${e.message}`);
       }
     }
+    // הרשתות שהופיעו בתוצאות
+    const byChain = {};
+    for (const d of deals) byChain[d.chain] = (byChain[d.chain] || 0) + 1;
+    report.chains.push(...Object.entries(byChain).map(([name, n]) => ({ name, nearby: null, stores: [], deals: n, error: null })));
     return deals;
   },
   toDeal,

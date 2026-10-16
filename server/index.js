@@ -43,7 +43,7 @@ const state = (u) => ({
   me: { name: u.name, admin: u.admin },
   users: u.admin ? db.users().map((x) => ({ name: x.name, admin: x.admin, lastScan: x.lastScan, location: x.location?.label || null })) : undefined,
   list: u.list, location: u.location, radiusKm: u.radiusKm, deals: u.deals,
-  lastScan: u.lastScan, lastErrors: u.lastErrors, lastSources: u.lastSources || [],
+  lastScan: u.lastScan, lastErrors: u.lastErrors, lastSources: u.lastSources || [], lastReport: u.lastReport || null,
   followLocation: u.followLocation !== false,
   chains: scanner.ALL_CHAINS.map((c) => ({ id: c.id, name: c.name, on: !u.chains || u.chains.includes(c.id) })),
   vapidKey: push.publicKey,

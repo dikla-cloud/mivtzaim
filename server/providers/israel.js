@@ -62,20 +62,33 @@ module.exports = {
   countries: ['IL'],
   chains: CHAINS,
   findDeals,
-  async scan({ list, location, radiusKm, enabledChains, errors }) {
+  async scan({ list, location, radiusKm, enabledChains, errors, report }) {
     const deals = [];
     for (const chain of CHAINS.filter((c) => !enabledChains || enabledChains.includes(c.id))) {
+      // מה נבדק ברשת הזו – מוצג למשתמש ב„מה נבדק בסריקה”
+      const r = { name: chain.name, nearby: 0, stores: [], deals: 0, error: null };
+      report.chains.push(r);
       try {
-        const nearby = (await geo.storesWithin(await chainStores(chain), location, radiusKm)).slice(0, MAX_STORES_PER_CHAIN);
-        for (const store of nearby) {
+        const all = await geo.storesWithin(await chainStores(chain), location, radiusKm);
+        r.nearby = all.length;
+        for (const store of all.slice(0, MAX_STORES_PER_CHAIN)) {
+          const sr = { name: store.name, km: store.km, promos: 0, deals: 0, error: null };
+          r.stores.push(sr);
           try {
             const files = await chain.storeFiles(store.storeId);
-            deals.push(...findDeals({ list, promos: xml.parsePromos(files.promos), prices: xml.parsePrices(files.prices), chain, store }));
+            const promos = xml.parsePromos(files.promos);
+            const found = findDeals({ list, promos, prices: xml.parsePrices(files.prices), chain, store });
+            sr.promos = promos.length;
+            sr.deals = found.length;
+            r.deals += found.length;
+            deals.push(...found);
           } catch (e) {
+            sr.error = e.message;
             errors.push(`${chain.name} / ${store.name}: ${e.message}`);
           }
         }
       } catch (e) {
+        r.error = e.message;
         errors.push(`${chain.name}: ${e.message}`);
       }
     }

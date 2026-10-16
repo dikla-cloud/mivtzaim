@@ -103,3 +103,11 @@ form > button { margin-top: 8px; }
 .h-hole { fill: var(--bg); }
 .h-pct { font: 700 22px system-ui, sans-serif; fill: #7c2d12; }
 .h-spark { fill: #fbbf24; }
+
+#report { margin-top: 16px; }
+#report summary { font-weight: 600; cursor: pointer; color: var(--text); }
+#report h4 { margin: 12px 0 4px; font-size: .95rem; }
+#report p { margin: 6px 0; }
+.report-list { margin: 0; padding-inline-start: 18px; }
+.report-list li { margin: 4px 0; }
+.warn { color: var(--warn); }
