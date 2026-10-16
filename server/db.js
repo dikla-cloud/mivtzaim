@@ -44,11 +44,13 @@ function get() {
       db.legacy = Object.fromEntries(LEGACY.filter((k) => k in raw).map((k) => [k, raw[k]]));
       for (const k of LEGACY) delete db[k];
     }
-    // משתמשים מגרסה קודמת (לפני משקי בית) – כולם נכנסים למשק הבית של המנהל
-    const orphans = Object.values(db.users).filter((u) => !u.household || !db.households[u.household]);
-    if (orphans.length) {
-      const id = Object.values(db.users).find((u) => u.household && db.households[u.household])?.household || newHousehold();
-      for (const u of orphans) u.household = id;
+    // משתמשים מגרסה קודמת (לפני משקי בית) – כל אחד מקבל משק בית משלו
+    for (const u of Object.values(db.users)) if (!u.household || !db.households[u.household]) u.household = newHousehold();
+    // תיקון חד-פעמי: גרסה קודמת צירפה את כל המשתמשים הקיימים למשק הבית של המנהל.
+    // מפרידים אותם; רשימת „חסר בבית” נשארת אצל המנהל. אפשר לצרף מחדש מההגדרות.
+    if (!db.householdsV2) {
+      for (const u of Object.values(db.users)) if (!u.admin) u.household = newHousehold();
+      db.householdsV2 = true;
     }
   }
   return db;

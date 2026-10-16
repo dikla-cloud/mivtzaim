@@ -140,6 +140,20 @@ app.put('/api/users/:name/password', adminOnly, (req, res) => {
   res.json(state(req.user));
 });
 
+// המנהל מצרף משתמש למשק הבית שלו, או מפריד אותו למשק בית משלו
+app.put('/api/users/:name/household', adminOnly, (req, res) => {
+  const u = db.get().users[db.userKey(req.params.name)];
+  if (!u) return res.status(404).json({ error: 'משתמש לא נמצא' });
+  if (u === req.user) return res.status(400).json({ error: 'זה החשבון שלך' });
+  if (req.body?.join) u.household = db.householdOf(req.user).id;
+  else {
+    u.household = null;
+    db.householdOf(u); // משק בית חדש וריק
+  }
+  db.save();
+  res.json(state(req.user));
+});
+
 app.delete('/api/users/:name', adminOnly, (req, res) => {
   const key = db.userKey(req.params.name);
   const u = db.get().users[key];

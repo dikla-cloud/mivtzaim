@@ -232,6 +232,18 @@ function renderFamily() {
     });
     const acts = Object.assign(document.createElement('span'), { className: 'acts' });
     acts.append(reset);
+    if (u.name !== S.me.name) {
+      const mine = u.household === S.me.household;
+      const hh = Object.assign(document.createElement('button'), { textContent: mine ? 'הפרדה ממשק הבית שלי' : 'צירוף למשק הבית שלי' });
+      hh.addEventListener('click', async () => {
+        const q = mine
+          ? `להפריד את ${u.name} ממשק הבית שלך? רשימת „חסר בבית” שלך תישאר אצלך, ו${u.name} יקבל רשימה ריקה משלו.`
+          : `לצרף את ${u.name} למשק הבית שלך? הוא יראה ויעדכן את רשימת „חסר בבית” שלך.`;
+        if (!confirm(q)) return;
+        try { S = await api('PUT', `/api/users/${encodeURIComponent(u.name)}/household`, { join: !mine }); render(); } catch (e) { alert(e.message); }
+      });
+      acts.append(hh);
+    }
     li.append(acts);
     if (u.name !== S.me.name) {
       const del = Object.assign(document.createElement('button'), { textContent: 'מחיקה' });
