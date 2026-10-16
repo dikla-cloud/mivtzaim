@@ -65,3 +65,9 @@ test('geo: street with the same name in another city is not trusted', async () =
   assert.ok(geo.inCity('Tel Aviv', 'Tel Aviv'));
   assert.equal(await geo.storePosition({ city: '7900', address: 'קק"ל 10' }), null);
 });
+
+test('geo: CBS city code resolved from the saved table', async () => {
+  const geo = require('../server/geo');
+  assert.equal(await geo.cityName('עפולה עילית'), 'נוף הגליל');
+  assert.equal(await geo.cityName('תל אביב'), 'תל אביב');
+});

@@ -82,12 +82,45 @@ const loose = (x) => norm(x).replace(/[וי]/g, '');
 const inCity = (label, city) => !/[א-ת]/.test(city) || loose(label).includes(loose(city).split(' ')[0]);
 const MAX_FROM_CITY_KM = 10;
 
+// חלק מהרשתות כותבות את העיר כסמל יישוב של הלמ"ס (למשל 7900 = פתח תקווה).
+// הטבלה הרשמית מ-data.gov.il יורדת פעם אחת ונשמרת בדיסק.
+const CITIES = path.join(path.dirname(CACHE), 'cities.json');
+const CBS_URL = 'https://data.gov.il/api/3/action/datastore_search?resource_id=5c78e9fa-c2e2-4771-93ff-7f400a12f7ba&limit=5000';
+let cbs = null;
+async function cbsCities() {
+  if (cbs) return cbs;
+  try { cbs = JSON.parse(fs.readFileSync(CITIES, 'utf8')); return cbs; } catch { /* עוד לא ירד */ }
+  try {
+    const res = await fetch(CBS_URL, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(30000) });
+    const rows = (await res.json()).result?.records || [];
+    const map = {};
+    for (const r of rows) {
+      const code = Number(r['סמל_ישוב']);
+      const name = String(r['שם_ישוב'] || '').replace(/\s+/g, ' ').trim();
+      if (code && name) map[code] = name;
+    }
+    if (Object.keys(map).length > 100) {
+      fs.mkdirSync(path.dirname(CITIES), { recursive: true });
+      fs.writeFileSync(CITIES, JSON.stringify(map));
+      cbs = map;
+      return cbs;
+    }
+  } catch { /* אין חיבור – ננסה בפעם הבאה */ }
+  return {};
+}
+
+// שם העיר לאיתור: מתרגם סמל יישוב ושמות ישנים/מקוצרים. מחזיר '' אם אי אפשר
+async function cityName(raw) {
+  raw = String(raw || '').trim();
+  if (/^\d+$/.test(raw)) raw = (await cbsCities())[Number(raw)] || '';
+  return CITY_ALIASES[raw] || raw;
+}
+
 // מיקום סניף. מחזיר גם איך נקבע (לבדיקה): city / address / none
 async function storePosition(s) {
   if (s.lat != null) return { lat: s.lat, lon: s.lon, how: 'file' };
-  const raw = String(s.city || '').trim();
-  if (!raw || /^\d+$/.test(raw)) return null; // קוד עיר מספרי – אי אפשר לאתר בבטחה
-  const city = CITY_ALIASES[raw] || raw;
+  const city = await cityName(s.city);
+  if (!city) return null;
   let center = await geocode(`${city}, ישראל`);
   if (center && !inCity(center.label, city)) center = null;
   const addr = s.address && norm(s.address) && (await geocode(`${s.address}, ${city}, ישראל`));
@@ -103,8 +136,8 @@ async function storesWithin(stores, center, radiusKm) {
   const out = [];
   for (const s of stores) {
     if (s.lat == null) {
-      const raw = String(s.city || '').trim();
-      const city = raw && !/^\d+$/.test(raw) && (await geocode(`${CITY_ALIASES[raw] || raw}, ישראל`));
+      const name = await cityName(s.city);
+      const city = name && (await geocode(`${name}, ישראל`));
       if (city && haversineKm(center, city) > radiusKm + 8) continue; // עיר רחוקה – לא צריך לאתר את הכתובת
     }
     const pos = await storePosition(s);
@@ -115,4 +148,4 @@ async function storesWithin(stores, center, radiusKm) {
   return out.sort((a, b) => a.km - b.km);
 }
 
-module.exports = { haversineKm, geocode, reverse, storesWithin, storePosition, inCity };
+module.exports = { haversineKm, geocode, reverse, storesWithin, storePosition, inCity, cityName };
