@@ -38,8 +38,8 @@ function message(deals) {
   return { title: `${deals.length} מבצעים חדשים מהרשימה שלך`, body: lines.join('\n') };
 }
 
-async function send(payload) {
-  const d = db.get();
+// שולח לכל המכשירים של משתמש אחד
+async function send(d, payload) {
   const alive = [];
   for (const sub of d.subscriptions) {
     try {
@@ -57,6 +57,6 @@ module.exports = {
   money,
   publicKey: k.publicKey,
   message,
-  notifyDeals: (deals) => send({ ...message(deals), url: '/' }),
+  notifyDeals: (d, deals) => send(d, { ...message(deals), url: '/' }),
   send,
 };

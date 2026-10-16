@@ -1,5 +1,5 @@
-const CACHE = 'mivtzaim-v2';
-const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'icon.svg', 'manifest.webmanifest'];
+const CACHE = 'mivtzaim-v3';
+const SHELL = ['./', 'index.html', 'style.css', 'foods.js', 'app.js', 'icon.svg', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));

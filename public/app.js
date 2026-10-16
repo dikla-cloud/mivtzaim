@@ -1,6 +1,10 @@
 const $ = (s) => document.querySelector(s);
 let S = null;
-let token = localStorage.getItem('appToken') || '';
+const store = {
+  get: (k) => { try { return localStorage.getItem(k) || ''; } catch { return ''; } },
+  set: (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch { /* מצב פרטי */ } },
+};
+let token = store.get('session');
 
 async function api(method, url, body) {
   const res = await fetch(url, {
@@ -8,15 +12,41 @@ async function api(method, url, body) {
     headers: { 'Content-Type': 'application/json', 'x-app-token': token },
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (res.status === 401) {
-    token = prompt('סיסמת האפליקציה:') || '';
-    localStorage.setItem('appToken', token);
-    return api(method, url, body);
+  const json = await res.json().catch(() => ({}));
+  if (res.status === 401 && url !== '/api/login') {
+    showLogin();
+    throw new Error('נדרשת כניסה');
   }
-  const json = await res.json();
   if (!res.ok) throw new Error(json.error || 'שגיאה');
   return json;
 }
+
+// ---------- כניסה ----------
+async function showLogin() {
+  document.body.classList.add('logged-out');
+  try {
+    const { firstRun } = await (await fetch('/api/setup')).json();
+    $('#loginHint').textContent = firstRun
+      ? 'כניסה ראשונה: בחרו שם, והקלידו את הסיסמה שהוגדרה בהתקנה. החשבון הזה יהיה המנהל.'
+      : 'כניסה לחשבון שלך';
+  } catch { /* בלי חיבור */ }
+}
+
+$('#loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const err = $('#loginError');
+  err.hidden = true;
+  try {
+    const r = await api('POST', '/api/login', { name: $('#loginName').value, password: $('#loginPass').value });
+    token = r.token;
+    store.set('session', token);
+    $('#loginPass').value = '';
+    await boot();
+  } catch (ex) {
+    err.textContent = ex.message;
+    err.hidden = false;
+  }
+});
 
 const fmtDate = (s) => new Date(s).toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'numeric' });
 const money = (n, cur = 'ILS') => {
@@ -37,6 +67,8 @@ function render() {
   $('#status').textContent = S.location ? `📍 ${S.location.label} · רדיוס ${S.radiusKm} ק"מ · ${scanned}` : 'יש להגדיר מיקום בלשונית „הגדרות”';
   $('#sources').textContent = S.lastSources.length ? `מקור הנתונים: ${S.lastSources.join(', ')}` : '';
   $('#follow').checked = S.followLocation;
+  $('#meName').textContent = S.me.name;
+  renderFamily();
 
   renderDeals();
   renderList();
@@ -67,7 +99,7 @@ function renderDeals() {
     const g = document.createElement('div');
     g.className = 'group';
     g.innerHTML = `<h2></h2>`;
-    g.firstChild.textContent = `${item} (${deals.length})`;
+    g.firstChild.textContent = `${foodIcon(item)} ${item} (${deals.length})`;
     for (const d of deals) {
       const el = $('#dealTpl').content.cloneNode(true);
       const price = el.querySelector('.price');
@@ -99,7 +131,9 @@ function renderDeals() {
 function renderList() {
   $('#items').replaceChildren(...S.list.map((it, i) => {
     const li = document.createElement('li');
+    const icon = Object.assign(document.createElement('span'), { className: 'food', textContent: foodIcon(it.text), ariaHidden: 'true' });
     const inp = Object.assign(document.createElement('input'), { value: it.text, ariaLabel: 'מוצר' });
+    inp.addEventListener('input', () => (icon.textContent = foodIcon(inp.value)));
     inp.addEventListener('change', () => {
       const items = S.list.map((x) => x.text);
       items[i] = inp.value;
@@ -107,10 +141,75 @@ function renderList() {
     });
     const del = Object.assign(document.createElement('button'), { textContent: '✕', title: 'מחיקה' });
     del.addEventListener('click', () => saveList(S.list.filter((_, j) => j !== i).map((x) => x.text)));
-    li.append(inp, del);
+    li.append(icon, inp, del);
     return li;
   }));
 }
+
+function renderFamily() {
+  $('#familyCard').hidden = !S.me.admin;
+  if (!S.me.admin) return;
+  $('#appUrl').textContent = location.origin;
+  $('#family').replaceChildren(...S.users.map((u) => {
+    const li = document.createElement('li');
+    const who = Object.assign(document.createElement('span'), { className: 'who' });
+    who.append(Object.assign(document.createElement('b'), { textContent: u.name }));
+    who.append(Object.assign(document.createElement('span'), {
+      className: 'muted small',
+      textContent: ` ${u.admin ? '· מנהל' : ''}${u.location ? ` · 📍 ${u.location}` : ' · עוד לא נכנס'}`,
+    }));
+    li.append(who);
+    const reset = Object.assign(document.createElement('button'), { textContent: 'סיסמה חדשה' });
+    reset.addEventListener('click', async () => {
+      const p = prompt(`סיסמה חדשה עבור ${u.name} (לפחות 6 תווים):`);
+      if (!p) return;
+      try { S = await api('PUT', `/api/users/${encodeURIComponent(u.name)}/password`, { password: p }); render(); toast(`הסיסמה של ${u.name} עודכנה`); } catch (e) { alert(e.message); }
+    });
+    const acts = Object.assign(document.createElement('span'), { className: 'acts' });
+    acts.append(reset);
+    li.append(acts);
+    if (u.name !== S.me.name) {
+      const del = Object.assign(document.createElement('button'), { textContent: 'מחיקה' });
+      del.addEventListener('click', async () => {
+        if (!confirm(`למחוק את החשבון של ${u.name}? הרשימה וההגדרות שלו יימחקו.`)) return;
+        try { S = await api('DELETE', `/api/users/${encodeURIComponent(u.name)}`); render(); } catch (e) { alert(e.message); }
+      });
+      acts.append(del);
+    }
+    return li;
+  }));
+}
+
+$('#addUser').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    S = await api('POST', '/api/users', { name: $('#newUserName').value, password: $('#newUserPass').value });
+    toast(`${$('#newUserName').value} נוסף/ה`);
+    $('#addUser').reset();
+    render();
+  } catch (ex) { alert(ex.message); }
+});
+
+$('#passForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if ($('#passNew').value !== $('#passNew2').value) return alert('הסיסמאות החדשות לא זהות');
+  try {
+    await api('PUT', '/api/password', { current: $('#passCur').value, next: $('#passNew').value });
+    $('#passForm').reset();
+    $('#passForm').closest('details').open = false;
+    toast('הסיסמה הוחלפה ✔ שאר המכשירים יתבקשו להיכנס מחדש');
+  } catch (ex) { alert(ex.message); }
+});
+
+$('#logout').addEventListener('click', async () => {
+  // ההתראות במכשיר הזה שייכות לחשבון שיוצא – מבטלים אותן
+  try { const reg = await navigator.serviceWorker?.ready; await (await reg?.pushManager.getSubscription())?.unsubscribe(); } catch { /* */ }
+  await api('POST', '/api/logout').catch(() => {});
+  token = '';
+  store.set('session', '');
+  S = null;
+  showLogin();
+});
 
 // ---------- רשימת קניות ----------
 const splitItems = (txt) => txt.split(/[\n,;]+/).map((s) => s.replace(/^[\s\-*•\d.)]+(?=\D)/, '').trim()).filter(Boolean);
@@ -260,12 +359,15 @@ window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); inst
 $('#install').addEventListener('click', () => installEvt?.prompt());
 
 // ---------- הפעלה ----------
-(async () => {
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+async function boot() {
   S = await api('GET', '/api/state');
+  document.body.classList.remove('logged-out');
   render();
   updateLocation();
   if (!S.location && !S.followLocation) showTab('settings');
   else if (!S.list.length) showTab('list');
   updatePushState();
-})();
+}
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+if (token) boot().catch(() => {}); else showLogin();

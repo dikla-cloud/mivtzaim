@@ -32,10 +32,11 @@ test('marktguru offer → deal, expired dropped', () => {
 test('unsupported country → clear message, no paid fallback', async () => {
   const db = require('../server/db');
   const scanner = require('../server/scanner');
-  const d = db.get();
-  d.list = [{ id: '1', text: 'חלב' }];
-  d.location = { lat: -33.87, lon: 151.21, label: 'Sydney', place: { countryCode: 'AU', country: 'Australia', city: 'Sydney', postcode: '2000' } };
-  const r = await scanner.scan();
+  const d = db.newUser('test', {
+    list: [{ id: '1', text: 'חלב' }],
+    location: { lat: -33.87, lon: 151.21, label: 'Sydney', place: { countryCode: 'AU', country: 'Australia', city: 'Sydney', postcode: '2000' } },
+  });
+  const r = await scanner.scan(d);
   assert.deepEqual(r.sources, []);
   assert.match(r.errors[0], /אין עדיין מקור מבצעים חינמי/);
 });

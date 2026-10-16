@@ -25,12 +25,13 @@ async function placeOf(location) {
   return place;
 }
 
-let running = null;
+const running = new Map(); // סריקה אחת בכל רגע לכל משתמש
 
-async function scan() {
-  if (running) return running;
-  running = (async () => {
-    const d = db.get();
+// סורק עבור משתמש אחד (d = החשבון שלו)
+async function scan(d) {
+  const key = db.userKey(d.name);
+  if (running.has(key)) return running.get(key);
+  const job = (async () => {
     if (!d.location) throw new Error('לא הוגדר מיקום');
     const list = d.list.filter((x) => x.text.trim());
     const errors = [];
@@ -63,10 +64,11 @@ async function scan() {
     d.lastErrors = errors;
     d.lastSources = sources;
     db.save();
-    if (fresh.length) await push.notifyDeals(fresh);
+    if (fresh.length) await push.notifyDeals(d, fresh);
     return { deals: deals.length, new: fresh.length, errors, sources };
   })();
-  try { return await running; } finally { running = null; }
+  running.set(key, job);
+  try { return await job; } finally { running.delete(key); }
 }
 
 module.exports = { scan, placeOf, findDeals: israel.findDeals, ALL_CHAINS: israel.chains };

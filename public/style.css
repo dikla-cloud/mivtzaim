@@ -70,3 +70,36 @@ details { margin-top: 16px; font-size: .9rem; color: var(--muted); }
   position: fixed; bottom: calc(16px + env(safe-area-inset-bottom)); left: 16px; right: 16px; max-width: 520px; margin: auto;
   background: var(--text); color: var(--bg); padding: 12px 16px; border-radius: 12px; z-index: 5; box-shadow: 0 4px 16px rgb(0 0 0 / .2);
 }
+
+body.logged-out header, body.logged-out nav, body.logged-out main { display: none; }
+body:not(.logged-out) #login { display: none; }
+#login { max-width: 420px; margin: 0 auto; padding: calc(32px + env(safe-area-inset-top)) 16px; }
+#login h1 { margin-bottom: 4px; }
+label { display: block; margin: 8px 0; }
+[hidden] { display: none !important; }
+label > input:not([type=checkbox]):not([type=range]):not([type=file]) { display: block; width: 100%; margin-top: 4px; }
+form > button { margin-top: 8px; }
+.error { color: #b91c1c; }
+@media (prefers-color-scheme: dark) { .error { color: #fca5a5; } }
+#family { list-style: none; padding: 0; margin: 8px 0; }
+#family li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+#family li .who { flex: 1; min-width: 0; }
+#family li .acts { display: flex; gap: 6px; }
+#family li button { padding: 6px 10px; font-size: .9rem; }
+
+.food { font-size: 1.5rem; line-height: 1; width: 2rem; text-align: center; flex: none; }
+.hero { text-align: center; margin: 0 0 8px; }
+.hero svg { width: 100%; max-width: 260px; height: auto; display: block; margin: 0 auto; }
+.hero p { margin: 0; font-weight: 600; color: var(--muted); }
+.h-shadow { fill: var(--border); }
+.h-bag { fill: var(--accent); }
+.h-handle { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; }
+.h-milk { fill: #e8f1fb; stroke: #7aa7d6; stroke-width: 2; }
+.h-milk-top { fill: #7aa7d6; }
+.h-apple { fill: #e5484d; }
+.h-stem { fill: none; stroke: #2f855a; stroke-width: 3; stroke-linecap: round; }
+.h-baguette { fill: #d9a35b; }
+.h-tag { fill: #fbbf24; }
+.h-hole { fill: var(--bg); }
+.h-pct { font: 700 22px system-ui, sans-serif; fill: #7c2d12; }
+.h-spark { fill: #fbbf24; }

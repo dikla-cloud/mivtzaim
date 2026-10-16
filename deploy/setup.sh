@@ -6,7 +6,7 @@ set -euo pipefail
 
 GH_USER="${1:?חסר שם משתמש GitHub}"
 DOMAIN="${2:?חסרה כתובת, למשל mivtzaim.duckdns.org}"
-TOKEN="${3:?חסרה סיסמה לאפליקציה}"
+TOKEN="${3:?חסרה סיסמה ראשונית לאפליקציה}"  # משמשת רק לכניסה הראשונה של המנהל
 EMAIL="${4:-admin@example.com}"
 APP_DIR=/opt/mivtzaim
 DATA_DIR=/var/lib/mivtzaim

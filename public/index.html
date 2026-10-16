@@ -12,7 +12,18 @@
   <meta name="apple-mobile-web-app-title" content="מבצעים">
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="logged-out">
+  <section id="login">
+    <form id="loginForm" class="card">
+      <h1>מבצעים ליד הבית</h1>
+      <p id="loginHint" class="muted">כניסה לחשבון שלך</p>
+      <label>שם<input id="loginName" autocomplete="username" required></label>
+      <label>סיסמה<input id="loginPass" type="password" autocomplete="current-password" required></label>
+      <p id="loginError" class="error" hidden></p>
+      <button class="primary">כניסה</button>
+    </form>
+  </section>
+
   <header>
     <h1>מבצעים ליד הבית</h1>
     <p id="status" class="muted"></p>
@@ -27,6 +38,31 @@
 
   <main>
     <section id="tab-deals">
+      <div class="hero" aria-hidden="true">
+        <svg viewBox="0 0 220 140" role="img">
+          <ellipse cx="110" cy="128" rx="70" ry="7" class="h-shadow"/>
+          <!-- שקית קניות -->
+          <path d="M58 52h92l-8 72H66z" class="h-bag"/>
+          <path d="M84 52v-8a20 20 0 0 1 40 0v8" class="h-handle"/>
+          <!-- מוצרים מציצים מהשקית -->
+          <rect x="70" y="30" width="18" height="30" rx="4" class="h-milk"/>
+          <rect x="72" y="24" width="14" height="8" rx="2" class="h-milk-top"/>
+          <circle cx="112" cy="40" r="13" class="h-apple"/>
+          <path d="M112 27c2-6 6-8 10-8" class="h-stem"/>
+          <path d="M126 36l14-14 6 6-14 14z" class="h-baguette"/>
+          <!-- תווית מבצע -->
+          <g transform="rotate(-14 162 70)">
+            <path d="M140 52h38l12 18-12 18h-38z" class="h-tag"/>
+            <circle cx="147" cy="70" r="3.5" class="h-hole"/>
+            <text x="168" y="77" text-anchor="middle" class="h-pct">%</text>
+          </g>
+          <!-- נצנוצים -->
+          <path d="M40 34l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" class="h-spark"/>
+          <path d="M190 22l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" class="h-spark"/>
+          <path d="M34 92l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" class="h-spark"/>
+        </svg>
+        <p>המבצעים על המוצרים שלך, ליד הבית</p>
+      </div>
       <div class="row">
         <button id="scan" class="primary">בדיקת מבצעים עכשיו</button>
       </div>
@@ -54,6 +90,31 @@
     </section>
 
     <section id="tab-settings" hidden>
+      <div class="card">
+        <h3>החשבון שלי</h3>
+        <p class="muted">החשבון: <b id="meName"></b></p>
+        <details>
+          <summary>החלפת סיסמה</summary>
+          <form id="passForm">
+            <label>סיסמה נוכחית<input type="password" id="passCur" autocomplete="current-password" required></label>
+            <label>סיסמה חדשה (לפחות 6 תווים)<input type="password" id="passNew" autocomplete="new-password" minlength="6" required></label>
+            <label>שוב את הסיסמה החדשה<input type="password" id="passNew2" autocomplete="new-password" minlength="6" required></label>
+            <button class="primary">שמירת הסיסמה</button>
+          </form>
+        </details>
+        <div class="row"><button id="logout">יציאה מהחשבון במכשיר הזה</button></div>
+      </div>
+      <div class="card" id="familyCard" hidden>
+        <h3>בני משפחה</h3>
+        <p class="muted small">לכל בן משפחה חשבון משלו: רשימת קניות, מיקום והתראות נפרדים.</p>
+        <ul id="family"></ul>
+        <form id="addUser">
+          <label>שם<input id="newUserName" required minlength="2" maxlength="30" autocomplete="off"></label>
+          <label>סיסמה ראשונית (לפחות 6 תווים)<input id="newUserPass" required minlength="6" autocomplete="new-password"></label>
+          <button class="primary">הוספת בן משפחה</button>
+        </form>
+        <p class="muted small">אחרי ההוספה שלחו לבן המשפחה את הכתובת <b id="appUrl"></b>, את השם ואת הסיסמה. אחרי הכניסה הוא יוכל להחליף את הסיסמה בעצמו.</p>
+      </div>
       <div class="card">
         <h3>מיקום</h3>
         <p id="loc" class="muted"></p>
@@ -106,6 +167,7 @@
     </article>
   </template>
 
+  <script src="foods.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
