@@ -5,13 +5,37 @@ const xml = require('../xml');
 
 const BROWSER = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36' };
 
+// שם קובץ תקני: Stores/PriceFull/PromoFull + קוד רשת + סניף + חותמת זמן.
+// קרפור מוסיפה גם תת-רשת: Price7290055700007-001-002-20261016-140004.gz (רשת-תת רשת-סניף-תאריך-שעה)
+const NAME = /^(Stores|PriceFull|PromoFull|Price|Promo)(\d{13})-(\d{3})(?:-(\d{3}))?-(\d{8})-?(\d{4,6})/i;
+
+function parseName(name) {
+  const f = String(name).match(NAME);
+  if (!f) return null;
+  return { kind: f[1].toLowerCase(), store: Number(f[4] ?? f[3]), stamp: f[5] + f[6].padEnd(6, '0') };
+}
+
 function fileLinks(html, base) {
   const out = [];
-  for (const m of html.matchAll(/(?:href|src)\s*=\s*["']([^"']+)["']|["'](https?:\/\/[^"']+\.(?:gz|xml)[^"']*)["']/gi)) {
+  const add = (raw, url) => {
+    const name = decodeURIComponent(String(raw).split('/').pop().split('?')[0]);
+    const f = parseName(name);
+    if (f) out.push({ ...f, name, url });
+  };
+  // קישורים רגילים בעמוד
+  for (const m of html.matchAll(/(?:href|src)\s*=\s*["']([^"'$]+)["']|["'](https?:\/\/[^"']+\.(?:gz|xml)[^"']*)["']/gi)) {
     const raw = (m[1] || m[2]).replace(/&amp;/g, '&');
-    const name = decodeURIComponent(raw.split('/').pop().split('?')[0]);
-    const f = name.match(/^(Stores|PriceFull|PromoFull)\d+-(\d+)-(\d{12})/i);
-    if (f) out.push({ url: new URL(raw, base).href, kind: f[1].toLowerCase(), store: Number(f[2]), stamp: f[3] });
+    add(raw, new URL(raw, base).href);
+  }
+  // רשימה שמוטמעת בקוד העמוד: const files = [{"name": "..."}], והקישור נבנה מ-origin + path + name
+  const list = html.match(/(?:const|let|var)\s+files\s*=\s*(\[[\s\S]*?\])\s*[;\n]/);
+  if (list) {
+    const pathVar = (html.match(/(?:const|let|var)\s+path\s*=\s*["'`]([^"'`]*)["'`]/) || [])[1];
+    const origin = new URL(base).origin;
+    const dir = pathVar != null ? `${origin}/${pathVar.replace(/^\/+|\/+$/g, '')}` : new URL('.', base).href.replace(/\/$/, '');
+    try {
+      for (const f of JSON.parse(list[1])) if (f && f.name) add(f.name, `${dir.replace(/\/$/, '')}/${f.name}`.replace(/([^:])\/\//g, '$1/'));
+    } catch { /* לא JSON תקין */ }
   }
   return out;
 }
@@ -23,9 +47,16 @@ function chain(id, name, pages) {
     if (!all.length) throw new Error(`לא נמצאו קובצי מחירים בעמוד ${pages[0]}`);
     return all;
   }
-  const latest = (ls, kind, store) => ls
-    .filter((l) => l.kind === kind && (store == null || l.store === Number(store)))
-    .sort((a, b) => b.stamp.localeCompare(a.stamp))[0];
+  // מעדיפים קובץ מלא (PriceFull/PromoFull), ואם אין – הקובץ החלקי (Price/Promo)
+  const latest = (ls, kind, store) => {
+    for (const k of kind === 'stores' ? ['stores'] : [kind, kind.replace('full', '')]) {
+      const f = ls
+        .filter((l) => l.kind === k && (store == null || l.store === Number(store)))
+        .sort((a, b) => b.stamp.localeCompare(a.stamp))[0];
+      if (f) return f;
+    }
+    return null;
+  };
 
   return {
     id, name,
@@ -50,6 +81,7 @@ const pages = (env, def) => (process.env[env] || def).split(',').map((x) => x.tr
 
 module.exports = {
   fileLinks,
+  parseName,
   chains: [
     chain('carrefour', 'קרפור (כולל יינות ביתן)', pages('CARREFOUR_PAGES', 'https://prices.carrefour.co.il/')),
   ],

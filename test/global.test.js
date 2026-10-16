@@ -84,3 +84,17 @@ test('australia: Woolworths + Coles specials, per-retailer errors in report', as
     global.fetch = real;
   }
 });
+
+test('carrefour: embedded "const files" list and 4-part file names', () => {
+  const { fileLinks } = require('../server/chains/weblist');
+  const html = `<script>
+    const path = "20261016"
+    const files = [{"name":"Price7290055700007-001-002-20261016-140004.gz","size":536,"modified":"13:58 16-10-2026"},{"name":"PromoFull7290055700007-001-002-20261016-030000.gz","size":9},{"name":"Stores7290055700007-001-20261016-020000.xml","size":5}]
+    const file_link = window.location.origin+'/'+path+'/'+filename
+  </script><a href="\${file_link}" class="downloadBtn">`;
+  const l = fileLinks(html, 'https://prices.carrefour.co.il/');
+  assert.deepEqual(l.map((x) => [x.kind, x.store, x.stamp]), [
+    ['price', 2, '20261016140004'], ['promofull', 2, '20261016030000'], ['stores', 1, '20261016020000'],
+  ]);
+  assert.equal(l[0].url, 'https://prices.carrefour.co.il/20261016/Price7290055700007-001-002-20261016-140004.gz');
+});
