@@ -945,7 +945,7 @@ document.body.classList.toggle('not-il', COUNTRY !== 'IL');
 async function boot() {
   S = await api('GET', '/api/state');
   // השפה שנבחרה בחשבון (למשל במכשיר אחר) גוברת
-  if (S.lang && S.lang !== LANG) return setLang(S.lang);
+  if (S.lang && S.lang !== LANG && LANGS[S.lang]) return setLang(S.lang);
   if (!S.lang) api('PUT', '/api/settings', { lang: LANG }).catch(() => {});
   document.body.classList.remove('logged-out');
   render();

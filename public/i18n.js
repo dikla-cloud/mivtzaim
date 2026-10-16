@@ -1,6 +1,8 @@
 // שפות: עברית (המקור), Deutsch, English.
 // המפתח הוא הנוסח העברי, ו-{x} הוא מקום למשתנה. טקסט בלי תרגום מוצג בעברית.
-const LANGS = { he: 'עברית', de: 'Deutsch', en: 'English' };
+const COUNTRY = document.documentElement.dataset.country || 'IL';
+// בישראל: עברית, אנגלית וגרמנית. בהתקנה בחו"ל (למשל אוסטריה): רק גרמנית ואנגלית
+const LANGS = COUNTRY === 'IL' ? { he: 'עברית', en: 'English', de: 'Deutsch' } : { de: 'Deutsch', en: 'English' };
 const LOCALES = { he: 'he-IL', de: 'de-AT', en: 'en-GB' };
 const SPEECH = { he: 'he-IL', de: 'de-AT', en: 'en-GB' };
 
@@ -9,10 +11,9 @@ const LANG = (() => {
   try { saved = localStorage.getItem('lang') || ''; } catch { /* מצב פרטי */ }
   if (LANGS[saved]) return saved;
   const def = document.documentElement.dataset.defaultLang;
-  return LANGS[def] ? def : 'he';
+  return LANGS[def] ? def : Object.keys(LANGS)[0];
 })();
 const LOCALE = LOCALES[LANG];
-const COUNTRY = document.documentElement.dataset.country || 'IL';
 document.documentElement.lang = LANG;
 document.documentElement.dir = LANG === 'he' ? 'rtl' : 'ltr';
 

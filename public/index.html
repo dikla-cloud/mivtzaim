@@ -17,13 +17,15 @@
 <body class="logged-out">
   <section id="login">
     <form id="loginForm" class="card">
-      <h1>הקניות שלי</h1>
+      <div class="login-top">
+        <h1>הקניות שלי</h1>
+        <select id="loginLang" class="lang-mini" aria-label="שפה"></select>
+      </div>
       <p id="loginHint" class="muted">כניסה לחשבון שלך</p>
       <label>שם<input id="loginName" autocomplete="username" required></label>
       <label>סיסמה<input id="loginPass" type="password" autocomplete="current-password" required></label>
       <p id="loginError" class="error" hidden></p>
       <button class="primary">כניסה</button>
-      <select id="loginLang" class="lang-mini" aria-label="שפה"></select>
       <p class="muted small legal-links"><a href="terms.html">תנאי שימוש</a> · <a href="privacy.html">מדיניות פרטיות</a></p>
     </form>
   </section>
