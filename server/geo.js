@@ -116,6 +116,19 @@ async function cityName(raw) {
   return CITY_ALIASES[raw] || raw;
 }
 
+// ניקוי כתובת מקובץ הרשת לפני האיתור: „רח' דרויאנוב 5” ← „דרויאנוב 5”, „17 יצחק שמיר” ← „יצחק שמיר 17”,
+// „החשמונאים 84 פינת קרליבך” ← „החשמונאים 84”
+function cleanAddress(a) {
+  let x = String(a || '').replace(/\s+/g, ' ').trim();
+  x = x.split(',')[0].replace(/\s+פינת.*$/, '').replace(/^(רח['׳.]|רחוב)\s*/, '').trim();
+  const m = x.match(/^(\d+[א-ת]?)\s+(\D.*)$/);
+  if (m) x = `${m[2]} ${m[1]}`;
+  return x;
+}
+
+// „סניף” אינטרנטי (שופרסל ONLINE וכד׳) – אין לו מיקום אמיתי
+const isOnline = (s) => /www\.|online|אונליין|אינטרנט/i.test(`${s.name} ${s.address}`);
+
 // מיקום סניף. מחזיר גם איך נקבע (לבדיקה): city / address / none
 async function storePosition(s) {
   if (s.lat != null) return { lat: s.lat, lon: s.lon, how: 'file' };
@@ -123,7 +136,8 @@ async function storePosition(s) {
   if (!city) return null;
   let center = await geocode(`${city}, ישראל`);
   if (center && !inCity(center.label, city)) center = null;
-  const addr = s.address && norm(s.address) && (await geocode(`${s.address}, ${city}, ישראל`));
+  const street = cleanAddress(s.address);
+  const addr = street && /[א-תa-z]/i.test(street) && (await geocode(`${street}, ${city}, ישראל`));
   // כתובת נחשבת רק אם היא באותה עיר, וקרובה למרכז העיר (אחרת זה כנראה רחוב באותו שם בעיר אחרת)
   const addrOk = addr && inCity(addr.label, city) && (!center || haversineKm(center, addr) <= MAX_FROM_CITY_KM);
   if (addrOk) return { lat: addr.lat, lon: addr.lon, how: 'address' };
@@ -135,6 +149,7 @@ async function storePosition(s) {
 async function storesWithin(stores, center, radiusKm) {
   const out = [];
   for (const s of stores) {
+    if (isOnline(s)) continue;
     if (s.lat == null) {
       const name = await cityName(s.city);
       const city = name && (await geocode(`${name}, ישראל`));
@@ -148,4 +163,4 @@ async function storesWithin(stores, center, radiusKm) {
   return out.sort((a, b) => a.km - b.km);
 }
 
-module.exports = { haversineKm, geocode, reverse, storesWithin, storePosition, inCity, cityName };
+module.exports = { haversineKm, geocode, reverse, storesWithin, storePosition, inCity, cityName, cleanAddress };

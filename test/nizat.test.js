@@ -71,3 +71,12 @@ test('geo: CBS city code resolved from the saved table', async () => {
   assert.equal(await geo.cityName('עפולה עילית'), 'נוף הגליל');
   assert.equal(await geo.cityName('תל אביב'), 'תל אביב');
 });
+
+test('geo: store addresses cleaned before lookup', () => {
+  const { cleanAddress } = require('../server/geo');
+  assert.equal(cleanAddress("רח' דרויאנוב 5"), 'דרויאנוב 5');
+  assert.equal(cleanAddress('17 יצחק שמיר'), 'יצחק שמיר 17');
+  assert.equal(cleanAddress('החשמונאים 84 פינת קרליבך'), 'החשמונאים 84');
+  assert.equal(cleanAddress('צה"ל 71, מרכ'), 'צה"ל 71');
+  assert.equal(cleanAddress('רח.המלאכה 2'), 'המלאכה 2');
+});
