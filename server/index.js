@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const express = require('express');
@@ -115,8 +116,34 @@ app.patch('/api/home/:id', (req, res) => {
   res.json(homeState(req));
 });
 
+// הודעות קוליות ב„חסר בבית”: נשמרות כקבצים בתיקיית הנתונים, ונגישות רק לבני משק הבית
+const VOICE_DIR = path.resolve(path.dirname(db.FILE), 'voice');
+const VOICE_TYPES = { 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a', 'audio/mpeg': 'mp3', 'audio/aac': 'aac', 'audio/wav': 'wav' };
+const voiceFile = (item) => path.join(VOICE_DIR, `${item.id}.${item.voice.ext}`);
+const dropVoice = (items) => { for (const x of items) if (x.voice) fs.rm(voiceFile(x), { force: true }, () => {}); };
+
+app.post('/api/home/voice', express.raw({ type: 'audio/*', limit: '3mb' }), (req, res) => {
+  const type = String(req.get('content-type') || '').split(';')[0].trim();
+  const ext = VOICE_TYPES[type];
+  if (!ext || !Buffer.isBuffer(req.body) || !req.body.length) return res.status(400).json({ error: 'פורמט הקלטה לא נתמך' });
+  const seconds = Math.min(Math.round(Number(req.get('x-voice-seconds')) || 0), 120);
+  const item = { id: crypto.randomUUID(), text: 'הודעה קולית', done: false, by: req.user.name, at: new Date().toISOString(), voice: { type, ext, seconds } };
+  fs.mkdirSync(VOICE_DIR, { recursive: true });
+  fs.writeFileSync(voiceFile(item), req.body);
+  home(req).push(item);
+  db.save();
+  res.json(homeState(req));
+});
+
+app.get('/api/home/:id/voice', (req, res) => {
+  const item = home(req).find((x) => x.id === req.params.id && x.voice);
+  if (!item || !fs.existsSync(voiceFile(item))) return res.status(404).json({ error: 'ההקלטה לא נמצאה' });
+  res.type(item.voice.type).sendFile(voiceFile(item));
+});
+
 app.delete('/api/home/:id', (req, res) => {
   const h = db.householdOf(req.user);
+  dropVoice(h.home.filter((x) => x.id === req.params.id));
   h.home = h.home.filter((x) => x.id !== req.params.id);
   db.save();
   res.json(homeState(req));
@@ -125,6 +152,7 @@ app.delete('/api/home/:id', (req, res) => {
 // „ניקוי פריטים שנקנו”: נשארים רק מה שעוד לא נקנה. רשימת המבצעים לא מושפעת.
 app.post('/api/home/clear-done', (req, res) => {
   const h = db.householdOf(req.user);
+  dropVoice(h.home.filter((x) => x.done));
   h.home = h.home.filter((x) => !x.done);
   db.save();
   res.json(homeState(req));

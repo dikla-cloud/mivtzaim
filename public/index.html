@@ -83,6 +83,11 @@
         <input id="homeItem" placeholder="מה חסר בבית? (אפשר כמה, מופרדים בפסיק)" autocomplete="off">
         <button class="primary">הוספה</button>
       </form>
+      <div class="row voice-row">
+        <button type="button" id="dictate" hidden>🎤 הכתבה</button>
+        <button type="button" id="record" hidden>🎙️ הודעה קולית</button>
+        <span id="voiceHint" class="muted small"></span>
+      </div>
       <ul id="homeList"></ul>
       <p id="homeEmpty" class="empty muted" hidden>אין כרגע חוסרים 🎉</p>
       <div class="row" id="homeActions" hidden>

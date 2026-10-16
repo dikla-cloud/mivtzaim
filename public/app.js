@@ -317,12 +317,12 @@ function renderHome() {
     li.className = 'homeitem' + (it.done ? ' done' : '');
     const toggle = Object.assign(document.createElement('button'), { className: 'check', ariaLabel: it.done ? 'סימון כלא נקנה' : 'סימון כנקנה', textContent: it.done ? '✔' : '' });
     const body = Object.assign(document.createElement('span'), { className: 'hbody' });
-    body.append(Object.assign(document.createElement('span'), { className: 'food', textContent: foodIcon(it.text) }));
+    body.append(Object.assign(document.createElement('span'), { className: 'food', textContent: it.voice ? '🎙️' : foodIcon(it.text) }));
     const txt = Object.assign(document.createElement('span'), { className: 'htext' });
-    txt.append(Object.assign(document.createElement('span'), { textContent: it.text }));
+    txt.append(Object.assign(document.createElement('span'), { textContent: it.voice ? `הודעה קולית${it.voice.seconds ? ` · ${it.voice.seconds} שנ׳` : ''}` : it.text }));
     const meta = [it.by && it.by !== S.me.name ? `הוסיף/ה ${it.by}` : '', it.done && it.doneBy ? `נקנה ע״י ${it.doneBy}` : ''].filter(Boolean).join(' · ');
     if (meta) txt.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: meta }));
-    const d = !it.done && dealFor(it.text);
+    const d = !it.done && !it.voice && dealFor(it.text);
     if (d) txt.append(Object.assign(document.createElement('small'), {
       className: 'onsale',
       textContent: `🏷️ במבצע: ${d.promoPrice != null ? `${d.minQty > 1 ? `${d.minQty} ב-` : ''}${money(d.promoPrice, d.currency)}` : d.description} ב${d.chain}`,
@@ -337,7 +337,11 @@ function renderHome() {
     toggle.addEventListener('click', flip);
     body.addEventListener('click', flip);
     li.append(toggle, body);
-    if (!watched.has(plain(it.text))) {
+    if (it.voice) {
+      const play = Object.assign(document.createElement('button'), { className: 'mini play', textContent: '▶', title: 'השמעה' });
+      play.addEventListener('click', () => playVoice(it.id, play));
+      li.append(play);
+    } else if (!watched.has(plain(it.text))) {
       const star = Object.assign(document.createElement('button'), { className: 'mini', textContent: '⭐', title: 'להוסיף לרשימה לחיפוש מבצעים' });
       star.addEventListener('click', async () => {
         await saveList([...S.list.map((x) => x.text), it.text]);
@@ -360,6 +364,125 @@ $('#homeAdd').addEventListener('submit', async (e) => {
   Object.assign(S, await api('POST', '/api/home', { items }));
   renderHome();
 });
+
+// ---------- קול: הכתבה (דיבור ← טקסט) והודעה קולית ----------
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const STOP_WORDS = new Set(['צריך', 'צריכים', 'צריכה', 'לקנות', 'תקנה', 'תקנו', 'חסר', 'חסרה', 'חסרים', 'גם', 'וגם', 'עוד', 'בבקשה', 'ו']);
+const COMPOUNDS = ['שמן זית', 'שמן קנולה', 'בשר טחון', 'חזה עוף', 'שוקי עוף', 'נייר טואלט', 'מגבות נייר', 'אבקת כביסה', 'נוזל כלים',
+  'משחת שיניים', 'תפוחי אדמה', 'גבינה צהובה', 'גבינה לבנה', 'גבינה בולגרית', 'שמנת חמוצה', 'דגני בוקר', 'שיבולת שועל', 'חמאת בוטנים',
+  'מזון לחתולים', 'מזון לכלבים', 'מיץ תפוזים', 'לחם אחיד', 'שוקולד חלב', 'מים מינרליים', 'נייר כסף', 'שקיות זבל'];
+const isProduct = (w) => foodIcon(w) !== '🛒';
+
+// „חלב לחם וביצים” ← ['חלב', 'לחם', 'ביצים']. הפרדה לפי ו' החיבור ולפי שמות מוצרים מוכרים, בלי לשבור צירופים כמו „שמן זית”.
+function splitSpoken(text) {
+  const items = [];
+  let cur = [];
+  const push = () => { if (cur.length) items.push(cur.join(' ')); cur = []; };
+  for (const w of text.replace(/[.,،;]/g, ' , ').split(/\s+/).filter(Boolean)) {
+    if (w === ',') { push(); continue; }
+    if (STOP_WORDS.has(w)) continue;
+    let word = w;
+    let conj = false;
+    if (/^ו[\u05D0-\u05EA]{2,}/.test(w) && !/^(וניל|ופל|וופל|וודקה|ויטמין|וואפל)/.test(w)) { conj = true; word = w.slice(1); }
+    const phrase = cur.length ? `${cur[cur.length - 1]} ${word}` : '';
+    const compound = phrase && COMPOUNDS.some((c) => c === phrase || c.startsWith(phrase + ' '));
+    if (cur.length && !compound && (conj || (isProduct(word) && cur.some(isProduct)))) push();
+    cur.push(word);
+  }
+  push();
+  return items;
+}
+
+if (SR) {
+  $('#dictate').hidden = false;
+  let rec = null;
+  $('#dictate').addEventListener('click', () => {
+    if (rec) return rec.stop();
+    rec = new SR();
+    rec.lang = 'he-IL';
+    rec.interimResults = true;
+    rec.continuous = false;
+    const before = $('#homeItem').value.trim();
+    $('#dictate').classList.add('live');
+    $('#dictate').textContent = '⏹ מקשיב…';
+    $('#voiceHint').textContent = 'אמרו מה חסר, למשל: „חלב, לחם וביצים”';
+    rec.onresult = (e) => {
+      const said = [...e.results].map((r) => r[0].transcript).join(' ');
+      const items = splitSpoken(said);
+      $('#homeItem').value = [before, items.join(', ')].filter(Boolean).join(', ');
+    };
+    rec.onerror = (e) => { $('#voiceHint').textContent = e.error === 'not-allowed' ? 'צריך לאשר גישה למיקרופון' : `ההכתבה נכשלה (${e.error})`; };
+    rec.onend = () => {
+      rec = null;
+      $('#dictate').classList.remove('live');
+      $('#dictate').textContent = '🎤 הכתבה';
+      if ($('#homeItem').value.trim() !== before) {
+        $('#voiceHint').textContent = 'בדקו את הפריטים ותקנו אם צריך, ואז „הוספה”';
+        $('#homeItem').focus();
+      }
+    };
+    rec.start();
+  });
+}
+
+if (window.MediaRecorder && navigator.mediaDevices?.getUserMedia) {
+  $('#record').hidden = false;
+  let mr = null;
+  let timer = null;
+  const MAX = 30;
+  $('#record').addEventListener('click', async () => {
+    if (mr) return mr.stop();
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { return alert('צריך לאשר גישה למיקרופון'); }
+    const type = ['audio/webm', 'audio/mp4', 'audio/ogg'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
+    mr = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+    const chunks = [];
+    const t0 = Date.now();
+    mr.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    mr.onstop = async () => {
+      clearInterval(timer);
+      stream.getTracks().forEach((t) => t.stop());
+      const seconds = Math.round((Date.now() - t0) / 1000);
+      const blob = new Blob(chunks, { type: (mr.mimeType || type || 'audio/webm').split(';')[0] });
+      mr = null;
+      $('#record').classList.remove('live');
+      $('#record').textContent = '🎙️ הודעה קולית';
+      if (seconds < 1 || !blob.size) return;
+      $('#voiceHint').textContent = 'שומר…';
+      try {
+        const res = await fetch('/api/home/voice', { method: 'POST', headers: { 'Content-Type': blob.type, 'x-voice-seconds': seconds, 'x-app-token': token }, body: blob });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error);
+        Object.assign(S, json);
+        renderHome();
+        $('#voiceHint').textContent = 'ההודעה הקולית נוספה לרשימה';
+      } catch (e) { $('#voiceHint').textContent = `השמירה נכשלה: ${e.message}`; }
+    };
+    mr.start();
+    $('#record').classList.add('live');
+    timer = setInterval(() => {
+      const s = Math.round((Date.now() - t0) / 1000);
+      $('#record').textContent = `⏹ עצירה (${s}/${MAX} שנ׳)`;
+      if (s >= MAX) mr?.stop();
+    }, 250);
+    $('#voiceHint').textContent = 'מקליט… לחצו שוב לעצירה';
+  });
+}
+
+const voiceUrls = new Map();
+async function playVoice(id, btn) {
+  try {
+    if (!voiceUrls.has(id)) {
+      const res = await fetch(`/api/home/${id}/voice`, { headers: { 'x-app-token': token } });
+      if (!res.ok) throw new Error('ההקלטה לא נמצאה');
+      voiceUrls.set(id, URL.createObjectURL(await res.blob()));
+    }
+    const a = new Audio(voiceUrls.get(id));
+    btn.textContent = '🔊';
+    a.onended = () => (btn.textContent = '▶');
+    await a.play();
+  } catch (e) { toast(e.message); btn.textContent = '▶'; }
+}
 
 $('#clearDone').addEventListener('click', async () => {
   const n = S.home.filter((x) => x.done).length;

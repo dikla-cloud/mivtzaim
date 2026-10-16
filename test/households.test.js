@@ -32,3 +32,32 @@ test('existing family members are split into their own households; home list sta
   db.save(); db.reset();
   assert.equal(db.get().users['יואב'].household, 'h1');
 });
+
+test('voice note: upload, play back for household only, removed on clear', async () => {
+  process.env.APP_TOKEN = 'x';
+  const app = require('../server/index.js');
+  const auth = require('../server/auth');
+  const server = app.listen(0);
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const d = db.get();
+    const owner = auth.newSession(d.users['דיקלה']);
+    const other = auth.newSession(d.users['רותי']); // משק בית אחר
+    const audio = Buffer.from('fake-webm-audio');
+    let r = await fetch(base + '/api/home/voice', { method: 'POST', headers: { 'Content-Type': 'audio/webm;codecs=opus', 'x-voice-seconds': '4', 'x-app-token': owner }, body: audio });
+    const item = (await r.json()).home.find((x) => x.voice);
+    assert.equal(item.voice.seconds, 4);
+    r = await fetch(`${base}/api/home/${item.id}/voice`, { headers: { 'x-app-token': owner } });
+    assert.equal(Buffer.from(await r.arrayBuffer()).toString(), 'fake-webm-audio');
+    assert.equal((await fetch(`${base}/api/home/${item.id}/voice`, { headers: { 'x-app-token': other } })).status, 404);
+    assert.equal((await fetch(base + '/api/home/voice', { method: 'POST', headers: { 'Content-Type': 'audio/x-evil', 'x-app-token': owner }, body: audio })).status, 400);
+    const file = path.join(dir, 'voice', `${item.id}.webm`);
+    assert.ok(fs.existsSync(file));
+    await fetch(`${base}/api/home/${item.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-app-token': owner }, body: JSON.stringify({ done: true }) });
+    await fetch(base + '/api/home/clear-done', { method: 'POST', headers: { 'x-app-token': owner } });
+    await new Promise((res) => setTimeout(res, 100));
+    assert.ok(!fs.existsSync(file));
+  } finally {
+    server.close();
+  }
+});
