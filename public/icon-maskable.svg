@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#14897f"/>
+      <stop offset="1" stop-color="#0c6159"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="translate(256 262) scale(.78) translate(-256 -262)">
+  <path d="M120 150h40l40 190h170l36-130H186" fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="220" cy="390" r="24" fill="#fff"/>
+  <circle cx="350" cy="390" r="24" fill="#fff"/>
+  <!-- סימן האחוזים, ממורכז בתוך סל העגלה (מרכז הסל: 290,275) -->
+  <g fill="none" stroke="#fbbf24" stroke-width="12" stroke-linecap="round">
+    <line x1="314" y1="236" x2="266" y2="314"/>
+    <circle cx="267" cy="249" r="13"/>
+    <circle cx="313" cy="301" r="13"/>
+  </g>
+  </g>
+</svg>
