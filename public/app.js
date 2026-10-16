@@ -925,7 +925,10 @@ window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); inst
 $('#install').addEventListener('click', () => installEvt?.prompt());
 
 // ---------- שפה ----------
-$('#langSel').replaceChildren(...Object.entries(LANGS).map(([k, name]) => Object.assign(document.createElement('option'), { value: k, textContent: name, selected: k === LANG })));
+for (const sel of [$('#langSel'), $('#loginLang')]) {
+  sel.replaceChildren(...Object.entries(LANGS).map(([k, name]) => Object.assign(document.createElement('option'), { value: k, textContent: `🌐 ${name}`, selected: k === LANG })));
+}
+$('#loginLang').addEventListener('change', (e) => setLang(e.target.value));
 function setLang(l) {
   try { localStorage.setItem('lang', l); } catch { /* */ }
   location.reload();

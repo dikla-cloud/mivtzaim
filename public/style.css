@@ -246,3 +246,4 @@ body.not-il .il-only { display: none; }
 
 /* הוספה מצילום */
 label.photo { display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+#loginForm .lang-mini { display: block; margin: 12px auto 0; min-width: 0; padding: 6px 10px; font-size: .9rem; }

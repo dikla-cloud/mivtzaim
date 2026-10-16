@@ -26,7 +26,7 @@ const PUBLIC = path.join(__dirname, '..', 'public');
 app.get(['/', '/index.html'], (req, res) => {
   const L = i18n.DEFAULT_LANG;
   const html = fs.readFileSync(path.join(PUBLIC, 'index.html'), 'utf8')
-    .replace('<html lang="he" dir="rtl">', `<html lang="${L}" dir="${i18n.dir(L)}" data-default-lang="${L}" data-country="${APP_COUNTRY}">`)
+    .replace('<html lang="he" dir="rtl" translate="no">', `<html lang="${L}" dir="${i18n.dir(L)}" translate="no" data-default-lang="${L}" data-country="${APP_COUNTRY}">`)
     .replace(/<title>[^<]*<\/title>/, `<title>${appName(L)}</title>`)
     .replace('content="הקניות שלי"', `content="${appName(L)}"`);
   res.set('Cache-Control', 'no-cache').type('html').send(html);
