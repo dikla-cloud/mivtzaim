@@ -19,7 +19,33 @@ const FOOD_ICONS = [
   ['יין', '🍷'], ['בירה', '🍺'], ['פיצה', '🍕'], ['המבורגר', '🍔'], ['סושי', '🍣'],
   ['נייר טואלט', '🧻'], ['מגבות נייר', '🧻'], ['טישו', '🧻'], ['סבון', '🧼'], ['שמפו', '🧴'], ['אבקת כביסה', '🧺'],
   ['מרכך', '🧴'], ['נוזל כלים', '🧽'], ['ספוג', '🧽'], ['חיתול', '👶'], ['מזון לכלב', '🐕'], ['מזון לחתול', '🐈'],
-  ['milch', '🥛'], ['milk', '🥛'], ['cheese', '🧀'], ['käse', '🧀'], ['bread', '🍞'], ['brot', '🍞'], ['egg', '🥚'], ['eier', '🥚'],
+];
+
+// גרמנית ואנגלית: בגרמנית העיקר במילה מורכבת הוא הסוף (Vollmilch ← milch, Milchschokolade ← schokolade),
+// ולכן מחפשים את המילה בסוף המילה (עם סיומת רבים קצרה). הספציפיים קודם.
+const FOOD_ICONS_LATIN = [
+  ['schokolade', '🍫'], ['chocolate', '🍫'], ['erdnussbutter', '🥜'], ['peanut', '🥜'], ['nuss', '🌰'], ['nüsse', '🌰'], ['nut', '🌰'], ['mandel', '🌰'], ['almond', '🌰'],
+  ['kartoffel', '🥔'], ['erdapfel', '🥔'], ['potato', '🥔'], ['orange', '🍊'], ['mandarine', '🍊'], ['apfel', '🍎'], ['äpfel', '🍎'], ['apple', '🍎'],
+  ['=eis', '🍦'], ['speiseeis', '🍦'], ['ice cream', '🍦'], ['keks', '🍪'], ['cookie', '🍪'], ['biscuit', '🍪'], ['kuchen', '🍰'], ['torte', '🍰'], ['cake', '🍰'], ['chips', '🍿'], ['popcorn', '🍿'], ['brezel', '🥨'],
+  ['joghurt', '🥣'], ['yogurt', '🥣'], ['yoghurt', '🥣'], ['müsli', '🥣'], ['cornflakes', '🥣'], ['cereal', '🥣'], ['haferflocken', '🥣'], ['oats', '🥣'],
+  ['butter', '🧈'], ['käse', '🧀'], ['cheese', '🧀'], ['topfen', '🧀'], ['quark', '🧀'], ['sahne', '🥛'], ['obers', '🥛'], ['cream', '🥛'], ['milch', '🥛'], ['milk', '🥛'],
+  ['=ei', '🥚'], ['eier', '🥚'], ['egg', '🥚'], ['semmel', '🥖'], ['brötchen', '🥖'], ['baguette', '🥖'], ['brot', '🍞'], ['bread', '🍞'], ['toast', '🍞'], ['mehl', '🌾'], ['flour', '🌾'],
+  ['=reis', '🍚'], ['basmatireis', '🍚'], ['rice', '🍚'], ['nudeln', '🍝'], ['pasta', '🍝'], ['spaghetti', '🍝'],
+  ['hähnchen', '🍗'], ['huhn', '🍗'], ['hendl', '🍗'], ['chicken', '🍗'], ['schnitzel', '🍗'], ['pute', '🍗'], ['turkey', '🍗'], ['fleisch', '🥩'], ['faschiertes', '🥩'], ['hackfleisch', '🥩'], ['beef', '🥩'], ['meat', '🥩'], ['steak', '🥩'],
+  ['wurst', '🌭'], ['würstel', '🌭'], ['sausage', '🌭'], ['schinken', '🥓'], ['=ham', '🥓'], ['speck', '🥓'], ['bacon', '🥓'],
+  ['lachs', '🐟'], ['salmon', '🐟'], ['thunfisch', '🐟'], ['tuna', '🐟'], ['fisch', '🐟'], ['fish', '🐟'],
+  ['tomate', '🍅'], ['paradeiser', '🍅'], ['tomato', '🍅'], ['gurke', '🥒'], ['cucumber', '🥒'], ['karotte', '🥕'], ['möhre', '🥕'], ['carrot', '🥕'], ['zwiebel', '🧅'], ['onion', '🧅'],
+  ['knoblauch', '🧄'], ['garlic', '🧄'], ['paprika', '🫑'], ['pepper', '🫑'], ['salat', '🥬'], ['lettuce', '🥬'], ['kohl', '🥬'], ['cabbage', '🥬'], ['brokkoli', '🥦'], ['broccoli', '🥦'],
+  ['mais', '🌽'], ['corn', '🌽'], ['pilz', '🍄'], ['champignon', '🍄'], ['mushroom', '🍄'], ['avocado', '🥑'], ['olive', '🫒'],
+  ['banane', '🍌'], ['banana', '🍌'], ['zitrone', '🍋'], ['lemon', '🍋'], ['traube', '🍇'], ['grape', '🍇'], ['melone', '🍈'], ['erdbeere', '🍓'], ['strawberr', '🍓'], ['birne', '🍐'], ['pear', '🍐'],
+  ['pfirsich', '🍑'], ['peach', '🍑'], ['kirsche', '🍒'], ['cherr', '🍒'], ['mango', '🥭'], ['ananas', '🍍'], ['pineapple', '🍍'], ['kiwi', '🥝'],
+  ['=öl', '🫒'], ['olivenöl', '🫒'], ['sonnenblumenöl', '🫒'], ['rapsöl', '🫒'], ['=oil', '🫒'], ['olive oil', '🫒'], ['salz', '🧂'], ['salt', '🧂'], ['zucker', '🍬'], ['sugar', '🍬'], ['honig', '🍯'], ['honey', '🍯'], ['marmelade', '🍯'], ['jam', '🍯'], ['ketchup', '🍅'],
+  ['bohnen', '🫘'], ['beans', '🫘'], ['linsen', '🫘'], ['lentil', '🫘'], ['dose', '🥫'],
+  ['kaffee', '☕'], ['coffee', '☕'], ['=tee', '🍵'], ['früchtetee', '🍵'], ['kräutertee', '🍵'], ['=tea', '🍵'], ['saft', '🧃'], ['juice', '🧃'], ['cola', '🥤'], ['limonade', '🥤'], ['soda', '🥤'], ['wasser', '💧'], ['water', '💧'],
+  ['wein', '🍷'], ['wine', '🍷'], ['bier', '🍺'], ['beer', '🍺'], ['pizza', '🍕'], ['burger', '🍔'], ['sushi', '🍣'],
+  ['klopapier', '🧻'], ['toilettenpapier', '🧻'], ['toilet paper', '🧻'], ['küchenrolle', '🧻'], ['taschentücher', '🧻'], ['tissues', '🧻'], ['seife', '🧼'], ['soap', '🧼'], ['shampoo', '🧴'],
+  ['waschmittel', '🧺'], ['detergent', '🧺'], ['spülmittel', '🧽'], ['schwamm', '🧽'], ['sponge', '🧽'], ['windel', '👶'], ['nappies', '👶'], ['diaper', '👶'],
+  ['hundefutter', '🐕'], ['dog food', '🐕'], ['katzenfutter', '🐈'], ['cat food', '🐈'],
 ];
 
 function foodIcon(text) {
@@ -27,5 +53,9 @@ function foodIcon(text) {
   if (/^\d{7,14}$/.test(t.trim())) return '🏷️'; // ברקוד
   const words = t.split(/\s+/).flatMap((w) => (/^[הובלמש]/.test(w) && w.length > 3 ? [w, w.slice(1)] : [w]));
   const hit = FOOD_ICONS.find(([k]) => (k.includes(' ') ? t.includes(k) : words.some((w) => w.startsWith(k))));
-  return hit ? hit[1] : '🛒';
+  if (hit) return hit[1];
+  const ends = (w, k) => { const i = w.lastIndexOf(k); return i >= 0 && w.length - (i + k.length) <= 2 && (i === 0 || k.length >= 3); };
+  // „=מילה” – רק מילה שלמה (Eis ולא Reis/Preis)
+  const latin = FOOD_ICONS_LATIN.find(([k]) => (k[0] === '=' ? words.includes(k.slice(1)) : k.includes(' ') ? t.includes(k) : words.some((w) => ends(w.replace(/-/g, ''), k))));
+  return latin ? latin[1] : '🛒';
 }

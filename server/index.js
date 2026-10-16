@@ -8,13 +8,38 @@ const push = require('./push');
 const auth = require('./auth');
 const scanner = require('./scanner');
 const metrics = require('./metrics');
+const i18n = require('./i18n');
+
+// הגדרות ההתקנה: שפת ברירת מחדל ומדינה (למשל התקנה נפרדת לאוסטריה: APP_LANG=de APP_COUNTRY=AT)
+const APP_COUNTRY = (process.env.APP_COUNTRY || 'IL').toUpperCase();
+const APP_NAMES = { he: 'הקניות שלי', de: 'Meine Einkäufe', en: 'My Shopping' };
+const appName = (l) => process.env.APP_NAME || APP_NAMES[i18n.pick(l)];
+const T = (req, he, vars) => i18n.tr(req.lang, he, vars);
 
 // גרסת תנאי השימוש ומדיניות הפרטיות. כשמשנים אותם – מעלים את הגרסה, וכל משתמש יתבקש לאשר מחדש.
 const TERMS_VERSION = '2026-10-16';
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// דף הבית והמניפסט מותאמים לשפה ולשם של ההתקנה
+const PUBLIC = path.join(__dirname, '..', 'public');
+app.get(['/', '/index.html'], (req, res) => {
+  const L = i18n.DEFAULT_LANG;
+  const html = fs.readFileSync(path.join(PUBLIC, 'index.html'), 'utf8')
+    .replace('<html lang="he" dir="rtl">', `<html lang="${L}" dir="${i18n.dir(L)}" data-default-lang="${L}" data-country="${APP_COUNTRY}">`)
+    .replace(/<title>[^<]*<\/title>/, `<title>${appName(L)}</title>`)
+    .replace('content="הקניות שלי"', `content="${appName(L)}"`);
+  res.set('Cache-Control', 'no-cache').type('html').send(html);
+});
+app.get('/manifest.webmanifest', (req, res) => {
+  const L = i18n.DEFAULT_LANG;
+  const m = JSON.parse(fs.readFileSync(path.join(PUBLIC, 'manifest.webmanifest'), 'utf8'));
+  Object.assign(m, { name: appName(L), short_name: appName(L), lang: L, dir: i18n.dir(L) });
+  res.type('application/manifest+json').send(JSON.stringify(m));
+});
+app.use(express.static(PUBLIC));
+// שפת ההודעות: מה שהאפליקציה שולחת, אחרת השפה שנבחרה בחשבון, אחרת ברירת המחדל של ההתקנה
+app.use('/api', (req, res, next) => { req.lang = i18n.pick(req.get('x-app-lang')); next(); });
 
 // ---------- כניסה ----------
 const failures = new Map(); // הגנה מניחוש סיסמאות: השהיה אחרי ניסיונות כושלים
@@ -27,25 +52,26 @@ app.post('/api/login', async (req, res) => {
   const u = auth.login(name, password);
   if (!u) {
     failures.set(key, f + 1);
-    return res.status(401).json({ error: db.users().length ? 'שם או סיסמה שגויים' : 'הסיסמה הראשונית שגויה' });
+    return res.status(401).json({ error: T(req, db.users().length ? 'שם או סיסמה שגויים' : 'הסיסמה הראשונית שגויה') });
   }
   failures.delete(key);
   res.json({ token: auth.newSession(u) });
 });
 
-app.get('/api/setup', (req, res) => res.json({ firstRun: !db.users().length }));
+app.get('/api/setup', (req, res) => res.json({ firstRun: !db.users().length, lang: i18n.DEFAULT_LANG, country: APP_COUNTRY }));
 
 app.use('/api', (req, res, next) => {
   req.token = req.get('x-app-token');
   req.user = auth.sessionUser(req.token);
   if (req.user) {
     metrics.seen(req.user);
+    if (!req.get('x-app-lang') && req.user.lang) req.lang = i18n.pick(req.user.lang);
     return next();
   }
-  res.status(401).json({ error: 'נדרשת כניסה' });
+  res.status(401).json({ error: T(req, 'נדרשת כניסה') });
 });
 
-const adminOnly = (req, res, next) => (req.user.admin ? next() : res.status(403).json({ error: 'רק למנהל החשבון' }));
+const adminOnly = (req, res, next) => (req.user.admin ? next() : res.status(403).json({ error: T(req, 'רק למנהל החשבון') }));
 
 const userInfo = (x) => ({ name: x.name, admin: x.admin, household: x.household, lastScan: x.lastScan, location: x.location?.label || null });
 
@@ -58,6 +84,8 @@ const state = (u) => ({
   needTerms: u.termsVersion !== TERMS_VERSION,
   list: u.list, location: u.location, radiusKm: u.radiusKm, deals: u.deals,
   lastScan: u.lastScan, lastErrors: u.lastErrors, lastSources: u.lastSources || [], lastReport: u.lastReport || null,
+  lang: u.lang || null,
+  country: APP_COUNTRY,
   chains: scanner.ALL_CHAINS.map((c) => ({ id: c.id, name: c.name, on: !u.chains || u.chains.includes(c.id) })),
   vapidKey: push.publicKey,
 });
@@ -70,8 +98,8 @@ app.post('/api/logout', (req, res) => {
 
 app.put('/api/password', (req, res) => {
   const { current, next } = req.body || {};
-  if (!auth.checkPassword(req.user.pass, current)) return res.status(400).json({ error: 'הסיסמה הנוכחית שגויה' });
-  if (!auth.validPassword(next)) return res.status(400).json({ error: 'הסיסמה החדשה צריכה להכיל לפחות 6 תווים' });
+  if (!auth.checkPassword(req.user.pass, current)) return res.status(400).json({ error: T(req, 'הסיסמה הנוכחית שגויה') });
+  if (!auth.validPassword(next)) return res.status(400).json({ error: T(req, 'הסיסמה החדשה צריכה להכיל לפחות 6 תווים') });
   req.user.pass = auth.hashPassword(next);
   auth.dropSessions(req.user, req.token); // ניתוק שאר המכשירים
   db.save();
@@ -82,13 +110,13 @@ app.put('/api/password', (req, res) => {
 // כל משתמש יכול להוסיף מישהו נוסף ממשק הבית שלו (המנהל יכול גם להוסיף משק בית חדש)
 app.post('/api/users', (req, res) => {
   const { name, password, newHousehold } = req.body || {};
-  if (!auth.validName(name)) return res.status(400).json({ error: 'השם צריך להכיל 2–30 תווים' });
-  if (!auth.validPassword(password)) return res.status(400).json({ error: 'הסיסמה צריכה להכיל לפחות 6 תווים' });
-  if (db.get().users[db.userKey(name)]) return res.status(400).json({ error: 'כבר יש משתמש בשם הזה' });
+  if (!auth.validName(name)) return res.status(400).json({ error: T(req, 'השם צריך להכיל 2–30 תווים') });
+  if (!auth.validPassword(password)) return res.status(400).json({ error: T(req, 'הסיסמה צריכה להכיל לפחות 6 תווים') });
+  if (db.get().users[db.userKey(name)]) return res.status(400).json({ error: T(req, 'כבר יש משתמש בשם הזה') });
   const { maxUsers, membersCanInvite } = db.get().limits;
-  if (!req.user.admin && !membersCanInvite) return res.status(403).json({ error: 'רק מנהל האפליקציה יכול להזמין משתמשים חדשים' });
+  if (!req.user.admin && !membersCanInvite) return res.status(403).json({ error: T(req, 'רק מנהל האפליקציה יכול להזמין משתמשים חדשים') });
   if (db.users().length >= maxUsers) {
-    return res.status(400).json({ error: `הגעתם למספר המשתמשים המקסימלי באפליקציה (${maxUsers}). ${req.user.admin ? 'אפשר להגדיל אותו בהגדרות ← בני הבית.' : 'אפשר לבקש מהמנהל להגדיל אותו.'}` });
+    return res.status(400).json({ error: `${T(req, 'הגעתם למספר המשתמשים המקסימלי באפליקציה ({max}).', { max: maxUsers })} ${T(req, req.user.admin ? 'אפשר להגדיל אותו בהגדרות ← בני הבית.' : 'אפשר לבקש מהמנהל להגדיל אותו.')}` });
   }
   db.newUser(name, {
     pass: auth.hashPassword(password),
@@ -131,7 +159,7 @@ app.post('/api/home', (req, res) => {
 
 app.patch('/api/home/:id', (req, res) => {
   const item = home(req).find((x) => x.id === req.params.id);
-  if (!item) return res.status(404).json({ error: 'הפריט כבר לא ברשימה', ...homeState(req) });
+  if (!item) return res.status(404).json({ error: T(req, 'הפריט כבר לא ברשימה'), ...homeState(req) });
   if (typeof req.body?.done === 'boolean') {
     if (req.body.done && !item.done) metrics.count('home_bought');
     item.done = req.body.done;
@@ -193,8 +221,8 @@ app.post('/api/home/clear-done', (req, res) => {
 
 app.put('/api/users/:name/password', adminOnly, (req, res) => {
   const u = db.get().users[db.userKey(req.params.name)];
-  if (!u) return res.status(404).json({ error: 'משתמש לא נמצא' });
-  if (!auth.validPassword(req.body?.password)) return res.status(400).json({ error: 'הסיסמה צריכה להכיל לפחות 6 תווים' });
+  if (!u) return res.status(404).json({ error: T(req, 'משתמש לא נמצא') });
+  if (!auth.validPassword(req.body?.password)) return res.status(400).json({ error: T(req, 'הסיסמה צריכה להכיל לפחות 6 תווים') });
   u.pass = auth.hashPassword(req.body.password);
   auth.dropSessions(u, u === req.user ? req.token : undefined);
   db.save();
@@ -214,8 +242,8 @@ app.put('/api/limits', adminOnly, (req, res) => {
 // המנהל מצרף משתמש למשק הבית שלו, או מפריד אותו למשק בית משלו
 app.put('/api/users/:name/household', adminOnly, (req, res) => {
   const u = db.get().users[db.userKey(req.params.name)];
-  if (!u) return res.status(404).json({ error: 'משתמש לא נמצא' });
-  if (u === req.user) return res.status(400).json({ error: 'זה החשבון שלך' });
+  if (!u) return res.status(404).json({ error: T(req, 'משתמש לא נמצא') });
+  if (u === req.user) return res.status(400).json({ error: T(req, 'זה החשבון שלך') });
   if (req.body?.join) u.household = db.householdOf(req.user).id;
   else {
     u.household = null;
@@ -228,8 +256,8 @@ app.put('/api/users/:name/household', adminOnly, (req, res) => {
 app.delete('/api/users/:name', adminOnly, (req, res) => {
   const key = db.userKey(req.params.name);
   const u = db.get().users[key];
-  if (!u) return res.status(404).json({ error: 'משתמש לא נמצא' });
-  if (u === req.user) return res.status(400).json({ error: 'אי אפשר למחוק את החשבון שלך' });
+  if (!u) return res.status(404).json({ error: T(req, 'משתמש לא נמצא') });
+  if (u === req.user) return res.status(400).json({ error: T(req, 'אי אפשר למחוק את החשבון שלך') });
   auth.dropSessions(u);
   delete db.get().users[key];
   db.save();
@@ -240,7 +268,7 @@ app.delete('/api/users/:name', adminOnly, (req, res) => {
 // רשימת „חסר בבית” נמחקת רק אם לא נשאר בה אף בן בית אחר.
 app.delete('/api/me', (req, res) => {
   const u = req.user;
-  if (u.admin) return res.status(400).json({ error: 'חשבון המנהל לא נמחק מכאן, כי בלעדיו אי אפשר לנהל את האפליקציה.' });
+  if (u.admin) return res.status(400).json({ error: T(req, 'חשבון המנהל לא נמחק מכאן, כי בלעדיו אי אפשר לנהל את האפליקציה.') });
   const d = db.get();
   auth.dropSessions(u);
   delete d.users[db.userKey(u.name)];
@@ -291,15 +319,16 @@ app.put('/api/list', (req, res) => {
 
 app.put('/api/settings', async (req, res) => {
   const u = req.user;
-  const { lat, lon, label, address, radiusKm, chains } = req.body;
+  const { lat, lon, label, address, radiusKm, chains, lang } = req.body;
+  if (i18n.LANGS.includes(lang)) u.lang = lang;
   if (address) {
     const hit = await geo.geocode(address, { il: false });
-    if (!hit) return res.status(400).json({ error: 'הכתובת לא נמצאה' });
+    if (!hit) return res.status(400).json({ error: T(req, 'הכתובת לא נמצאה') });
     u.location = { lat: hit.lat, lon: hit.lon, label: address };
     rescanSoon(u);
   } else if (Number.isFinite(lat) && Number.isFinite(lon)) {
     // עדכון מיקום בלחיצה: מזהים עיר ומדינה ובודקים מבצעים מחדש
-    u.location = { lat, lon, label: label || 'המיקום הנוכחי' };
+    u.location = { lat, lon, label: label || T(req, 'המיקום הנוכחי') };
     const place = await scanner.placeOf(u.location);
     if (place && !label) u.location.label = [place.city, place.country].filter(Boolean).join(', ') || u.location.label;
     rescanSoon(u);
@@ -312,7 +341,7 @@ app.put('/api/settings', async (req, res) => {
 
 app.post('/api/subscribe', (req, res) => {
   const sub = req.body;
-  if (!sub?.endpoint) return res.status(400).json({ error: 'מנוי לא תקין' });
+  if (!sub?.endpoint) return res.status(400).json({ error: T(req, 'מנוי לא תקין') });
   // מכשיר שייך למשתמש אחד בלבד (למשל טלפון שעבר מיד ליד)
   for (const u of db.users()) u.subscriptions = u.subscriptions.filter((s) => s.endpoint !== sub.endpoint);
   req.user.subscriptions.push(sub);
@@ -321,7 +350,7 @@ app.post('/api/subscribe', (req, res) => {
 });
 
 app.post('/api/test-push', async (req, res) => {
-  await push.send(req.user, { title: 'בדיקת התראה', body: `שלום ${req.user.name}, ההתראות פועלות ✔`, url: '/' });
+  await push.send(req.user, { title: T(req, 'בדיקת התראה'), body: T(req, 'שלום {name}, ההתראות פועלות ✔', { name: req.user.name }), url: '/' });
   res.json({ ok: true });
 });
 

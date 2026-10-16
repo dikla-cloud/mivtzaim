@@ -3,6 +3,7 @@
 // אלה ממשקים לא רשמיים של האתרים – אם אחד מהם ישתנה או יחסום, זה יופיע ב„מה נבדק בסריקה”.
 const { Session } = require('../http');
 const translate = require('../translate');
+const { tr } = require('../i18n');
 
 const BROWSER = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
@@ -10,7 +11,7 @@ const BROWSER = {
 };
 const PER_ITEM = 6; // כמה מבצעים להציג לכל מוצר מכל רשת
 
-const deal = (chain, entry, p) => ({
+const deal = (chain, entry, p, lang) => ({
   key: `au|${chain}|${p.id}|${p.price}`,
   listItem: entry.text,
   product: p.name,
@@ -23,7 +24,7 @@ const deal = (chain, entry, p) => ({
   end: p.end || null,
   clubOnly: false,
   chain,
-  store: `${chain} (מחיר ארצי באתר)`,
+  store: tr(lang, "{chain} (מחיר ארצי באתר)", { chain }),
   address: '',
   km: null,
   url: p.url || null,
@@ -91,8 +92,8 @@ module.exports = {
   id: 'australia',
   name: 'Woolworths + Coles (אוסטרליה)',
   countries: ['AU'],
-  async scan({ list, errors, report }) {
-    report.note = 'מבצעי השבוע באתרי Woolworths ו-Coles. המחירים באתרים ארציים, ושתי הרשתות פרוסות בכל הערים.';
+  async scan({ list, errors, report, lang }) {
+    report.note = tr(lang, 'מבצעי השבוע באתרי Woolworths ו-Coles. המחירים באתרים ארציים, ושתי הרשתות פרוסות בכל הערים.');
     const terms = await translate(list.map((x) => x.text), 'en', 'AU');
     for (const e of list) report.items[e.text] = { term: terms[e.text]?.term || e.text, translated: Boolean(terms[e.text]), how: terms[e.text]?.how, offers: 0 };
     const deals = [];
@@ -112,11 +113,11 @@ module.exports = {
         try {
           const { count, specials } = await retailer.search(s, info.term);
           info.offers += count;
-          const found = specials.slice(0, PER_ITEM).map((p) => deal(retailer.name, entry, p));
+          const found = specials.slice(0, PER_ITEM).map((p) => deal(retailer.name, entry, p, lang));
           r.deals += found.length;
           deals.push(...found);
         } catch (e) {
-          r.error = `חיפוש „${info.term}” נכשל: ${e.message}`;
+          r.error = tr(lang, 'חיפוש „{term}” נכשל: {err}', { term: info.term, err: e.message });
           errors.push(`${retailer.name} / ${info.term}: ${e.message}`);
         }
       }

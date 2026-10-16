@@ -1,5 +1,6 @@
 // סריקת מבצעים לפי המיקום הנוכחי: מזהה מדינה ← בוחר מקור נתונים ← מתאים לרשימה ← התראות
 const db = require('./db');
+const { tr, pick } = require('./i18n');
 const geo = require('./geo');
 const push = require('./push');
 const metrics = require('./metrics');
@@ -34,28 +35,29 @@ async function scan(d) {
   const key = db.userKey(d.name);
   if (running.has(key)) return running.get(key);
   const job = (async () => {
-    if (!d.location) throw new Error('לא הוגדר מיקום');
+    const lang = pick(d.lang);
+    if (!d.location) throw new Error(tr(lang, 'לא הוגדר מיקום'));
     const list = d.list.filter((x) => x.text.trim());
     const errors = [];
     const place = (await placeOf(d.location)) || { countryCode: '', country: '', city: '', postcode: '', label: d.location.label };
     // דוח „מה נבדק” – נשמר עם תוצאות הסריקה ומוצג באפליקציה
     const report = { place: { ...place }, radiusKm: d.radiusKm, providers: [], chains: [], items: {}, note: '' };
-    const ctx = { list, location: d.location, place, radiusKm: d.radiusKm, enabledChains: d.chains, errors, report };
+    const ctx = { list, location: d.location, place, radiusKm: d.radiusKm, enabledChains: d.chains, errors, report, lang };
 
     const deals = [];
     const sources = [];
     const providers = PROVIDERS.filter((p) => p.countries.includes(place.countryCode));
     if (!providers.length) {
-      errors.push(`אין עדיין מקור מבצעים חינמי ל${place.country || 'מדינה הזו'}. נתמכות כרגע: ישראל, אוסטריה, גרמניה ואוסטרליה.`);
+      errors.push(tr(lang, 'אין עדיין מקור מבצעים חינמי ל{country}. נתמכות כרגע: ישראל, אוסטריה, גרמניה ואוסטרליה.', { country: place.country || tr(lang, 'המדינה הזו') }));
     }
     for (const p of providers) {
       try {
         deals.push(...await p.scan(ctx));
-        sources.push(p.name);
-        report.providers.push({ name: p.name, error: null });
+        sources.push(tr(lang, p.name));
+        report.providers.push({ name: tr(lang, p.name), error: null });
       } catch (e) {
-        errors.push(`${p.name}: ${e.message}`);
-        report.providers.push({ name: p.name, error: e.message });
+        errors.push(`${tr(lang, p.name)}: ${e.message}`);
+        report.providers.push({ name: tr(lang, p.name), error: e.message });
       }
     }
     report.items = list.map((x) => ({

@@ -9,15 +9,15 @@ let token = store.get('session');
 async function api(method, url, body) {
   const res = await fetch(url, {
     method,
-    headers: { 'Content-Type': 'application/json', 'x-app-token': token },
+    headers: { 'Content-Type': 'application/json', 'x-app-token': token, 'x-app-lang': LANG },
     body: body ? JSON.stringify(body) : undefined,
   });
   const json = await res.json().catch(() => ({}));
   if (res.status === 401 && url !== '/api/login') {
     showLogin();
-    throw new Error('נדרשת כניסה');
+    throw new Error(t('נדרשת כניסה'));
   }
-  if (!res.ok) throw new Error(json.error || 'שגיאה');
+  if (!res.ok) throw new Error(json.error || t('שגיאה'));
   return json;
 }
 
@@ -36,9 +36,9 @@ async function showLogin() {
   document.body.classList.add('logged-out');
   try {
     const { firstRun } = await (await fetch('/api/setup')).json();
-    $('#loginHint').textContent = firstRun
+    $('#loginHint').textContent = t(firstRun
       ? 'כניסה ראשונה: בחרו שם, והקלידו את הסיסמה שהוגדרה בהתקנה. החשבון הזה יהיה המנהל.'
-      : 'כניסה לחשבון שלך';
+      : 'כניסה לחשבון שלך');
   } catch { /* בלי חיבור */ }
 }
 
@@ -58,9 +58,9 @@ $('#loginForm').addEventListener('submit', async (e) => {
   }
 });
 
-const fmtDate = (s) => new Date(s).toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'numeric' });
+const fmtDate = (s) => new Date(s).toLocaleDateString(LOCALE, { weekday: 'short', day: 'numeric', month: 'numeric' });
 const money = (n, cur = 'ILS') => {
-  try { return new Intl.NumberFormat('he-IL', { style: 'currency', currency: cur || 'ILS' }).format(n); } catch { return `${n} ${cur || ''}`; }
+  try { return new Intl.NumberFormat(LOCALE, { style: 'currency', currency: cur || 'ILS' }).format(n); } catch { return `${n} ${cur || ''}`; }
 };
 const daysLeft = (s) => Math.ceil((new Date(s) - Date.now()) / 86400000);
 
@@ -77,9 +77,9 @@ function showTab(t) {
 
 // ---------- תצוגה ----------
 function render() {
-  const scanned = S.lastScan ? `נבדק לאחרונה: ${new Date(S.lastScan).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' })}` : 'עוד לא בוצעה בדיקה';
-  $('#status').textContent = S.location ? `📍 ${S.location.label} · רדיוס ${S.radiusKm} ק"מ · ${scanned}` : 'לחצו על „עדכון מיקום” כדי להתחיל';
-  $('#sources').textContent = S.lastSources.length ? `מקור הנתונים: ${S.lastSources.join(', ')}` : '';
+  const scanned = S.lastScan ? t('נבדק לאחרונה: {when}', { when: new Date(S.lastScan).toLocaleString(LOCALE, { dateStyle: 'short', timeStyle: 'short' }) }) : t('עוד לא בוצעה בדיקה');
+  $('#status').textContent = S.location ? t('📍 {place} · רדיוס {km} ק"מ · {scanned}', { place: S.location.label, km: S.radiusKm, scanned }) : t('לחצו על „עדכון מיקום” כדי להתחיל');
+  $('#sources').textContent = S.lastSources.length ? t('מקור הנתונים: {src}', { src: S.lastSources.join(', ') }) : '';
   $('#meName').textContent = S.me.name;
   $('#deleteMeBox').hidden = S.me.admin;
   $('#statsCard').hidden = !S.me.admin;
@@ -89,7 +89,7 @@ function render() {
   renderList();
   renderHome();
 
-  $('#loc').textContent = S.location ? `נוכחי: ${S.location.label}` : 'לא הוגדר מיקום';
+  $('#loc').textContent = S.location ? t('נוכחי: {place}', { place: S.location.label }) : t('לא הוגדר מיקום');
   $('#radius').value = S.radiusKm;
   $('#radiusVal').textContent = S.radiusKm;
   $('#chains').replaceChildren(...S.chains.map((c) => {
@@ -107,8 +107,9 @@ function render() {
 
 function renderDeals() {
   const box = $('#deals');
-  if (!S.list.length) return (box.innerHTML = '<p class="empty muted">הרשימה ריקה. הוסיפו מוצרים בלשונית „רשימה לחיפוש מבצעים”.</p>');
-  if (!S.deals.length) return (box.innerHTML = `<p class="empty muted">${S.lastScan ? 'לא נמצאו כרגע מבצעים על מוצרי הרשימה באזור. למטה אפשר לראות בדיוק מה נבדק.' : 'לחצו „בדיקת מבצעים עכשיו”.'}</p>`);
+  const empty = (msg) => box.replaceChildren(Object.assign(document.createElement('p'), { className: 'empty muted', textContent: t(msg) }));
+  if (!S.list.length) return empty('הרשימה ריקה. הוסיפו מוצרים בלשונית „רשימה לחיפוש מבצעים”.');
+  if (!S.deals.length) return empty(S.lastScan ? 'לא נמצאו כרגע מבצעים על מוצרי הרשימה באזור. למטה אפשר לראות בדיוק מה נבדק.' : 'לחצו „בדיקת מבצעים עכשיו”.');
 
   const groups = new Map();
   for (const d of S.deals) groups.set(d.listItem, [...(groups.get(d.listItem) || []), d]);
@@ -129,35 +130,35 @@ const SHOP_SEARCH = [
   [/רמי לוי/, (q) => `https://www.rami-levy.co.il/he/online/search?q=${q}`],
 ];
 function dealLink(d) {
-  if (d.url) return { href: d.url, label: 'לדף המבצע באתר הרשת ↗' };
+  if (d.url) return { href: d.url, label: t('לדף המבצע באתר הרשת ↗') };
   const code = /^\d{7,14}$/.test(d.itemCode || '') ? d.itemCode : '';
   const shop = SHOP_SEARCH.find(([re]) => re.test(d.chain));
-  if (shop && code) return { href: shop[1](encodeURIComponent(code)), label: `לחיפוש המוצר באתר ${d.chain} ↗` };
+  if (shop && code) return { href: shop[1](encodeURIComponent(code)), label: t('לחיפוש המוצר באתר {chain} ↗', { chain: d.chain }) };
   const q = [d.product, code, d.chain, d.currency === 'EUR' ? 'Angebot' : d.currency === 'AUD' ? 'special' : 'מבצע'].filter(Boolean).join(' ');
-  return { href: `https://www.google.com/search?q=${encodeURIComponent(q)}`, label: 'לחיפוש המוצר ברשת ↗' };
+  return { href: `https://www.google.com/search?q=${encodeURIComponent(q)}`, label: t('לחיפוש המוצר ברשת ↗') };
 }
 
 function dealCard(d) {
   const el = $('#dealTpl').content.cloneNode(true);
   const price = el.querySelector('.price');
-  price.textContent = d.promoPrice != null ? `${d.minQty > 1 ? `${d.minQty} ב-` : ''}${money(d.promoPrice, d.currency)}` : 'מבצע';
+  price.textContent = d.promoPrice != null ? `${d.minQty > 1 ? t('{n} ב-', { n: d.minQty }) : ''}${money(d.promoPrice, d.currency)}` : t('מבצע');
   if (d.regularPrice) price.append(Object.assign(document.createElement('s'), { textContent: money(d.regularPrice, d.currency) }));
   el.querySelector('.chain').textContent = d.chain;
   const prod = el.querySelector('.product');
   prod.textContent = d.product;
-  if (d.clubOnly) prod.append(Object.assign(document.createElement('span'), { className: 'badge', textContent: 'מועדון' }));
+  if (d.clubOnly) prod.append(Object.assign(document.createElement('span'), { className: 'badge', textContent: t('מועדון') }));
   el.querySelector('.desc').textContent = d.description;
   const until = el.querySelector('.until');
   if (d.end) {
     const left = daysLeft(d.end);
-    until.textContent = `בתוקף עד ${fmtDate(d.end)}${left <= 2 ? ` · ${left <= 0 ? 'מסתיים היום' : `עוד ${left} ימים`}` : ''}`;
+    until.textContent = `${t('בתוקף עד {date}', { date: fmtDate(d.end) })}${left <= 2 ? ` · ${left <= 0 ? t('מסתיים היום') : t('עוד {n} ימים', { n: left })}` : ''}`;
     until.classList.toggle('soon', left <= 2);
-  } else until.textContent = 'תאריך סיום לא פורסם';
-  el.querySelector('.where').textContent = `${d.store}${d.km != null ? ` · ${d.km} ק"מ` : ''}`;
+  } else until.textContent = t('תאריך סיום לא פורסם');
+  el.querySelector('.where').textContent = `${d.store}${d.km != null ? t(' · {km} ק"מ', { km: d.km }) : ''}`;
   el.querySelector('.where').title = d.address;
   const link = dealLink(d);
   const src = el.querySelector('.source');
-  if (d.itemCode && /^\d{7,14}$/.test(d.itemCode)) src.append(Object.assign(document.createElement('span'), { className: 'muted', textContent: `ברקוד ${d.itemCode} · ` }));
+  if (d.itemCode && /^\d{7,14}$/.test(d.itemCode)) src.append(Object.assign(document.createElement('span'), { className: 'muted', textContent: t('ברקוד {code} · ', { code: d.itemCode }) }));
   const a = Object.assign(document.createElement('a'), { href: link.href, target: '_blank', rel: 'noopener', textContent: `🔗 ${link.label}` });
   a.addEventListener('click', () => track('deal_click', d.chain));
   src.append(a);
@@ -176,46 +177,46 @@ function renderReport() {
   body.replaceChildren();
 
   const p = R.place || {};
-  const where = [p.city, p.country].filter(Boolean).join(', ') || 'לא זוהה';
-  body.append(el('p', `📍 מיקום שזוהה: ${where}${p.postcode ? ` · מיקוד ${p.postcode}` : ''} · רדיוס ${R.radiusKm} ק"מ`));
+  const where = [p.city, p.country].filter(Boolean).join(', ') || t('לא זוהה');
+  body.append(el('p', `${t('📍 מיקום שזוהה: {where}', { where })}${p.postcode ? t(' · מיקוד {zip}', { zip: p.postcode }) : ''}${t(' · רדיוס {km} ק"מ', { km: R.radiusKm })}`));
 
   if (!R.providers.length) {
-    body.append(el('p', `⚠️ אין עדיין מקור מבצעים חינמי ל${p.country || 'מדינה הזו'}. נתמכות כרגע: ישראל, אוסטריה, גרמניה ואוסטרליה.`, 'warn'));
+    body.append(el('p', t('⚠️ אין עדיין מקור מבצעים חינמי ל{country}. נתמכות כרגע: ישראל, אוסטריה, גרמניה ואוסטרליה.', { country: p.country || t('מדינה הזו') }), 'warn'));
     return;
   }
   for (const pr of R.providers) {
-    body.append(el('p', pr.error ? `✘ מקור הנתונים: ${pr.name} – נכשל: ${pr.error}` : `✔ מקור הנתונים: ${pr.name}`, pr.error ? 'warn' : ''));
+    body.append(el('p', pr.error ? t('✘ מקור הנתונים: {name} – נכשל: {err}', { name: pr.name, err: pr.error }) : t('✔ מקור הנתונים: {name}', { name: pr.name }), pr.error ? 'warn' : ''));
   }
   if (R.note) body.append(el('p', R.note, 'muted small'));
 
-  body.append(el('h4', 'רשתות'));
+  body.append(el('h4', t('רשתות')));
   const chains = el('ul', '', 'report-list');
-  if (!R.chains.length) chains.append(el('li', 'לא הופיעה אף רשת עם מבצע על מוצרי הרשימה.', 'muted'));
+  if (!R.chains.length) chains.append(el('li', t('לא הופיעה אף רשת עם מבצע על מוצרי הרשימה.'), 'muted'));
   for (const c of R.chains) {
     let line;
-    if (c.error) line = `✘ ${c.name} – לא הצלחנו לבדוק: ${c.error}`;
-    else if (c.nearby === 0) line = `– ${c.name} – אין סניף ברדיוס ${R.radiusKm} ק"מ`;
-    else if (c.nearby == null) line = `✔ ${c.name} – ${c.deals} מבצעים מהרשימה`;
+    if (c.error) line = t('✘ {name} – לא הצלחנו לבדוק: {err}', { name: c.name, err: c.error });
+    else if (c.nearby === 0) line = t('– {name} – אין סניף ברדיוס {km} ק"מ', { name: c.name, km: R.radiusKm });
+    else if (c.nearby == null) line = t('✔ {name} – {n} מבצעים מהרשימה', { name: c.name, n: c.deals });
     else {
-      const st = c.stores.map((s) => (s.error ? `${s.name} (${s.km} ק"מ, שגיאה)` : `${s.name} (${s.km} ק"מ, ${s.promos} מבצעים בסניף)`)).join(' · ');
-      line = `✔ ${c.name} – ${c.nearby} סניפים ברדיוס, נבדקו: ${st} – ${c.deals} התאמות לרשימה`;
+      const st = c.stores.map((s) => (s.error ? t('{name} ({km} ק"מ, שגיאה)', s) : t('{name} ({km} ק"מ, {n} מבצעים בסניף)', { ...s, n: s.promos }))).join(' · ');
+      line = t('✔ {name} – {nearby} סניפים ברדיוס, נבדקו: {stores} – {n} התאמות לרשימה', { name: c.name, nearby: c.nearby, stores: st, n: c.deals });
     }
     chains.append(el('li', line, c.error ? 'warn' : c.nearby === 0 ? 'muted' : ''));
   }
   body.append(chains);
 
-  body.append(el('h4', 'מוצרים'));
+  body.append(el('h4', t('מוצרים')));
   const items = el('ul', '', 'report-list');
   const abroad = p.countryCode && p.countryCode !== 'IL';
   for (const it of R.items) {
     let line = `${foodIcon(it.text)} ${it.text}`;
-    if (it.term && it.term !== it.text) line += ` → חיפוש „${it.term}”${it.how === 'online' ? ' (תרגום אוטומטי – אם הוא שגוי, אפשר לתקן עם |)' : it.how === 'manual' ? ' (תרגום ידני)' : ''}`;
-    if (it.offers != null) line += ` · ${it.offers} תוצאות בעלונים`;
-    line += ` · ${it.found ? `${it.found} מבצעים בתוקף` : 'אין מבצע כרגע'}`;
+    if (it.term && it.term !== it.text) line += `${t(' → חיפוש „{term}”', { term: it.term })}${it.how === 'online' ? t(' (תרגום אוטומטי – אם הוא שגוי, אפשר לתקן עם |)') : it.how === 'manual' ? t(' (תרגום ידני)') : ''}`;
+    if (it.offers != null) line += t(' · {n} תוצאות בעלונים', { n: it.offers });
+    line += ` · ${it.found ? t('{n} מבצעים בתוקף', { n: it.found }) : t('אין מבצע כרגע')}`;
     const li = el('li', line);
-    if (it.error) li.append(el('div', `שגיאה: ${it.error}`, 'warn small'));
+    if (it.error) li.append(el('div', t('שגיאה: {err}', { err: it.error }), 'warn small'));
     else if (abroad && it.offers != null && !it.translated && !/[a-zà-ÿ]/i.test(it.term || '')) {
-      li.append(el('div', 'לא תורגם לשפה המקומית. אפשר להוסיף תרגום ידני: למשל „חלב | Milch”', 'muted small'));
+      li.append(el('div', t('לא תורגם לשפה המקומית. אפשר להוסיף תרגום ידני: למשל „חלב | Milch”'), 'muted small'));
     }
     items.append(li);
   }
@@ -226,14 +227,14 @@ function renderList() {
   $('#items').replaceChildren(...S.list.map((it, i) => {
     const li = document.createElement('li');
     const icon = Object.assign(document.createElement('span'), { className: 'food', textContent: foodIcon(it.text), ariaHidden: 'true' });
-    const inp = Object.assign(document.createElement('input'), { value: it.text, ariaLabel: 'מוצר' });
+    const inp = Object.assign(document.createElement('input'), { value: it.text, ariaLabel: t('מוצר') });
     inp.addEventListener('input', () => (icon.textContent = foodIcon(inp.value)));
     inp.addEventListener('change', () => {
       const items = S.list.map((x) => x.text);
       items[i] = inp.value;
       saveList(items);
     });
-    const del = Object.assign(document.createElement('button'), { textContent: '✕', title: 'מחיקה' });
+    const del = Object.assign(document.createElement('button'), { textContent: '✕', title: t('מחיקה') });
     del.addEventListener('click', () => saveList(S.list.filter((_, j) => j !== i).map((x) => x.text)));
     li.append(icon, inp, del);
     return li;
@@ -251,8 +252,8 @@ function renderFamily() {
   if (document.activeElement !== $('#maxUsers')) $('#maxUsers').value = L.maxUsers;
   $('#maxUsersSave').disabled = Number($('#maxUsers').value) === L.maxUsers;
   $('#limitsInfo').textContent = !canInvite
-    ? 'הזמנת משתמשים חדשים נעשית דרך מנהל האפליקציה.'
-    : left ? `באפליקציה ${L.count} משתמשים מתוך ${L.maxUsers} אפשריים (נשארו ${left}).` : `הגעתם למספר המשתמשים המקסימלי (${L.maxUsers}).${S.me.admin ? ' אפשר להגדיל אותו למעלה.' : ''}`;
+    ? t('הזמנת משתמשים חדשים נעשית דרך מנהל האפליקציה.')
+    : left ? t('באפליקציה {count} משתמשים מתוך {max} אפשריים (נשארו {left}).', { count: L.count, max: L.maxUsers, left }) : `${t('הגעתם למספר המשתמשים המקסימלי ({max}).', { max: L.maxUsers })}${S.me.admin ? t(' אפשר להגדיל אותו למעלה.') : ''}`;
   $('#newHouseholdWrap').hidden = !S.me.admin;
   // משתמש רגיל יכול להוסיף רק בן בית למשק הבית שלו
   $('#shareHousehold').disabled = !S.me.admin;
@@ -264,25 +265,25 @@ function renderFamily() {
     who.append(Object.assign(document.createElement('b'), { textContent: u.name }));
     who.append(Object.assign(document.createElement('span'), {
       className: 'muted small',
-      textContent: ` ${u.household === S.me.household ? '· 🏠 משק הבית שלך' : '· משק בית אחר'}${u.admin ? ' · מנהל' : ''}${u.location ? ` · 📍 ${u.location}` : ' · עוד לא נכנס'}`,
+      textContent: ` ${t(u.household === S.me.household ? '· 🏠 משק הבית שלך' : '· משק בית אחר')}${u.admin ? t(' · מנהל') : ''}${u.location ? ` · 📍 ${u.location}` : t(' · עוד לא נכנס')}`,
     }));
     li.append(who);
     if (!S.me.admin) return li; // ניהול סיסמאות ומחיקה – למנהל בלבד
-    const reset = Object.assign(document.createElement('button'), { textContent: 'סיסמה חדשה' });
+    const reset = Object.assign(document.createElement('button'), { textContent: t('סיסמה חדשה') });
     reset.addEventListener('click', async () => {
-      const p = prompt(`סיסמה חדשה עבור ${u.name} (לפחות 6 תווים):`);
+      const p = prompt(t('סיסמה חדשה עבור {name} (לפחות 6 תווים):', { name: u.name }));
       if (!p) return;
-      try { S = await api('PUT', `/api/users/${encodeURIComponent(u.name)}/password`, { password: p }); render(); toast(`הסיסמה של ${u.name} עודכנה`); } catch (e) { alert(e.message); }
+      try { S = await api('PUT', `/api/users/${encodeURIComponent(u.name)}/password`, { password: p }); render(); toast(t('הסיסמה של {name} עודכנה', { name: u.name })); } catch (e) { alert(e.message); }
     });
     const acts = Object.assign(document.createElement('span'), { className: 'acts' });
     acts.append(reset);
     if (u.name !== S.me.name) {
       const mine = u.household === S.me.household;
-      const hh = Object.assign(document.createElement('button'), { textContent: mine ? 'הפרדה ממשק הבית שלי' : 'צירוף למשק הבית שלי' });
+      const hh = Object.assign(document.createElement('button'), { textContent: t(mine ? 'הפרדה ממשק הבית שלי' : 'צירוף למשק הבית שלי') });
       hh.addEventListener('click', async () => {
-        const q = mine
-          ? `להפריד את ${u.name} ממשק הבית שלך? רשימת „חסר בבית” שלך תישאר אצלך, ו${u.name} יקבל רשימה ריקה משלו.`
-          : `לצרף את ${u.name} למשק הבית שלך? הוא יראה ויעדכן את רשימת „חסר בבית” שלך.`;
+        const q = t(mine
+          ? 'להפריד את {name} ממשק הבית שלך? רשימת „חסר בבית” שלך תישאר אצלך, ו{name} יקבל רשימה ריקה משלו.'
+          : 'לצרף את {name} למשק הבית שלך? הוא יראה ויעדכן את רשימת „חסר בבית” שלך.', { name: u.name });
         if (!confirm(q)) return;
         try { S = await api('PUT', `/api/users/${encodeURIComponent(u.name)}/household`, { join: !mine }); render(); } catch (e) { alert(e.message); }
       });
@@ -290,9 +291,9 @@ function renderFamily() {
     }
     li.append(acts);
     if (u.name !== S.me.name) {
-      const del = Object.assign(document.createElement('button'), { textContent: 'מחיקה' });
+      const del = Object.assign(document.createElement('button'), { textContent: t('מחיקה') });
       del.addEventListener('click', async () => {
-        if (!confirm(`למחוק את החשבון של ${u.name}? הרשימה וההגדרות שלו יימחקו.`)) return;
+        if (!confirm(t('למחוק את החשבון של {name}? הרשימה וההגדרות שלו יימחקו.', { name: u.name }))) return;
         try { S = await api('DELETE', `/api/users/${encodeURIComponent(u.name)}`); render(); } catch (e) { alert(e.message); }
       });
       acts.append(del);
@@ -326,7 +327,7 @@ $('#addUser').addEventListener('submit', async (e) => {
   e.preventDefault();
   try {
     S = await api('POST', '/api/users', { name: $('#newUserName').value, password: $('#newUserPass').value, newHousehold: $('#newHousehold').checked });
-    toast(`${$('#newUserName').value} נוסף/ה`);
+    toast(t('{name} נוסף/ה', { name: $('#newUserName').value }));
     $('#addUser').reset();
     $('#shareHousehold').checked = true;
     render();
@@ -335,12 +336,12 @@ $('#addUser').addEventListener('submit', async (e) => {
 
 $('#passForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  if ($('#passNew').value !== $('#passNew2').value) return alert('הסיסמאות החדשות לא זהות');
+  if ($('#passNew').value !== $('#passNew2').value) return alert(t('הסיסמאות החדשות לא זהות'));
   try {
     await api('PUT', '/api/password', { current: $('#passCur').value, next: $('#passNew').value });
     $('#passForm').reset();
     $('#passForm').closest('details').open = false;
-    toast('הסיסמה הוחלפה ✔ שאר המכשירים יתבקשו להיכנס מחדש');
+    toast(t('הסיסמה הוחלפה ✔ שאר המכשירים יתבקשו להיכנס מחדש'));
   } catch (ex) { alert(ex.message); }
 });
 
@@ -356,7 +357,7 @@ $('#logout').addEventListener('click', async () => {
 
 // מחיקת החשבון שלי (למשתמש שאינו המנהל)
 $('#deleteMe').addEventListener('click', async () => {
-  if (!confirm('למחוק את החשבון לצמיתות? אי אפשר לבטל את זה.')) return;
+  if (!confirm(t('למחוק את החשבון לצמיתות? אי אפשר לבטל את זה.'))) return;
   try {
     try { const reg = await navigator.serviceWorker?.ready; await (await reg?.pushManager.getSubscription())?.unsubscribe(); } catch { /* */ }
     await api('DELETE', '/api/me');
@@ -364,24 +365,24 @@ $('#deleteMe').addEventListener('click', async () => {
     store.set('session', '');
     S = null;
     showLogin();
-    alert('החשבון נמחק.');
+    alert(t('החשבון נמחק.'));
   } catch (e) { alert(e.message); }
 });
 
 // ---------- נתוני שימוש (למנהל) ----------
-const EVENT_NAMES = {
+const EVENT_NAMES = { // מתורגם בתצוגה
   deal_click: 'לחיצות על מבצעים', notification: 'התראות שנשלחו', home_add: 'פריטים שנוספו ל„חסר בבית”',
   home_bought: 'פריטים שסומנו כנקנו', scan: 'סריקות', signup: 'משתמשים חדשים',
 };
 async function loadStats() {
   let m;
   try { m = await api('GET', '/api/metrics?days=30'); } catch { return; }
-  const n = (x) => (x || 0).toLocaleString('he-IL');
+  const n = (x) => (x || 0).toLocaleString(LOCALE);
   const tiles = [
     ['רשומים', m.registered], ['משקי בית', m.households], ['פעילים היום', m.active.today],
     ['פעילים ב-7 ימים', m.active.week], ['פעילים ב-30 יום', m.active.month],
     ...Object.entries(EVENT_NAMES).map(([k, label]) => [label, m.totals[k]]),
-  ];
+  ].map(([label, v]) => [t(label), v]);
   $('#kpis').replaceChildren(...tiles.map(([label, v]) => {
     const t = document.createElement('div');
     t.className = 'kpi';
@@ -396,15 +397,15 @@ async function loadStats() {
     return r;
   };
   $('#chainStats').replaceChildren(
-    tr(['רשת', 'מבצעים שהוצגו', 'לחיצות'], 'th'),
-    ...(rows.length ? rows.map((c) => tr([c.name, n(c.shown), n(c.clicks)])) : [tr(['עוד אין נתונים', '', ''])]),
+    tr([t('רשת'), t('מבצעים שהוצגו'), t('לחיצות')], 'th'),
+    ...(rows.length ? rows.map((c) => tr([c.name, n(c.shown), n(c.clicks)])) : [tr([t('עוד אין נתונים'), '', ''])]),
   );
 }
 // גרף עמודות: משתמשים פעילים בכל יום. ריחוף/נגיעה בעמודה מציגים את התאריך והמספר
 function renderActiveChart(series) {
   const box = $('#activeChart');
   const max = Math.max(1, ...series.map((d) => d.active));
-  const day = (k) => new Date(k + 'T12:00').toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' });
+  const day = (k) => new Date(k + 'T12:00').toLocaleDateString(LOCALE, { day: 'numeric', month: 'numeric' });
   const tip = Object.assign(document.createElement('div'), { className: 'tip', hidden: true });
   const plot = Object.assign(document.createElement('div'), { className: 'plot' });
   for (const d of series) {
@@ -414,9 +415,9 @@ function renderActiveChart(series) {
     const bar = Object.assign(document.createElement('i'), {});
     bar.style.height = `${(d.active / max) * 100}%`;
     col.append(bar);
-    col.setAttribute('aria-label', `${day(d.date)}: ${d.active} פעילים`);
+    col.setAttribute('aria-label', t('{day}: {n} פעילים', { day: day(d.date), n: d.active }));
     const show = () => {
-      tip.textContent = `${day(d.date)} · ${d.active} פעילים`;
+      tip.textContent = t('{day} · {n} פעילים', { day: day(d.date), n: d.active });
       tip.hidden = false;
       const r = col.getBoundingClientRect(), b = box.getBoundingClientRect();
       tip.style.left = `${Math.min(Math.max(r.left - b.left + r.width / 2, 50), b.width - 50)}px`;
@@ -431,15 +432,15 @@ function renderActiveChart(series) {
   }
   const axis = Object.assign(document.createElement('div'), { className: 'axis muted small' });
   axis.append(Object.assign(document.createElement('span'), { textContent: day(series[0].date) }), Object.assign(document.createElement('span'), { textContent: day(series[series.length - 1].date) }));
-  const top = Object.assign(document.createElement('div'), { className: 'ymax muted small', textContent: `עד ${max}` });
-  box.setAttribute('aria-label', `משתמשים פעילים ב-30 הימים האחרונים, מקסימום ${max} ביום`);
+  const top = Object.assign(document.createElement('div'), { className: 'ymax muted small', textContent: t('עד {max}', { max }) });
+  box.setAttribute('aria-label', t('משתמשים פעילים ב-30 הימים האחרונים, מקסימום {max} ביום', { max }));
   box.replaceChildren(top, plot, axis, tip);
 }
 $('#statsRefresh').addEventListener('click', loadStats);
 $('#statsCsv').addEventListener('click', async () => {
   try {
     const res = await fetch('/api/metrics.csv', { headers: { 'x-app-token': token } });
-    if (!res.ok) throw new Error('ההורדה נכשלה');
+    if (!res.ok) throw new Error(t('ההורדה נכשלה'));
     const url = URL.createObjectURL(await res.blob());
     const a = Object.assign(document.createElement('a'), { href: url, download: `usage-${new Date().toISOString().slice(0, 10)}.csv` });
     document.body.append(a); a.click(); a.remove();
@@ -473,7 +474,7 @@ const dealFor = (text) => dealsFor(text)[0];
 // חלון פרטי המבצעים על פריט מ„חסר בבית”, עם קישור לבדיקה
 function openDealSheet(text) {
   const ds = dealsFor(text);
-  $('#sheetTitle').textContent = `${foodIcon(text)} מבצעים על „${text}”`;
+  $('#sheetTitle').textContent = `${foodIcon(text)} ${t('מבצעים על „{item}”', { item: text })}`;
   $('#sheetBody').replaceChildren(...ds.map(dealCard));
   $('#dealSheet').showModal();
   track('deal_sheet');
@@ -487,7 +488,7 @@ function renderHome() {
   $('#homeCount').hidden = !open;
   $('#homeCount').textContent = open;
   const others = S.users.filter((u) => u.household === S.me.household && u.name !== S.me.name).map((u) => u.name);
-  $('#homeShared').textContent = others.length ? `🏠 משותף עם: ${others.join(', ')}` : '🏠 כרגע רק את/ה ברשימה הזו. אפשר לשתף בני בית בהגדרות ← „בני הבית”.';
+  $('#homeShared').textContent = others.length ? t('🏠 משותף עם: {names}', { names: others.join(', ') }) : t('🏠 כרגע רק את/ה ברשימה הזו. אפשר לשתף בני בית בהגדרות ← „בני הבית”.');
   $('#homeEmpty').hidden = items.length > 0;
   $('#homeActions').hidden = !items.some((x) => x.done);
   const watched = new Set(S.list.map((x) => plain(x.text)));
@@ -495,12 +496,12 @@ function renderHome() {
   $('#homeList').replaceChildren(...items.map((it) => {
     const li = document.createElement('li');
     li.className = 'homeitem' + (it.done ? ' done' : '');
-    const toggle = Object.assign(document.createElement('button'), { className: 'check', ariaLabel: it.done ? 'סימון כלא נקנה' : 'סימון כנקנה', textContent: it.done ? '✔' : '' });
+    const toggle = Object.assign(document.createElement('button'), { className: 'check', ariaLabel: t(it.done ? 'סימון כלא נקנה' : 'סימון כנקנה'), textContent: it.done ? '✔' : '' });
     const body = Object.assign(document.createElement('span'), { className: 'hbody' });
     body.append(Object.assign(document.createElement('span'), { className: 'food', textContent: foodIcon(it.text) }));
     const txt = Object.assign(document.createElement('span'), { className: 'htext' });
     txt.append(Object.assign(document.createElement('span'), { textContent: it.text }));
-    const meta = [it.by && it.by !== S.me.name ? `הוסיף/ה ${it.by}` : '', it.done && it.doneBy ? `נקנה ע״י ${it.doneBy}` : ''].filter(Boolean).join(' · ');
+    const meta = [it.by && it.by !== S.me.name ? t('הוסיף/ה {name}', { name: it.by }) : '', it.done && it.doneBy ? t('נקנה ע״י {name}', { name: it.doneBy }) : ''].filter(Boolean).join(' · ');
     if (meta) txt.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: meta }));
     const d = !it.done && dealFor(it.text);
     if (d) {
@@ -508,7 +509,7 @@ function renderHome() {
       const sale = Object.assign(document.createElement('button'), {
         type: 'button',
         className: 'onsale',
-        textContent: `🏷️ במבצע: ${d.promoPrice != null ? `${d.minQty > 1 ? `${d.minQty} ב-` : ''}${money(d.promoPrice, d.currency)}` : d.description} ב${d.chain}${n > 1 ? ` (ועוד ${n - 1})` : ''} · פרטים וקישור ‹`,
+        textContent: `${t('🏷️ במבצע: {price} ב{chain}', { price: d.promoPrice != null ? `${d.minQty > 1 ? t('{n} ב-', { n: d.minQty }) : ''}${money(d.promoPrice, d.currency)}` : d.description, chain: d.chain })}${n > 1 ? t(' (ועוד {n})', { n: n - 1 }) : ''}${t(' · פרטים וקישור ‹')}`,
       });
       sale.addEventListener('click', (e) => { e.stopPropagation(); openDealSheet(it.text); });
       txt.append(sale);
@@ -524,19 +525,19 @@ function renderHome() {
     body.addEventListener('click', flip);
     li.append(toggle, body);
     if (!watched.has(plain(it.text))) {
-      const star = Object.assign(document.createElement('button'), { className: 'mini', textContent: '⭐', title: 'להוסיף לרשימה לחיפוש מבצעים' });
+      const star = Object.assign(document.createElement('button'), { className: 'mini', textContent: '⭐', title: t('להוסיף לרשימה לחיפוש מבצעים') });
       star.addEventListener('click', async () => {
         await saveList([...S.list.map((x) => x.text), it.text]);
-        toast(`„${it.text}” נוסף לרשימה לחיפוש מבצעים`);
+        toast(t('„{item}” נוסף לרשימה לחיפוש מבצעים', { item: it.text }));
       });
       li.append(star);
     }
-    const del = Object.assign(document.createElement('button'), { className: 'mini', textContent: '✕', title: 'מחיקה' });
+    const del = Object.assign(document.createElement('button'), { className: 'mini', textContent: '✕', title: t('מחיקה') });
     del.addEventListener('click', async () => {
       const index = S.home.findIndex((x) => x.id === it.id);
       Object.assign(S, await api('DELETE', `/api/home/${it.id}`));
       renderHome();
-      offerUndo(`„${it.text}” נמחק מהרשימה`, [{ item: it, index }]);
+      offerUndo(t('„{item}” נמחק מהרשימה', { item: it.text }), [{ item: it, index }]);
     });
     li.append(del);
     return li;
@@ -548,15 +549,15 @@ const sameItem = (a, b) => {
   const n = (s) => String(s).replace(/[׳'"״.,]/g, '').replace(/\s+/g, ' ').trim().toLowerCase().replace(/^ה(?=[\u05D0-\u05EA]{2})/, '');
   return n(a) === n(b);
 };
-const whoAdded = (x) => (x.by && x.by !== S.me.name ? ` (הוסיף/ה ${x.by})` : x.by ? ' (הוספת בעצמך)' : '');
+const whoAdded = (x) => (x.by && x.by !== S.me.name ? t(' (הוסיף/ה {name})', { name: x.by }) : x.by ? t(' (הוספת בעצמך)') : '');
 
 function showDuplicates(dups) {
   const hint = $('#dupHint');
   hint.hidden = !dups.length;
   if (!dups.length) return;
   hint.textContent = dups.length === 1
-    ? `ℹ️ „${dups[0].text}” כבר ברשימה${whoAdded(dups[0])}`
-    : `ℹ️ כבר ברשימה: ${dups.map((d) => `„${d.text}”`).join(', ')}`;
+    ? t('ℹ️ „{item}” כבר ברשימה{who}', { item: dups[0].text, who: whoAdded(dups[0]) })
+    : t('ℹ️ כבר ברשימה: {items}', { items: dups.map((d) => `„${d.text}”`).join(', ') });
 }
 
 $('#homeItem').addEventListener('input', () => {
@@ -575,9 +576,9 @@ $('#homeAdd').addEventListener('submit', async (e) => {
   showDuplicates(r.duplicates || []);
   const added = items.length - (r.duplicates || []).length;
   if (r.duplicates?.length) {
-    const dupText = r.duplicates.length === 1 ? `„${r.duplicates[0].text}” כבר ברשימה ולא נוסף שוב` : `${r.duplicates.length} פריטים כבר ברשימה ולא נוספו שוב`;
-    const addedText = added === 1 ? 'נוסף פריט אחד' : `נוספו ${added} פריטים`;
-    toast(added ? `${addedText}. ${dupText}` : (r.duplicates.length === 1 ? dupText : 'כל הפריטים כבר ברשימה'));
+    const dupText = r.duplicates.length === 1 ? t('„{item}” כבר ברשימה ולא נוסף שוב', { item: r.duplicates[0].text }) : t('{n} פריטים כבר ברשימה ולא נוספו שוב', { n: r.duplicates.length });
+    const addedText = added === 1 ? t('נוסף פריט אחד') : t('נוספו {n} פריטים', { n: added });
+    toast(added ? `${addedText}. ${dupText}` : (r.duplicates.length === 1 ? dupText : t('כל הפריטים כבר ברשימה')));
     // הדגשת הפריטים שכבר קיימים
     for (const d of r.duplicates) {
       const li = [...document.querySelectorAll('#homeList .homeitem')].find((el) => el.querySelector('.htext > span')?.textContent === d.text);
@@ -597,86 +598,90 @@ $('#copyLink').addEventListener('click', async () => {
     document.execCommand('copy');
   }
   track('copy_link');
-  $('#copyLink').textContent = '✔ הועתק';
-  setTimeout(() => ($('#copyLink').textContent = '📋 העתקת הקישור'), 2000);
+  $('#copyLink').textContent = t('✔ הועתק');
+  setTimeout(() => ($('#copyLink').textContent = t('📋 העתקת הקישור')), 2000);
 });
 if (navigator.share) {
   $('#shareLink').hidden = false;
   $('#shareLink').classList.add(/iPhone|iPad|Macintosh/.test(navigator.userAgent) ? 'is-ios' : 'is-other');
-  $('#shareLink').addEventListener('click', () => navigator.share({ title: 'הקניות שלי', text: 'הצטרפות לאפליקציה „הקניות שלי”:', url: location.origin }).then(() => track('share_link'), () => {}));
+  $('#shareLink').addEventListener('click', () => navigator.share({ title: t('הקניות שלי'), text: t('הצטרפות לאפליקציה „הקניות שלי”:'), url: location.origin }).then(() => track('share_link'), () => {}));
 }
 
-// ---------- קול: הכתבה (דיבור ← טקסט) והודעה קולית ----------
+// ---------- הכתבה (דיבור ← פריטים) ----------
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-const STOP_WORDS = new Set(['צריך', 'צריכים', 'צריכה', 'לקנות', 'תקנה', 'תקנו', 'חסר', 'חסרה', 'חסרים', 'גם', 'וגם', 'עוד', 'בבקשה', 'ו']);
+const STOP_WORDS = new Set(['צריך', 'צריכים', 'צריכה', 'לקנות', 'תקנה', 'תקנו', 'חסר', 'חסרה', 'חסרים', 'גם', 'וגם', 'עוד', 'בבקשה', 'ו',
+  'wir', 'brauchen', 'brauche', 'kaufen', 'bitte', 'noch', 'auch', 'we', 'need', 'buy', 'please', 'some', 'also']);
+const JOINERS = new Set(['und', 'and', 'oder', 'or']); // „Milch und Brot” ← שני פריטים
 const COMPOUNDS = ['שמן זית', 'שמן קנולה', 'בשר טחון', 'חזה עוף', 'שוקי עוף', 'נייר טואלט', 'מגבות נייר', 'אבקת כביסה', 'נוזל כלים',
   'משחת שיניים', 'תפוחי אדמה', 'גבינה צהובה', 'גבינה לבנה', 'גבינה בולגרית', 'שמנת חמוצה', 'דגני בוקר', 'שיבולת שועל', 'חמאת בוטנים',
   'מזון לחתולים', 'מזון לכלבים', 'מיץ תפוזים', 'לחם אחיד', 'שוקולד חלב', 'מים מינרליים', 'נייר כסף', 'שקיות זבל'];
 const isProduct = (w) => foodIcon(w) !== '🛒';
 
-// „חלב לחם וביצים” ← ['חלב', 'לחם', 'ביצים']. הפרדה לפי ו' החיבור ולפי שמות מוצרים מוכרים, בלי לשבור צירופים כמו „שמן זית”.
+// „חלב לחם וביצים” ← ['חלב', 'לחם', 'ביצים']. הפרדה לפי ו' החיבור (או und/and) ולפי שמות מוצרים מוכרים, בלי לשבור צירופים כמו „שמן זית”.
 function splitSpoken(text) {
   const items = [];
   let cur = [];
   const push = () => { if (cur.length) items.push(cur.join(' ')); cur = []; };
   for (const w of text.replace(/[.,،;]/g, ' , ').split(/\s+/).filter(Boolean)) {
-    if (w === ',') { push(); continue; }
-    if (STOP_WORDS.has(w)) continue;
+    if (w === ',' || JOINERS.has(w.toLowerCase())) { push(); continue; }
+    if (STOP_WORDS.has(w.toLowerCase())) continue;
     let word = w;
     let conj = false;
     if (/^ו[\u05D0-\u05EA]{2,}/.test(w) && !/^(וניל|ופל|וופל|וודקה|ויטמין|וואפל)/.test(w)) { conj = true; word = w.slice(1); }
     const phrase = cur.length ? `${cur[cur.length - 1]} ${word}` : '';
     const compound = phrase && COMPOUNDS.some((c) => c === phrase || c.startsWith(phrase + ' '));
-    if (cur.length && !compound && (conj || (isProduct(word) && cur.some(isProduct)))) push();
+    if (cur.length && !compound && (conj || (/[א-ת]/.test(word) && isProduct(word) && cur.some(isProduct)))) push();
     cur.push(word);
   }
   push();
   return items;
 }
 
-// אייקון מיקרופון: הכתבה (דיבור ← פריטים). במכשיר שלא תומך בהכתבה האייקון לא מופיע
+// אייקון מיקרופון ליד שדה הוספה. במכשיר שלא תומך בהכתבה האייקון לא מופיע
 // (אפשר להשתמש במיקרופון של המקלדת בטלפון).
-if (SR) {
-  $('#mic').hidden = false;
+function dictation(btn, input, hintEl, example) {
+  if (!SR) return;
+  btn.hidden = false;
   let rec = null;
-  $('#mic').addEventListener('click', () => {
+  btn.addEventListener('click', () => {
     if (rec) return rec.stop();
     rec = new SR();
     track('dictation');
-    rec.lang = 'he-IL';
+    rec.lang = SPEECH[LANG];
     rec.interimResults = true;
     rec.continuous = false;
-    const before = $('#homeItem').value.trim();
-    $('#mic').classList.add('live');
-    $('#mic').textContent = '⏹';
-    $('#voiceHint').textContent = 'אמרו מה חסר, למשל: „חלב, לחם וביצים”';
+    const before = input.value.trim();
+    btn.classList.add('live');
+    btn.textContent = '⏹';
+    hintEl.textContent = t(example);
     rec.onresult = (e) => {
       const said = [...e.results].map((r) => r[0].transcript).join(' ');
-      const items = splitSpoken(said);
-      $('#homeItem').value = [before, items.join(', ')].filter(Boolean).join(', ');
+      input.value = [before, splitSpoken(said).join(', ')].filter(Boolean).join(', ');
     };
-    rec.onerror = (e) => { $('#voiceHint').textContent = e.error === 'not-allowed' ? 'צריך לאשר גישה למיקרופון' : `ההכתבה נכשלה (${e.error})`; };
+    rec.onerror = (e) => { hintEl.textContent = e.error === 'not-allowed' ? t('צריך לאשר גישה למיקרופון') : t('ההכתבה נכשלה ({err})', { err: e.error }); };
     rec.onend = () => {
       rec = null;
-      $('#mic').classList.remove('live');
-      $('#mic').textContent = '🎤';
-      if ($('#homeItem').value.trim() !== before) {
-        $('#voiceHint').textContent = 'בדקו את הפריטים ותקנו אם צריך, ואז „הוספה”';
-        $('#homeItem').focus();
+      btn.classList.remove('live');
+      btn.textContent = '🎤';
+      if (input.value.trim() !== before) {
+        hintEl.textContent = t('בדקו את הפריטים ותקנו אם צריך, ואז „הוספה”');
+        input.focus();
       }
     };
     rec.start();
   });
 }
+dictation($('#mic'), $('#homeItem'), $('#voiceHint'), 'אמרו מה חסר, למשל: „חלב, לחם וביצים”');
+dictation($('#micList'), $('#newItem'), $('#listHint'), 'אמרו אילו מוצרים להוסיף, למשל: „חלב, קפה ושמן זית”');
 
 // ביטול מחיקה: אחרי מחיקה מופיע כפתור „ביטול” שמחזיר את הפריטים למקומם
 function offerUndo(msg, entries) {
   toast(msg, {
-    label: '↩ ביטול',
+    label: t('↩ ביטול'),
     async run() {
       Object.assign(S, await api('POST', '/api/home/restore', { items: entries }));
       renderHome();
-      toast(entries.length === 1 ? `„${entries[0].item.text}” הוחזר לרשימה` : `${entries.length} פריטים הוחזרו לרשימה`);
+      toast(entries.length === 1 ? t('„{item}” הוחזר לרשימה', { item: entries[0].item.text }) : t('{n} פריטים הוחזרו לרשימה', { n: entries.length }));
     },
   });
 }
@@ -685,7 +690,7 @@ $('#clearDone').addEventListener('click', async () => {
   const entries = S.home.map((item, index) => ({ item, index })).filter((e) => e.item.done);
   Object.assign(S, await api('POST', '/api/home/clear-done'));
   renderHome();
-  offerUndo(entries.length === 1 ? 'פריט אחד שנקנה נמחק מהרשימה' : `${entries.length} פריטים שנקנו נמחקו מהרשימה`, entries);
+  offerUndo(entries.length === 1 ? t('פריט אחד שנקנה נמחק מהרשימה') : t('{n} פריטים שנקנו נמחקו מהרשימה', { n: entries.length }), entries);
 });
 
 // סנכרון עם בני הבית: בזמן שהרשימה פתוחה מתעדכנים כל כמה שניות
@@ -715,7 +720,7 @@ $('#add').addEventListener('submit', (e) => {
 });
 $('#bulkAdd').addEventListener('click', () => { saveList([...S.list.map((x) => x.text), ...splitItems($('#bulk').value)]); $('#bulk').value = ''; });
 $('#bulkReplace').addEventListener('click', () => {
-  if (confirm('להחליף את כל הרשימה הקיימת?')) { saveList(splitItems($('#bulk').value)); $('#bulk').value = ''; }
+  if (confirm(t('להחליף את כל הרשימה הקיימת?'))) { saveList(splitItems($('#bulk').value)); $('#bulk').value = ''; }
 });
 $('#file').addEventListener('change', async (e) => {
   const f = e.target.files[0];
@@ -728,7 +733,7 @@ $('#file').addEventListener('change', async (e) => {
 $('#scan').addEventListener('click', async () => {
   const b = $('#scan');
   b.disabled = true;
-  b.textContent = 'בודק מבצעים… (יכול לקחת כמה דקות)';
+  b.textContent = t('בודק מבצעים… (יכול לקחת כמה דקות)');
   try {
     const r = await api('POST', '/api/scan');
     S = r.state;
@@ -737,29 +742,29 @@ $('#scan').addEventListener('click', async () => {
     alert(e.message);
   } finally {
     b.disabled = false;
-    b.textContent = 'בדיקת מבצעים עכשיו';
+    b.textContent = t('בדיקת מבצעים עכשיו');
   }
 });
 
 // ---------- הגדרות ----------
 // עדכון מיקום בלחיצה (ברירת המחדל): לוקחים את המיקום הנוכחי ובודקים מבצעים מחדש
 function updateMyLocation() {
-  if (!navigator.geolocation) return alert('הדפדפן לא תומך באיתור מיקום');
+  if (!navigator.geolocation) return alert(t('הדפדפן לא תומך באיתור מיקום'));
   const btns = [$('#locBtn'), $('#gps')];
   btns.forEach((b) => { b.disabled = true; });
-  $('#locBtn').textContent = '📍 מאתר…';
-  const done = () => { btns.forEach((b) => { b.disabled = false; }); $('#locBtn').textContent = '📍 עדכון מיקום'; };
+  $('#locBtn').textContent = t('📍 מאתר…');
+  const done = () => { btns.forEach((b) => { b.disabled = false; }); $('#locBtn').textContent = t('📍 עדכון מיקום'); };
   navigator.geolocation.getCurrentPosition(
     async (p) => {
       try {
         const prev = S.lastScan;
         S = await api('PUT', '/api/settings', { lat: p.coords.latitude, lon: p.coords.longitude });
         render();
-        toast(`📍 המיקום עודכן: ${S.location.label} – בודק מבצעים באזור…`);
+        toast(t('📍 המיקום עודכן: {place} – בודק מבצעים באזור…', { place: S.location.label }));
         waitForScan(prev);
       } catch (e) { alert(e.message); } finally { done(); }
     },
-    (err) => { done(); alert(err.code === 1 ? 'צריך לאשר לאפליקציה גישה למיקום' : 'לא ניתן לקבל מיקום: ' + err.message); },
+    (err) => { done(); alert(err.code === 1 ? t('צריך לאשר לאפליקציה גישה למיקום') : t('לא ניתן לקבל מיקום: ') + err.message); },
     { enableHighAccuracy: false, timeout: 20000, maximumAge: 0 },
   );
 }
@@ -781,7 +786,7 @@ async function waitForScan(prev) {
   for (let i = 0; i < 60; i++) {
     await new Promise((r) => setTimeout(r, 5000));
     const s = await api('GET', '/api/state');
-    if (s.lastScan !== prev) { S = s; render(); toast(`📍 ${S.location.label}: נמצאו ${S.deals.length} מבצעים`); return; }
+    if (s.lastScan !== prev) { S = s; render(); toast(t('📍 {place}: נמצאו {n} מבצעים', { place: S.location.label, n: S.deals.length })); return; }
   }
 }
 
@@ -813,15 +818,15 @@ const b64ToBytes = (b64) => {
 async function updatePushState() {
   const el = $('#pushState');
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    el.textContent = /iPhone|iPad/.test(navigator.userAgent)
+    el.textContent = t(/iPhone|iPad/.test(navigator.userAgent)
       ? 'באייפון: קודם מוסיפים את האפליקציה למסך הבית ופותחים אותה משם.'
-      : 'הדפדפן הזה לא תומך בהתראות.';
+      : 'הדפדפן הזה לא תומך בהתראות.');
     $('#enablePush').hidden = true;
     return;
   }
   const reg = await navigator.serviceWorker.ready;
   const sub = await reg.pushManager.getSubscription();
-  el.textContent = sub ? 'ההתראות פעילות במכשיר הזה ✔' : Notification.permission === 'denied' ? 'ההתראות נחסמו בהגדרות הדפדפן.' : 'ההתראות כבויות במכשיר הזה.';
+  el.textContent = t(sub ? 'ההתראות פעילות במכשיר הזה ✔' : Notification.permission === 'denied' ? 'ההתראות נחסמו בהגדרות הדפדפן.' : 'ההתראות כבויות במכשיר הזה.');
 }
 
 $('#enablePush').addEventListener('click', async () => {
@@ -832,7 +837,7 @@ $('#enablePush').addEventListener('click', async () => {
       (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(S.vapidKey) }));
     await api('POST', '/api/subscribe', sub.toJSON());
     updatePushState();
-  } catch (e) { alert('הפעלת ההתראות נכשלה: ' + e.message); }
+  } catch (e) { alert(t('הפעלת ההתראות נכשלה: ') + e.message); }
 });
 $('#testPush').addEventListener('click', () => api('POST', '/api/test-push'));
 
@@ -840,9 +845,26 @@ let installEvt;
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; $('#install').hidden = false; });
 $('#install').addEventListener('click', () => installEvt?.prompt());
 
+// ---------- שפה ----------
+$('#langSel').replaceChildren(...Object.entries(LANGS).map(([k, name]) => Object.assign(document.createElement('option'), { value: k, textContent: name, selected: k === LANG })));
+function setLang(l) {
+  try { localStorage.setItem('lang', l); } catch { /* */ }
+  location.reload();
+}
+$('#langSel').addEventListener('change', async (e) => {
+  const l = e.target.value;
+  if (S) await api('PUT', '/api/settings', { lang: l }).catch(() => {});
+  setLang(l);
+});
+
 // ---------- הפעלה ----------
+translatePage();
+document.body.classList.toggle('not-il', COUNTRY !== 'IL');
 async function boot() {
   S = await api('GET', '/api/state');
+  // השפה שנבחרה בחשבון (למשל במכשיר אחר) גוברת
+  if (S.lang && S.lang !== LANG) return setLang(S.lang);
+  if (!S.lang) api('PUT', '/api/settings', { lang: LANG }).catch(() => {});
   document.body.classList.remove('logged-out');
   render();
   if (S.needTerms && !$('#termsDlg').open) { $('#termsOk').checked = false; $('#termsAccept').disabled = true; $('#termsDlg').showModal(); }

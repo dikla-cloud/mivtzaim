@@ -114,3 +114,18 @@ test('carrefour: embedded "const files" list and 4-part file names', () => {
   ]);
   assert.equal(l[0].url, 'https://prices.carrefour.co.il/20261016/Price7290055700007-001-002-20261016-140004.gz');
 });
+
+test('marktguru: only products whose main word is the search term', () => {
+  const { relevant } = require('../server/providers/marktguru');
+  assert.ok(relevant('Butter', 'Teebutter 250 g'));
+  assert.ok(relevant('Butter', 'Kerrygold Irische Butter'));
+  assert.ok(relevant('Butter', 'Bio-Butter'));
+  assert.ok(!relevant('Butter', 'Buttercroissant'));
+  assert.ok(!relevant('Butter', 'Butter-Croissant 4 Stück'));
+  assert.ok(!relevant('Butter', 'Rama Margarine'));
+  assert.ok(!relevant('Butter', 'Butterkekse'));
+  assert.ok(relevant('Milch', 'Vollmilch 3,5% 1l'));
+  assert.ok(!relevant('Milch', 'Milchschokolade'));
+  assert.ok(relevant('Tomate', 'Rispentomaten'));
+  assert.ok(relevant('Eier', 'Freilandeier 10 Stk'));
+});

@@ -1,5 +1,5 @@
-const CACHE = 'mivtzaim-v19';
-const SHELL = ['./', 'index.html', 'style.css', 'foods.js', 'app.js', 'icon.svg', 'manifest.webmanifest'];
+const CACHE = 'mivtzaim-v20';
+const SHELL = ['./', 'index.html', 'style.css', 'i18n.js', 'foods.js', 'app.js', 'icon.svg', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
@@ -22,9 +22,9 @@ self.addEventListener('fetch', (e) => {
 });
 
 self.addEventListener('push', (e) => {
-  const data = e.data ? e.data.json() : { title: 'מבצעים', body: '' };
+  const data = e.data ? e.data.json() : { title: '🛒', body: '' };
   e.waitUntil(self.registration.showNotification(data.title, {
-    body: data.body, icon: 'icon-192.png', badge: 'icon-192.png', dir: 'rtl', lang: 'he',
+    body: data.body, icon: 'icon-192.png', badge: 'icon-192.png', dir: data.dir || 'auto', lang: data.lang || '',
     data: { url: data.url || '/' }, tag: 'deals',
   }));
 });

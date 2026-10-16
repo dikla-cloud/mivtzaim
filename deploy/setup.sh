@@ -1,15 +1,23 @@
 #!/usr/bin/env bash
 # התקנה בשרת Ubuntu חדש (למשל Oracle Cloud Always Free), בפקודה אחת:
 #   curl -fsSL https://raw.githubusercontent.com/<github-user>/mivtzaim/main/deploy/setup.sh | bash -s -- <github-user> <domain> <password> [email]
-# אפשר להריץ שוב בכל זמן כדי לעדכן לגרסה האחרונה מ-GitHub.
+# אפשר להריץ שוב בכל זמן כדי לעדכן לגרסה האחרונה מ-GitHub (כל ההתקנות בשרת מתעדכנות יחד).
+#
+# התקנה נוספת על אותו שרת (כתובת, משתמשים ושפה משלה), למשל לאוסטריה:
+#   ... | bash -s -- <github-user> <domain2> <password2> <email> mivtzaim-wien de AT 3001
+#   (שם ההתקנה, שפת ברירת מחדל he/de/en, מדינה IL/AT, ופורט פנימי פנוי)
 set -euo pipefail
 
 GH_USER="${1:?חסר שם משתמש GitHub}"
 DOMAIN="${2:?חסרה כתובת, למשל mivtzaim.duckdns.org}"
 TOKEN="${3:?חסרה סיסמה ראשונית לאפליקציה}"  # משמשת רק לכניסה הראשונה של המנהל
 EMAIL="${4:-admin@example.com}"
+INSTANCE="${5:-mivtzaim}"
+APP_LANG="${6:-he}"
+APP_COUNTRY="${7:-IL}"
+PORT="${8:-3000}"
 APP_DIR=/opt/mivtzaim
-DATA_DIR=/var/lib/mivtzaim
+DATA_DIR=/var/lib/$INSTANCE
 RUN_USER="$(id -un)"
 
 echo "==> התקנת חבילות בסיס"
@@ -41,10 +49,10 @@ sudo chown -R "$RUN_USER" "$APP_DIR"
 sudo mkdir -p "$DATA_DIR"
 sudo chown -R "$RUN_USER" "$DATA_DIR"
 
-echo "==> הגדרת שירות שרץ תמיד (גם אחרי הפעלה מחדש)"
-sudo tee /etc/systemd/system/mivtzaim.service >/dev/null <<EOF
+echo "==> הגדרת שירות שרץ תמיד (גם אחרי הפעלה מחדש): $INSTANCE"
+sudo tee /etc/systemd/system/$INSTANCE.service >/dev/null <<EOF
 [Unit]
-Description=Mivtzaim deals app
+Description=Mivtzaim deals app ($INSTANCE)
 After=network-online.target
 Wants=network-online.target
 
@@ -54,8 +62,10 @@ WorkingDirectory=$APP_DIR
 ExecStart=/usr/bin/node server/index.js
 Restart=always
 RestartSec=5
-Environment=PORT=3000
+Environment=PORT=$PORT
 Environment=DATA_DIR=$DATA_DIR
+Environment=APP_LANG=$APP_LANG
+Environment=APP_COUNTRY=$APP_COUNTRY
 Environment=APP_TOKEN=$TOKEN
 Environment=VAPID_SUBJECT=mailto:$EMAIL
 Environment=GEOCODER_UA=MivtzaimApp/1.0 ($EMAIL)
@@ -64,15 +74,15 @@ Environment=GEOCODER_UA=MivtzaimApp/1.0 ($EMAIL)
 WantedBy=multi-user.target
 EOF
 sudo systemctl daemon-reload
-sudo systemctl enable --now mivtzaim
-sudo systemctl restart mivtzaim
+sudo systemctl enable --now "$INSTANCE"
+# הקוד משותף לכל ההתקנות בשרת – מפעילים מחדש את כולן
+for unit in /etc/systemd/system/mivtzaim*.service; do sudo systemctl restart "$(basename "$unit")"; done
 
 echo "==> הגדרת HTTPS לכתובת $DOMAIN"
-sudo tee /etc/caddy/Caddyfile >/dev/null <<EOF
-$DOMAIN {
-  reverse_proxy localhost:3000
-}
-EOF
+# כל התקנה מקבלת קובץ משלה, והקובץ הראשי מצרף את כולם
+sudo mkdir -p /etc/caddy/sites
+printf '%s {\n  reverse_proxy localhost:%s\n}\n' "$DOMAIN" "$PORT" | sudo tee "/etc/caddy/sites/$INSTANCE.caddy" >/dev/null
+echo 'import sites/*.caddy' | sudo tee /etc/caddy/Caddyfile >/dev/null
 sudo systemctl reload caddy || sudo systemctl restart caddy
 
 echo "==> פתיחת פורטים 80 ו-443 בחומת האש של השרת"
@@ -82,11 +92,11 @@ fi
 if command -v netfilter-persistent >/dev/null; then sudo netfilter-persistent save; fi
 
 sleep 3
-if curl -fs localhost:3000 >/dev/null; then
+if curl -fs "localhost:$PORT" >/dev/null; then
   echo
   echo "✔ האפליקציה פועלת. פתחי בדפדפן: https://$DOMAIN"
   echo "  (בפעם הראשונה ייתכן שיעברו דקה-שתיים עד שתעודת ה-HTTPS תונפק)"
 else
-  echo "✘ משהו לא עבד. לבדיקה: sudo journalctl -u mivtzaim -n 50"
+  echo "✘ משהו לא עבד. לבדיקה: sudo journalctl -u $INSTANCE -n 50"
   exit 1
 fi

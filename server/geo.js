@@ -5,6 +5,14 @@ const { UA } = require('./http');
 
 const CACHE = path.join(__dirname, '..', 'data', 'geocache.json');
 let cache = null;
+
+// כתיבה בטוחה: קודם לקובץ זמני ואז החלפה, כדי ששתי התקנות על אותו שרת לא ישברו את הקובץ
+function writeJson(file, data) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(data));
+  fs.renameSync(tmp, file);
+}
 let last = 0;
 
 function haversineKm(a, b) {
@@ -39,8 +47,7 @@ async function geocode(query, { il = true } = {}) {
     return null; // שגיאת רשת – לא שומרים במטמון
   }
   c[key] = result;
-  fs.mkdirSync(path.dirname(CACHE), { recursive: true });
-  fs.writeFileSync(CACHE, JSON.stringify(c));
+  writeJson(CACHE, c);
   return result;
 }
 
@@ -65,8 +72,7 @@ async function reverse(lat, lon) {
     };
     if (!place.countryCode) return null;
     c[key] = place;
-    fs.mkdirSync(path.dirname(CACHE), { recursive: true });
-    fs.writeFileSync(CACHE, JSON.stringify(c));
+    writeJson(CACHE, c);
     return place;
   } catch {
     return null;
@@ -100,8 +106,7 @@ async function cbsCities() {
       if (code && name) map[code] = name;
     }
     if (Object.keys(map).length > 100) {
-      fs.mkdirSync(path.dirname(CITIES), { recursive: true });
-      fs.writeFileSync(CITIES, JSON.stringify(map));
+      writeJson(CITIES, map);
       cbs = map;
       return cbs;
     }

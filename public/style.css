@@ -239,3 +239,7 @@ button.danger { background: #b91c1c; color: #fff; border-color: #b91c1c; margin-
 table.stats { width: 100%; border-collapse: collapse; font-size: .9rem; }
 table.stats th, table.stats td { border-bottom: 1px solid var(--border); padding: 6px 8px; text-align: start; }
 table.stats td:not(:first-child), table.stats th:not(:first-child) { text-align: end; font-variant-numeric: tabular-nums; }
+
+/* שפה */
+select { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; min-width: 180px; }
+body.not-il .il-only { display: none; }
