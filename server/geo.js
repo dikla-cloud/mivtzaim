@@ -73,22 +73,46 @@ async function reverse(lat, lon) {
   }
 }
 
+// שמות ערים ישנים או מקוצרים בקובצי הרשתות
+const CITY_ALIASES = { 'עפולה עילית': 'נוף הגליל', 'נצרת עילית': 'נוף הגליל', 'פ"ת': 'פתח תקווה', 'ת"א': 'תל אביב', 'ראשל"צ': 'ראשון לציון', 'ב"ש': 'באר שבע' };
+const norm = (x) => String(x || '').replace(/[׳'"״\-–(),.]/g, ' ').replace(/\s+/g, ' ').trim();
+// האם התוצאה של שירות המפות נמצאת באותה עיר (לפי המילה הראשונה בשם העיר)
+// (בלי י׳ ו-ו׳, כדי ש„קרית” ו„קריית” ייחשבו אותו דבר. שם עיר שאינו בעברית לא נבדק)
+const loose = (x) => norm(x).replace(/[וי]/g, '');
+const inCity = (label, city) => !/[א-ת]/.test(city) || loose(label).includes(loose(city).split(' ')[0]);
+const MAX_FROM_CITY_KM = 10;
+
+// מיקום סניף. מחזיר גם איך נקבע (לבדיקה): city / address / none
+async function storePosition(s) {
+  if (s.lat != null) return { lat: s.lat, lon: s.lon, how: 'file' };
+  const raw = String(s.city || '').trim();
+  if (!raw || /^\d+$/.test(raw)) return null; // קוד עיר מספרי – אי אפשר לאתר בבטחה
+  const city = CITY_ALIASES[raw] || raw;
+  let center = await geocode(`${city}, ישראל`);
+  if (center && !inCity(center.label, city)) center = null;
+  const addr = s.address && norm(s.address) && (await geocode(`${s.address}, ${city}, ישראל`));
+  // כתובת נחשבת רק אם היא באותה עיר, וקרובה למרכז העיר (אחרת זה כנראה רחוב באותו שם בעיר אחרת)
+  const addrOk = addr && inCity(addr.label, city) && (!center || haversineKm(center, addr) <= MAX_FROM_CITY_KM);
+  if (addrOk) return { lat: addr.lat, lon: addr.lon, how: 'address' };
+  if (center) return { lat: center.lat, lon: center.lon, how: 'city' };
+  return null;
+}
+
 // מחזיר את הסניפים ברדיוס, עם מרחק. קודם מסנן לפי עיר (מעט בקשות), ורק אז מאתר כתובות מדויקות.
 async function storesWithin(stores, center, radiusKm) {
   const out = [];
   for (const s of stores) {
-    let pos = s.lat != null ? { lat: s.lat, lon: s.lon } : null;
-    if (!pos) {
-      if (!s.city) continue;
-      // עיר שלא זוהתה (למשל „מודיעין מרכז”): מנסים את הכתובת המלאה
-      const city = (await geocode(`${s.city}, ישראל`)) || (s.address && (await geocode(`${s.address}, ${s.city}, ישראל`)));
-      if (!city || haversineKm(center, city) > radiusKm + 8) continue;
-      pos = (s.address && (await geocode(`${s.address}, ${s.city}, ישראל`))) || city;
+    if (s.lat == null) {
+      const raw = String(s.city || '').trim();
+      const city = raw && !/^\d+$/.test(raw) && (await geocode(`${CITY_ALIASES[raw] || raw}, ישראל`));
+      if (city && haversineKm(center, city) > radiusKm + 8) continue; // עיר רחוקה – לא צריך לאתר את הכתובת
     }
+    const pos = await storePosition(s);
+    if (!pos) continue;
     const km = haversineKm(center, pos);
-    if (km <= radiusKm) out.push({ ...s, lat: pos.lat, lon: pos.lon, km: Math.round(km * 10) / 10 });
+    if (km <= radiusKm) out.push({ ...s, lat: pos.lat, lon: pos.lon, geo: pos.how, km: Math.round(km * 10) / 10 });
   }
   return out.sort((a, b) => a.km - b.km);
 }
 
-module.exports = { haversineKm, geocode, reverse, storesWithin };
+module.exports = { haversineKm, geocode, reverse, storesWithin, storePosition, inCity };

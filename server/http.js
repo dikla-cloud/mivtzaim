@@ -8,19 +8,20 @@ class Session {
     return [...this.cookies].map(([k, v]) => `${k}=${v}`).join('; ');
   }
 
-  async fetch(url, opts = {}, tries = 3) {
+  async fetch(url, opts = {}, tries = opts.tries || 3) {
     const headers = { 'User-Agent': UA, ...(opts.headers || {}) };
     if (this.cookies.size) headers.Cookie = this.cookieHeader();
     for (let i = 1; ; i++) {
       try {
-        const res = await fetch(url, { redirect: 'manual', ...opts, headers, signal: AbortSignal.timeout(120000) });
+        const { timeout = 120000, tries: _t, ...rest } = opts;
+        const res = await fetch(url, { redirect: 'manual', ...rest, headers, signal: AbortSignal.timeout(timeout) });
         for (const c of res.headers.getSetCookie?.() || []) {
           const [pair] = c.split(';');
           const eq = pair.indexOf('=');
           this.cookies.set(pair.slice(0, eq).trim(), pair.slice(eq + 1).trim());
         }
         if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
-          return this.fetch(new URL(res.headers.get('location'), url).href, { headers: opts.headers }, tries);
+          return this.fetch(new URL(res.headers.get('location'), url).href, { headers: opts.headers, timeout: opts.timeout }, tries);
         }
         if (!res.ok) throw new Error(`HTTP ${res.status} ${url}`);
         return res;

@@ -108,7 +108,8 @@ module.exports = {
           if (!store) continue;
           const sr = { name: store.name, km: store.km, promos: 0, deals: 0, error: null };
           r.stores.push(sr);
-          const items = await chain.deals();
+          const items = await chain.deals({ wait: 45000 });
+          if (!items) { sr.error = 'המבצעים עדיין נטענים מהאתר. יופיעו בסריקה הבאה'; continue; }
           const found = findWebDeals({ list, items, chain, store });
           sr.promos = items.length;
           sr.deals = r.deals = found.length;

@@ -9,6 +9,7 @@ const PROMO_PAGE = BASE + encodeURI('מבצעי-מועדון');
 const BROWSER = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36' };
 const TTL = 6 * 3600000; // המבצעים נקראים מהאתר לכל היותר פעם ב-6 שעות, לכל המשתמשים יחד
 const PARALLEL = 4;
+const PAGE = { headers: BROWSER, timeout: 25000, tries: 2 }; // דף שלא נענה תוך 25 שניות – מדלגים עליו
 
 const decode = (s) => String(s)
   .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
@@ -70,18 +71,19 @@ function parseStores(html) {
 let cache = null; // { at, deals }
 let pending = null;
 
-async function loadDeals() {
+async function loadDeals(onProgress = () => {}) {
   const s = new Session();
-  const cats = categoryLinks(await s.text(PROMO_PAGE, { headers: BROWSER }));
+  const cats = categoryLinks(await s.text(PROMO_PAGE, PAGE));
   if (!cats.length) throw new Error('לא נמצאו קטגוריות בדף המבצעים');
   const byId = new Map();
   let failed = 0;
   for (let i = 0; i < cats.length; i += PARALLEL) {
     await Promise.all(cats.slice(i, i + PARALLEL).map(async (u) => {
       try {
-        for (const p of parseProducts(await s.text(u, { headers: BROWSER }))) byId.set(p.id, p);
+        for (const p of parseProducts(await s.text(u, PAGE))) byId.set(p.id, p);
       } catch { failed++; }
     }));
+    onProgress(Math.min(i + PARALLEL, cats.length), cats.length, byId.size);
   }
   if (!byId.size && failed) throw new Error('דפי הקטגוריות לא נטענו');
   return [...byId.values()];
@@ -95,14 +97,18 @@ module.exports = {
   parseStores,
   categoryLinks,
   async stores() {
-    const stores = parseStores(await new Session().text(BASE + 'snifim.aspx', { headers: BROWSER }));
+    const stores = parseStores(await new Session().text(BASE + 'snifim.aspx', PAGE));
     if (!stores.length) throw new Error('לא נמצאה רשימת סניפים בדף הסניפים');
     return stores;
   },
-  // כל המבצעים ברשת (משותפים לכל הסניפים)
-  async deals() {
+  // כל המבצעים ברשת (משותפים לכל הסניפים).
+  // wait: כמה זמן לחכות לטעינה ראשונה. אם לא הספיקה – מחזיר null והטעינה ממשיכה ברקע לסריקה הבאה.
+  async deals({ wait = Infinity, onProgress } = {}) {
     if (cache && Date.now() - cache.at < TTL) return cache.deals;
-    pending ||= loadDeals().then((deals) => { cache = { at: Date.now(), deals }; return deals; }).finally(() => { pending = null; });
-    return pending;
+    pending ||= loadDeals(onProgress).then((deals) => { cache = { at: Date.now(), deals }; return deals; }).finally(() => { pending = null; });
+    if (wait === Infinity) return pending;
+    let timer;
+    const late = new Promise((r) => { timer = setTimeout(() => r(null), wait); });
+    try { return await Promise.race([pending, late]); } finally { clearTimeout(timer); }
   },
 };

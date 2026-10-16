@@ -57,3 +57,11 @@ test('nizat: deals from all categories, cached, matched to list', async () => {
   assert.match(found[0].description, /20% הנחה/);
   assert.match(found[0].url, /-i777$/);
 });
+
+test('geo: street with the same name in another city is not trusted', async () => {
+  const geo = require('../server/geo');
+  assert.ok(geo.inCity('קריית אונו, מחוז תל אביב, ישראל', 'קרית אונו'));
+  assert.ok(!geo.inCity('הרצל, רמת השרון, מחוז תל אביב, ישראל', 'נוף הגליל'));
+  assert.ok(geo.inCity('Tel Aviv', 'Tel Aviv'));
+  assert.equal(await geo.storePosition({ city: '7900', address: 'קק"ל 10' }), null);
+});

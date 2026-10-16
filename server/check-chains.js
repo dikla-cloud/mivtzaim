@@ -12,7 +12,9 @@ const israel = require('./providers/israel');
       const s = stores[0];
       if (!s) throw new Error('קובץ הסניפים ריק');
       if (chain.web) {
-        const items = await chain.deals();
+        process.stdout.write(`${stores.length} סניפים · קוראת מבצעים מהאתר… `);
+        const items = await chain.deals({ onProgress: (n, total, found) => process.stdout.write(`\r${chain.name}: ${stores.length} סניפים · קטגוריות ${n}/${total}, ${found} מוצרים במבצע   `) });
+        process.stdout.write('\n');
         console.log(`✔ ${stores.length} סניפים (למשל "${s.name}", ${s.city}) · ${items.length} מוצרים במבצע באתר${items[0] ? `, למשל: ${items[0].name} ${items[0].promoPrice} ₪ במקום ${items[0].regularPrice} ₪` : ''}`);
         continue;
       }
