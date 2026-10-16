@@ -477,6 +477,7 @@ $('#copyLink').addEventListener('click', async () => {
 });
 if (navigator.share) {
   $('#shareLink').hidden = false;
+  $('#shareLink').classList.add(/iPhone|iPad|Macintosh/.test(navigator.userAgent) ? 'is-ios' : 'is-other');
   $('#shareLink').addEventListener('click', () => navigator.share({ title: 'הקניות שלי', text: 'הצטרפות לאפליקציה „הקניות שלי”:', url: location.origin }).catch(() => {}));
 }
 

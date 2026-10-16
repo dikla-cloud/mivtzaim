@@ -200,3 +200,9 @@ nav button[aria-selected="true"], nav button[aria-selected="true"]:hover { backg
 #maxUsersForm input { max-width: 110px; flex: none; }
 #maxUsersForm button:disabled { opacity: .45; cursor: default; }
 .saved { color: var(--accent); font-weight: 700; }
+
+.share { display: inline-flex; align-items: center; gap: 6px; }
+.share svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.share svg.android circle { fill: currentColor; stroke: none; }
+.share.is-ios svg.android, .share.is-other svg.ios { display: none; }
+.linkbox code { flex: 1 1 100%; }

@@ -159,7 +159,12 @@
         <div class="linkbox">
           <code id="appUrl" dir="ltr"></code>
           <button type="button" id="copyLink">📋 העתקת הקישור</button>
-          <button type="button" id="shareLink" hidden>📤 שליחה</button>
+          <button type="button" id="shareLink" class="share" hidden>
+            <!-- אייקון שיתוף: באייפון ריבוע עם חץ למעלה, בשאר המכשירים שלוש נקודות מחוברות -->
+            <svg class="ios" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M8 10.5H6.5A1.5 1.5 0 0 0 5 12v7.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V12a1.5 1.5 0 0 0-1.5-1.5H16"/></svg>
+            <svg class="android" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="m8.3 10.7 7.4-4.3M8.3 13.3l7.4 4.3"/></svg>
+            <span>שיתוף</span>
+          </button>
         </div>
       </div>
       <div class="card">
