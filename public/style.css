@@ -142,3 +142,10 @@ nav button { font-size: .95rem; line-height: 1.25; }
 button.live { background: #dc2626; border-color: #dc2626; color: #fff; animation: pulse 1.2s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .75; } }
 .mini.play { font-size: 1.1rem; color: var(--accent); }
+
+.linkbox { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+.linkbox code { flex: 1; min-width: 0; overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: .9rem; text-align: left; }
+.linkbox button { padding: 8px 12px; }
+.dup { margin: 0 0 8px; padding: 8px 12px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); font-weight: 600; font-size: .9rem; }
+.homeitem.flash { animation: flash 1s ease-in-out 2; }
+@keyframes flash { 50% { background: var(--warn-soft); border-color: var(--warn); } }

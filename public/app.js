@@ -356,14 +356,66 @@ function renderHome() {
   }));
 }
 
+// פריט שכבר ברשימה: אזהרה כבר בזמן ההקלדה, והודעה אחרי ההוספה
+const sameItem = (a, b) => {
+  const n = (s) => String(s).replace(/[׳'"״.,]/g, '').replace(/\s+/g, ' ').trim().toLowerCase().replace(/^ה(?=[\u05D0-\u05EA]{2})/, '');
+  return n(a) === n(b);
+};
+const whoAdded = (x) => (x.by && x.by !== S.me.name ? ` (הוסיף/ה ${x.by})` : x.by ? ' (הוספת בעצמך)' : '');
+
+function showDuplicates(dups) {
+  const hint = $('#dupHint');
+  hint.hidden = !dups.length;
+  if (!dups.length) return;
+  hint.textContent = dups.length === 1
+    ? `ℹ️ „${dups[0].text}” כבר ברשימה${whoAdded(dups[0])}`
+    : `ℹ️ כבר ברשימה: ${dups.map((d) => `„${d.text}”`).join(', ')}`;
+}
+
+$('#homeItem').addEventListener('input', () => {
+  const open = (S.home || []).filter((x) => !x.done && !x.voice);
+  showDuplicates(splitItems($('#homeItem').value).map((t) => open.find((x) => sameItem(x.text, t))).filter(Boolean));
+});
+
 $('#homeAdd').addEventListener('submit', async (e) => {
   e.preventDefault();
   const items = splitItems($('#homeItem').value);
   if (!items.length) return;
   $('#homeItem').value = '';
-  Object.assign(S, await api('POST', '/api/home', { items }));
+  const r = await api('POST', '/api/home', { items });
+  Object.assign(S, { home: r.home });
   renderHome();
+  showDuplicates(r.duplicates || []);
+  const added = items.length - (r.duplicates || []).length;
+  if (r.duplicates?.length) {
+    const dupText = r.duplicates.length === 1 ? `„${r.duplicates[0].text}” כבר ברשימה ולא נוסף שוב` : `${r.duplicates.length} פריטים כבר ברשימה ולא נוספו שוב`;
+    const addedText = added === 1 ? 'נוסף פריט אחד' : `נוספו ${added} פריטים`;
+    toast(added ? `${addedText}. ${dupText}` : (r.duplicates.length === 1 ? dupText : 'כל הפריטים כבר ברשימה'));
+    // הדגשת הפריטים שכבר קיימים
+    for (const d of r.duplicates) {
+      const li = [...document.querySelectorAll('#homeList .homeitem')].find((el) => el.querySelector('.htext > span')?.textContent === d.text);
+      if (li) { li.classList.add('flash'); setTimeout(() => li.classList.remove('flash'), 2000); }
+    }
+  }
 });
+
+// קישור לאפליקציה: העתקה / שליחה
+$('#copyLink').addEventListener('click', async () => {
+  const url = location.origin;
+  try {
+    await navigator.clipboard.writeText(url);
+  } catch {
+    const r = document.createRange(); r.selectNodeContents($('#appUrl'));
+    getSelection().removeAllRanges(); getSelection().addRange(r);
+    document.execCommand('copy');
+  }
+  $('#copyLink').textContent = '✔ הועתק';
+  setTimeout(() => ($('#copyLink').textContent = '📋 העתקת הקישור'), 2000);
+});
+if (navigator.share) {
+  $('#shareLink').hidden = false;
+  $('#shareLink').addEventListener('click', () => navigator.share({ title: 'מבצעים ליד הבית', text: 'הצטרפות לאפליקציה „מבצעים ליד הבית”:', url: location.origin }).catch(() => {}));
+}
 
 // ---------- קול: הכתבה (דיבור ← טקסט) והודעה קולית ----------
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;

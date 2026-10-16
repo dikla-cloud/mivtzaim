@@ -61,3 +61,24 @@ test('voice note: upload, play back for household only, removed on clear', async
     server.close();
   }
 });
+
+test('adding an item that is already on the list reports it instead of duplicating', async () => {
+  const app = require('../server/index.js');
+  const auth = require('../server/auth');
+  const server = app.listen(0);
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const post = (token, items) => fetch(base + '/api/home', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-app-token': token }, body: JSON.stringify({ items }) }).then((r) => r.json());
+  try {
+    const d = db.get();
+    d.users['יואב'].household = d.users['דיקלה'].household; // אותו משק בית
+    const dikla = auth.newSession(d.users['דיקלה']);
+    const yoav = auth.newSession(d.users['יואב']);
+    await post(yoav, ["קוטג' 5%", 'לחם']);
+    const r = await post(dikla, ['קוטג 5%', 'הלחם', 'עגבניות']);
+    assert.deepEqual(r.duplicates.map((x) => [x.text, x.by]), [["קוטג' 5%", 'יואב'], ['לחם', 'יואב']]);
+    assert.equal(r.home.filter((x) => /לחם/.test(x.text)).length, 1);
+    assert.ok(r.home.some((x) => x.text === 'עגבניות'));
+  } finally {
+    server.close();
+  }
+});

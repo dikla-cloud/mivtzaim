@@ -92,16 +92,26 @@ const homeState = (req) => ({ home: home(req) });
 
 app.get('/api/home', (req, res) => res.json(homeState(req)));
 
+// השוואת פריטים בלי תלות ברווחים, גרשיים, אותיות גדולות/קטנות וה' הידיעה („החלב” = „חלב”)
+const sameItem = (a, b) => {
+  const n = (s) => String(s).replace(/[׳'"״.,]/g, '').replace(/\s+/g, ' ').trim().toLowerCase().replace(/^ה(?=[\u05D0-\u05EA]{2})/, '');
+  return n(a) === n(b);
+};
+
 app.post('/api/home', (req, res) => {
   const texts = [].concat(req.body?.items ?? req.body?.text ?? []).map((t) => String(t).trim()).filter(Boolean);
   const list = home(req);
+  const duplicates = []; // פריטים שכבר ברשימה – מוחזרים כדי שהאפליקציה תודיע עליהם
   for (const text of texts.slice(0, 200)) {
-    // פריט שכבר ברשימה (ועוד לא נקנה) לא נוסף פעמיים
-    if (list.some((x) => !x.done && x.text === text)) continue;
+    const existing = list.find((x) => !x.done && !x.voice && sameItem(x.text, text));
+    if (existing) {
+      duplicates.push({ text: existing.text, by: existing.by, at: existing.at });
+      continue;
+    }
     list.push({ id: crypto.randomUUID(), text, done: false, by: req.user.name, at: new Date().toISOString() });
   }
   db.save();
-  res.json(homeState(req));
+  res.json({ ...homeState(req), duplicates });
 });
 
 app.patch('/api/home/:id', (req, res) => {

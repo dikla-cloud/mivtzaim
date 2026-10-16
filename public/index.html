@@ -83,6 +83,7 @@
         <input id="homeItem" placeholder="מה חסר בבית? (אפשר כמה, מופרדים בפסיק)" autocomplete="off">
         <button class="primary">הוספה</button>
       </form>
+      <p id="dupHint" class="dup" hidden></p>
       <div class="row voice-row">
         <button type="button" id="dictate" hidden>🎤 הכתבה</button>
         <button type="button" id="record" hidden>🎙️ הודעה קולית</button>
@@ -141,7 +142,12 @@
           <label class="toggle" id="newHouseholdWrap" hidden><input type="checkbox" id="newHousehold"> משק בית נפרד (בלי רשימת „חסר בבית” משותפת איתי)</label>
           <button class="primary">שיתוף עם בן בית נוסף</button>
         </form>
-        <p class="muted small">אחרי ההוספה שלחו לו את הכתובת <b id="appUrl"></b>, את השם ואת הסיסמה. אחרי הכניסה הוא יוכל להחליף את הסיסמה בעצמו.</p>
+        <p class="muted small">אחרי ההוספה שלחו לו את הקישור לאפליקציה, את השם ואת הסיסמה. אחרי הכניסה הוא יוכל להחליף את הסיסמה בעצמו.</p>
+        <div class="linkbox">
+          <code id="appUrl" dir="ltr"></code>
+          <button type="button" id="copyLink">📋 העתקת הקישור</button>
+          <button type="button" id="shareLink" hidden>📤 שליחה</button>
+        </div>
       </div>
       <div class="card">
         <h3>מיקום</h3>
