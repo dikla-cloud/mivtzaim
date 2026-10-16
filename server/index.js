@@ -12,7 +12,7 @@ const i18n = require('./i18n');
 
 // הגדרות ההתקנה: שפת ברירת מחדל ומדינה (למשל התקנה נפרדת לאוסטריה: APP_LANG=de APP_COUNTRY=AT)
 const APP_COUNTRY = (process.env.APP_COUNTRY || 'IL').toUpperCase();
-const APP_NAMES = { he: 'הקניות שלי', de: 'Meine Einkäufe', en: 'My Shopping' };
+const APP_NAMES = { he: 'הקניות שלי', de: 'Meine Einkäufe', en: 'My Shopping', ar: 'مشترياتي' };
 const appName = (l) => process.env.APP_NAME || APP_NAMES[i18n.pick(l)];
 const T = (req, he, vars) => i18n.tr(req.lang, he, vars);
 

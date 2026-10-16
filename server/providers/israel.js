@@ -3,6 +3,7 @@ const db = require('../db');
 const xml = require('../xml');
 const geo = require('../geo');
 const { matches } = require('../match');
+const translate = require('../translate');
 
 const CHAINS = process.env.DEMO === '1'
   ? [require('../chains/demo')]
@@ -26,7 +27,7 @@ function findWebDeals({ list, items, chain, store }) {
   const deals = [];
   for (const it of items) {
     for (const entry of list) {
-      if (!matches(entry.text, it.name, '')) continue;
+      if (!matches(entry.match || entry.text, it.name, '')) continue;
       deals.push({
         key: `${chain.id}|${it.id}|${it.promoPrice}`,
         listItem: entry.text,
@@ -61,7 +62,7 @@ function findDeals({ list, promos, prices, chain, store, now = new Date() }) {
       const item = prices.get(code);
       const name = item?.name || '';
       for (const entry of list) {
-        if (!matches(entry.text, name, code)) continue;
+        if (!matches(entry.match || entry.text, name, code)) continue;
         deals.push({
           key: `${chain.id}|${store.storeId}|${p.promoId}|${code}`,
           listItem: entry.text,
@@ -94,8 +95,17 @@ module.exports = {
   chains: CHAINS,
   findDeals,
   findWebDeals,
-  async scan({ list, location, radiusKm, enabledChains, errors, report }) {
+  async scan({ list: rawList, location, radiusKm, enabledChains, errors, report }) {
     const deals = [];
+    // פריטים בערבית: קובצי הרשתות בעברית, ולכן מחפשים גם לפי התרגום לעברית
+    const arabic = rawList.filter((e) => translate.sourceLang(e.text) === 'ar');
+    const terms = arabic.length ? await translate(arabic.map((e) => e.text), 'he', 'IL') : {};
+    const list = rawList.map((e) => {
+      const tr = terms[e.text];
+      if (!tr) return e;
+      report.items[e.text] = { term: tr.term, how: tr.how, translated: true };
+      return { ...e, match: `${e.text}|${tr.term}` };
+    });
     for (const chain of CHAINS.filter((c) => !enabledChains || enabledChains.includes(c.id))) {
       // מה נבדק ברשת הזו – מוצג למשתמש ב„מה נבדק בסריקה”
       const r = { name: chain.name, nearby: 0, stores: [], deals: 0, error: null };

@@ -609,9 +609,9 @@ if (navigator.share) {
 
 // ---------- הכתבה (דיבור ← פריטים) ----------
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-const STOP_WORDS = new Set(['צריך', 'צריכים', 'צריכה', 'לקנות', 'תקנה', 'תקנו', 'חסר', 'חסרה', 'חסרים', 'גם', 'וגם', 'עוד', 'בבקשה', 'ו',
+const STOP_WORDS = new Set(['نحتاج', 'لازم', 'بدنا', 'شراء', 'اشتري', 'كمان', 'أيضا', 'من فضلك', 'צריך', 'צריכים', 'צריכה', 'לקנות', 'תקנה', 'תקנו', 'חסר', 'חסרה', 'חסרים', 'גם', 'וגם', 'עוד', 'בבקשה', 'ו',
   'wir', 'brauchen', 'brauche', 'kaufen', 'bitte', 'noch', 'auch', 'we', 'need', 'buy', 'please', 'some', 'also']);
-const JOINERS = new Set(['und', 'and', 'oder', 'or']); // „Milch und Brot” ← שני פריטים
+const JOINERS = new Set(['und', 'and', 'oder', 'or', 'و']); // „Milch und Brot” ← שני פריטים
 const COMPOUNDS = ['שמן זית', 'שמן קנולה', 'בשר טחון', 'חזה עוף', 'שוקי עוף', 'נייר טואלט', 'מגבות נייר', 'אבקת כביסה', 'נוזל כלים',
   'משחת שיניים', 'תפוחי אדמה', 'גבינה צהובה', 'גבינה לבנה', 'גבינה בולגרית', 'שמנת חמוצה', 'דגני בוקר', 'שיבולת שועל', 'חמאת בוטנים',
   'מזון לחתולים', 'מזון לכלבים', 'מיץ תפוזים', 'לחם אחיד', 'שוקולד חלב', 'מים מינרליים', 'נייר כסף', 'שקיות זבל'];
@@ -628,9 +628,10 @@ function splitSpoken(text) {
     let word = w;
     let conj = false;
     if (/^ו[\u05D0-\u05EA]{2,}/.test(w) && !/^(וניל|ופל|וופל|וודקה|ויטמין|וואפל)/.test(w)) { conj = true; word = w.slice(1); }
+    else if (/^و[\u0621-\u064A]{2,}/.test(w) && !/^(ورق|وجبة|وافل)/.test(w)) { conj = true; word = w.slice(1); } // و בערבית
     const phrase = cur.length ? `${cur[cur.length - 1]} ${word}` : '';
     const compound = phrase && COMPOUNDS.some((c) => c === phrase || c.startsWith(phrase + ' '));
-    if (cur.length && !compound && (conj || (/[א-ת]/.test(word) && isProduct(word) && cur.some(isProduct)))) push();
+    if (cur.length && !compound && (conj || (/[א-ת\u0600-\u06FF]/.test(word) && isProduct(word) && cur.some(isProduct)))) push();
     cur.push(word);
   }
   push();
