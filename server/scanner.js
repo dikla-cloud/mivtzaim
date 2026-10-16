@@ -2,6 +2,7 @@
 const db = require('./db');
 const geo = require('./geo');
 const push = require('./push');
+const metrics = require('./metrics');
 const israel = require('./providers/israel');
 const marktguru = require('./providers/marktguru');
 const australia = require('./providers/australia');
@@ -75,6 +76,10 @@ async function scan(d) {
     d.lastSources = sources;
     d.lastReport = report;
     db.save();
+    metrics.count('scan');
+    metrics.count('deals_found', deals.length);
+    for (const dl of deals) metrics.chain(dl.chain, 'shown');
+    if (fresh.length && d.subscriptions.length) metrics.count('notification');
     if (fresh.length) await push.notifyDeals(d, fresh);
     return { deals: deals.length, new: fresh.length, errors, sources };
   })();

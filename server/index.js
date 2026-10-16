@@ -7,6 +7,10 @@ const geo = require('./geo');
 const push = require('./push');
 const auth = require('./auth');
 const scanner = require('./scanner');
+const metrics = require('./metrics');
+
+// גרסת תנאי השימוש ומדיניות הפרטיות. כשמשנים אותם – מעלים את הגרסה, וכל משתמש יתבקש לאשר מחדש.
+const TERMS_VERSION = '2026-10-16';
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -34,7 +38,10 @@ app.get('/api/setup', (req, res) => res.json({ firstRun: !db.users().length }));
 app.use('/api', (req, res, next) => {
   req.token = req.get('x-app-token');
   req.user = auth.sessionUser(req.token);
-  if (req.user) return next();
+  if (req.user) {
+    metrics.seen(req.user);
+    return next();
+  }
   res.status(401).json({ error: 'נדרשת כניסה' });
 });
 
@@ -48,6 +55,7 @@ const state = (u) => ({
   users: db.users().filter((x) => u.admin || x.household === u.household).map(userInfo),
   home: db.householdOf(u).home,
   limits: { ...db.get().limits, count: db.users().length },
+  needTerms: u.termsVersion !== TERMS_VERSION,
   list: u.list, location: u.location, radiusKm: u.radiusKm, deals: u.deals,
   lastScan: u.lastScan, lastErrors: u.lastErrors, lastSources: u.lastSources || [], lastReport: u.lastReport || null,
   chains: scanner.ALL_CHAINS.map((c) => ({ id: c.id, name: c.name, on: !u.chains || u.chains.includes(c.id) })),
@@ -86,6 +94,7 @@ app.post('/api/users', (req, res) => {
     pass: auth.hashPassword(password),
     household: req.user.admin && newHousehold ? null : db.householdOf(req.user).id,
   });
+  metrics.count('signup');
   db.save();
   res.json(state(req.user));
 });
@@ -115,6 +124,7 @@ app.post('/api/home', (req, res) => {
     }
     list.push({ id: crypto.randomUUID(), text, done: false, by: req.user.name, at: new Date().toISOString() });
   }
+  metrics.count('home_add', texts.length - duplicates.length);
   db.save();
   res.json({ ...homeState(req), duplicates });
 });
@@ -123,6 +133,7 @@ app.patch('/api/home/:id', (req, res) => {
   const item = home(req).find((x) => x.id === req.params.id);
   if (!item) return res.status(404).json({ error: 'הפריט כבר לא ברשימה', ...homeState(req) });
   if (typeof req.body?.done === 'boolean') {
+    if (req.body.done && !item.done) metrics.count('home_bought');
     item.done = req.body.done;
     item.doneBy = req.body.done ? req.user.name : undefined;
   }
@@ -223,6 +234,38 @@ app.delete('/api/users/:name', adminOnly, (req, res) => {
   delete db.get().users[key];
   db.save();
   res.json(state(req.user));
+});
+
+// מחיקת החשבון שלי: החשבון, הרשימה לחיפוש מבצעים, המיקום וההתראות נמחקים.
+// רשימת „חסר בבית” נמחקת רק אם לא נשאר בה אף בן בית אחר.
+app.delete('/api/me', (req, res) => {
+  const u = req.user;
+  if (u.admin) return res.status(400).json({ error: 'חשבון המנהל לא נמחק מכאן, כי בלעדיו אי אפשר לנהל את האפליקציה.' });
+  const d = db.get();
+  auth.dropSessions(u);
+  delete d.users[db.userKey(u.name)];
+  if (!db.users().some((x) => x.household === u.household)) delete d.households[u.household];
+  db.save();
+  res.json({ ok: true });
+});
+
+// ---------- תנאי שימוש ומדיניות פרטיות ----------
+app.post('/api/terms/accept', (req, res) => {
+  req.user.termsVersion = TERMS_VERSION;
+  req.user.termsAcceptedAt = new Date().toISOString();
+  db.save();
+  res.json(state(req.user));
+});
+
+// ---------- מדידה שומרת פרטיות ----------
+app.post('/api/metrics/event', (req, res) => {
+  const ok = metrics.clientEvent(String(req.body?.type || ''), req.body?.chain);
+  res.status(ok ? 200 : 400).json({ ok });
+});
+app.get('/api/metrics', adminOnly, (req, res) => res.json(metrics.summary(Math.min(Math.max(Number(req.query.days) || 30, 7), 365))));
+app.get('/api/metrics.csv', adminOnly, (req, res) => {
+  res.set('Content-Disposition', `attachment; filename="usage-${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.type('text/csv').send(metrics.csv());
 });
 
 // ---------- רשימה, מיקום והגדרות ----------

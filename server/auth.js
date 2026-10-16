@@ -49,6 +49,7 @@ function login(name, password) {
     const initial = process.env.APP_TOKEN;
     if (initial ? password !== initial : !validPassword(password)) return null;
     const u = db.newUser(name, { ...(d.legacy || {}), admin: true, pass: hashPassword(password) });
+    require('./metrics').count('signup');
     delete d.legacy;
     db.save();
     return u;

@@ -21,6 +21,7 @@
       <label>סיסמה<input id="loginPass" type="password" autocomplete="current-password" required></label>
       <p id="loginError" class="error" hidden></p>
       <button class="primary">כניסה</button>
+      <p class="muted small legal-links"><a href="terms.html">תנאי שימוש</a> · <a href="privacy.html">מדיניות פרטיות</a></p>
     </form>
   </section>
 
@@ -83,7 +84,7 @@
     <section id="tab-home" hidden>
       <p id="homeShared" class="muted small"></p>
       <form id="homeAdd" class="row">
-        <input id="homeItem" placeholder="מה חסר בבית? (אפשר כמה, מופרדים בפסיק)" autocomplete="off">
+        <input id="homeItem" placeholder="מה חסר בבית?" autocomplete="off">
         <button type="button" id="mic" class="mic" aria-label="הקלטה" title="הקלטה" hidden>🎤</button>
         <button class="primary">הוספה</button>
       </form>
@@ -131,6 +132,25 @@
           </form>
         </details>
         <div class="row"><button id="logout">יציאה מהחשבון במכשיר הזה</button></div>
+        <p class="muted small legal-links"><a href="terms.html" target="_blank">תנאי שימוש</a> · <a href="privacy.html" target="_blank">מדיניות פרטיות</a></p>
+        <details id="deleteMeBox" hidden>
+          <summary>מחיקת החשבון שלי</summary>
+          <p class="muted small">החשבון, הרשימה לחיפוש מבצעים, המיקום וההתראות יימחקו לצמיתות. רשימת „חסר בבית” נשארת לבני הבית האחרים.</p>
+          <button id="deleteMe" class="danger">מחיקת החשבון שלי לצמיתות</button>
+        </details>
+      </div>
+      <div class="card" id="statsCard" hidden>
+        <h3>📊 נתוני שימוש</h3>
+        <p class="muted small">מספרים מצטברים בלבד. לא נשמר מי לחץ על מה, מה כתוב ברשימות או איפה כל אחד נמצא. רק את/ה (המנהל) רואה את המסך הזה.</p>
+        <div id="kpis" class="kpis"></div>
+        <h4>משתמשים פעילים בכל יום (30 ימים)</h4>
+        <div id="activeChart" class="chart" role="img"></div>
+        <h4>לפי רשת (30 ימים)</h4>
+        <div class="tablewrap"><table id="chainStats" class="stats"></table></div>
+        <div class="row">
+          <button id="statsRefresh">רענון</button>
+          <button id="statsCsv">⬇️ הורדת קובץ CSV</button>
+        </div>
       </div>
       <div class="card" id="familyCard" hidden>
         <h3>בני הבית</h3>
@@ -150,10 +170,12 @@
         </div>
         <p id="limitsInfo" class="muted small"></p>
         <form id="addUser">
+          <h4>הוספת משתמש</h4>
           <label>שם<input id="newUserName" required minlength="2" maxlength="30" autocomplete="off"></label>
           <label>סיסמה ראשונית (לפחות 6 תווים)<input id="newUserPass" required minlength="6" autocomplete="new-password"></label>
-          <label class="toggle" id="newHouseholdWrap" hidden><input type="checkbox" id="newHousehold"> משק בית נפרד (בלי רשימת „חסר בבית” משותפת איתי)</label>
-          <button class="primary">שיתוף עם בן בית נוסף</button>
+          <label class="toggle" id="newHouseholdWrap" hidden><input type="checkbox" id="newHousehold"> משק בית נפרד (בלי רשימת ״חסר בבית״ משותפת איתי)</label>
+          <label class="toggle"><input type="checkbox" id="shareHousehold" checked> שיתוף עם בן בית נוסף (רואה ומעדכן את רשימת ״חסר בבית״ שלי)</label>
+          <button class="primary">הוסף</button>
         </form>
         <p class="muted small">אחרי ההוספה שלחו לו את הקישור לאפליקציה, את השם ואת הסיסמה. אחרי הכניסה הוא יוכל להחליף את הסיסמה בעצמו.</p>
         <div class="linkbox">
@@ -203,6 +225,16 @@
   </main>
 
   <div id="toast" role="status" hidden></div>
+
+  <dialog id="termsDlg">
+    <form id="termsForm" method="dialog">
+      <h3>תנאי שימוש ומדיניות פרטיות</h3>
+      <p>כדי להמשיך יש לקרוא ולאשר את <a href="terms.html" target="_blank">תנאי השימוש</a> ואת <a href="privacy.html" target="_blank">מדיניות הפרטיות</a>.</p>
+      <p class="muted small">בקצרה: המבצעים מגיעים מהרשתות ויש לבדוק אותם בחנות. המידע שלך לא נמכר, והמדידה היא מצטברת בלבד, בלי זיהוי.</p>
+      <label class="toggle"><input type="checkbox" id="termsOk" required> קראתי ואני מסכים/ה</label>
+      <button class="primary" id="termsAccept" disabled>אישור והמשך</button>
+    </form>
+  </dialog>
 
   <dialog id="dealSheet">
     <div class="sheet-head">

@@ -206,3 +206,36 @@ nav button[aria-selected="true"], nav button[aria-selected="true"]:hover { backg
 .share svg.android circle { fill: currentColor; stroke: none; }
 .share.is-ios svg.android, .share.is-other svg.ios { display: none; }
 .linkbox code { flex: 1 1 100%; }
+
+#addUser h4 { margin: 16px 0 0; font-size: .95rem; border-top: 1px solid var(--border); padding-top: 12px; }
+/* כפתור עדכון המיקום בולט בכתום */
+#locBtn { background: #ea580c; border-color: #ea580c; color: #fff; font-weight: 700; box-shadow: 0 2px 6px rgb(234 88 12 / .35); }
+#locBtn:hover { background: #c2410c; border-color: #c2410c; }
+#locBtn:disabled { opacity: .7; }
+
+/* תנאי שימוש */
+.legal-links { text-align: center; margin: 12px 0 0; }
+.legal-links a { color: var(--accent); }
+#termsDlg { width: min(480px, calc(100vw - 24px)); border: 1px solid var(--border); border-radius: 16px; padding: 20px; background: var(--surface); color: var(--text); }
+#termsDlg::backdrop { background: rgb(0 0 0 / .55); }
+#termsDlg a { color: var(--accent); font-weight: 600; }
+#termsDlg button { width: 100%; margin-top: 12px; }
+button.danger { background: #b91c1c; color: #fff; border-color: #b91c1c; margin-top: 8px; }
+
+/* נתוני שימוש */
+.kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin: 8px 0 16px; }
+.kpi { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.kpi b { font-size: 1.5rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.kpi span { color: var(--muted); font-size: .8rem; }
+.chart { position: relative; direction: ltr; margin: 4px 0 16px; padding-top: 18px; }
+.chart .ymax { position: absolute; top: 0; left: 0; }
+.chart .plot { display: flex; align-items: flex-end; gap: 2px; height: 140px; border-bottom: 1px solid var(--border); }
+.chart .col { flex: 1; max-width: 24px; height: 100%; display: flex; align-items: flex-end; justify-content: center; cursor: default; outline: none; }
+.chart .col i { display: block; width: 100%; min-height: 2px; background: var(--accent); border-radius: 4px 4px 0 0; opacity: .85; }
+.chart .col.on i, .chart .col:focus-visible i { opacity: 1; box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+.chart .axis { display: flex; justify-content: space-between; margin-top: 4px; }
+.chart .tip { position: absolute; top: -8px; transform: translateX(-50%); background: var(--text); color: var(--bg); font-size: .8rem; padding: 3px 8px; border-radius: 6px; white-space: nowrap; pointer-events: none; direction: rtl; }
+.tablewrap { overflow-x: auto; }
+table.stats { width: 100%; border-collapse: collapse; font-size: .9rem; }
+table.stats th, table.stats td { border-bottom: 1px solid var(--border); padding: 6px 8px; text-align: start; }
+table.stats td:not(:first-child), table.stats th:not(:first-child) { text-align: end; font-variant-numeric: tabular-nums; }

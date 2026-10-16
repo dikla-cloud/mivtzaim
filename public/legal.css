@@ -1,0 +1,13 @@
+/* עמודי תנאי שימוש ומדיניות פרטיות */
+body.legal main { max-width: 760px; margin: auto; padding: calc(16px + env(safe-area-inset-top)) 16px 48px; line-height: 1.7; }
+body.legal h1 { font-size: 1.6rem; margin: 8px 0 0; }
+body.legal h2 { font-size: 1.1rem; margin: 28px 0 6px; }
+body.legal ul { padding-inline-start: 20px; }
+body.legal li { margin: 4px 0; }
+body.legal table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: .95rem; }
+body.legal th, body.legal td { border: 1px solid var(--border); padding: 8px 10px; text-align: start; vertical-align: top; }
+body.legal th { background: var(--accent-soft); }
+body.legal a { color: var(--accent); }
+body.legal mark { background: var(--warn-soft); color: var(--warn); padding: 0 4px; border-radius: 4px; }
+.draft { background: var(--warn-soft); color: var(--warn); border-radius: 10px; padding: 10px 14px; font-weight: 600; }
+.back { margin-top: 32px; }

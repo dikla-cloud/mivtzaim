@@ -21,6 +21,16 @@ async function api(method, url, body) {
   return json;
 }
 
+// מדידה שומרת פרטיות: רק סוג הפעולה (ושם הרשת בלחיצה על מבצע), בלי שום פרט מזהה
+function track(type, chain) {
+  fetch('/api/metrics/event', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-app-token': token },
+    body: JSON.stringify(chain ? { type, chain } : { type }),
+    keepalive: true,
+  }).catch(() => {});
+}
+
 // ---------- כניסה ----------
 async function showLogin() {
   document.body.classList.add('logged-out');
@@ -61,7 +71,7 @@ $('#gear').addEventListener('click', () => showTab($('#gear').getAttribute('aria
 function showTab(t) {
   document.querySelectorAll('nav button').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === t));
   $('#gear').setAttribute('aria-pressed', t === 'settings');
-  if (t === 'settings') scrollTo({ top: 0 });
+  if (t === 'settings') { scrollTo({ top: 0 }); if (S?.me.admin) loadStats(); }
   document.querySelectorAll('main > section').forEach((s) => (s.hidden = s.id !== `tab-${t}`));
 }
 
@@ -71,6 +81,8 @@ function render() {
   $('#status').textContent = S.location ? `📍 ${S.location.label} · רדיוס ${S.radiusKm} ק"מ · ${scanned}` : 'לחצו על „עדכון מיקום” כדי להתחיל';
   $('#sources').textContent = S.lastSources.length ? `מקור הנתונים: ${S.lastSources.join(', ')}` : '';
   $('#meName').textContent = S.me.name;
+  $('#deleteMeBox').hidden = S.me.admin;
+  $('#statsCard').hidden = !S.me.admin;
   renderFamily();
 
   renderDeals();
@@ -146,7 +158,9 @@ function dealCard(d) {
   const link = dealLink(d);
   const src = el.querySelector('.source');
   if (d.itemCode && /^\d{7,14}$/.test(d.itemCode)) src.append(Object.assign(document.createElement('span'), { className: 'muted', textContent: `ברקוד ${d.itemCode} · ` }));
-  src.append(Object.assign(document.createElement('a'), { href: link.href, target: '_blank', rel: 'noopener', textContent: `🔗 ${link.label}` }));
+  const a = Object.assign(document.createElement('a'), { href: link.href, target: '_blank', rel: 'noopener', textContent: `🔗 ${link.label}` });
+  a.addEventListener('click', () => track('deal_click', d.chain));
+  src.append(a);
   return el;
 }
 
@@ -240,6 +254,9 @@ function renderFamily() {
     ? 'הזמנת משתמשים חדשים נעשית דרך מנהל האפליקציה.'
     : left ? `באפליקציה ${L.count} משתמשים מתוך ${L.maxUsers} אפשריים (נשארו ${left}).` : `הגעתם למספר המשתמשים המקסימלי (${L.maxUsers}).${S.me.admin ? ' אפשר להגדיל אותו למעלה.' : ''}`;
   $('#newHouseholdWrap').hidden = !S.me.admin;
+  // משתמש רגיל יכול להוסיף רק בן בית למשק הבית שלו
+  $('#shareHousehold').disabled = !S.me.admin;
+  if (!S.me.admin) { $('#shareHousehold').checked = true; $('#newHousehold').checked = false; }
   $('#appUrl').textContent = location.origin;
   $('#family').replaceChildren(...S.users.map((u) => {
     const li = document.createElement('li');
@@ -301,12 +318,17 @@ $('#maxUsersForm').addEventListener('submit', async (e) => {
   } catch (ex) { alert(ex.message); }
 });
 
+// „משק בית נפרד” ו„שיתוף עם בן בית נוסף” – בדיוק אחת מהן מסומנת
+$('#newHousehold').addEventListener('change', (e) => { $('#shareHousehold').checked = !e.target.checked; });
+$('#shareHousehold').addEventListener('change', (e) => { if (S.me.admin) $('#newHousehold').checked = !e.target.checked; else e.target.checked = true; });
+
 $('#addUser').addEventListener('submit', async (e) => {
   e.preventDefault();
   try {
     S = await api('POST', '/api/users', { name: $('#newUserName').value, password: $('#newUserPass').value, newHousehold: $('#newHousehold').checked });
     toast(`${$('#newUserName').value} נוסף/ה`);
     $('#addUser').reset();
+    $('#shareHousehold').checked = true;
     render();
   } catch (ex) { alert(ex.message); }
 });
@@ -332,6 +354,107 @@ $('#logout').addEventListener('click', async () => {
   showLogin();
 });
 
+// מחיקת החשבון שלי (למשתמש שאינו המנהל)
+$('#deleteMe').addEventListener('click', async () => {
+  if (!confirm('למחוק את החשבון לצמיתות? אי אפשר לבטל את זה.')) return;
+  try {
+    try { const reg = await navigator.serviceWorker?.ready; await (await reg?.pushManager.getSubscription())?.unsubscribe(); } catch { /* */ }
+    await api('DELETE', '/api/me');
+    token = '';
+    store.set('session', '');
+    S = null;
+    showLogin();
+    alert('החשבון נמחק.');
+  } catch (e) { alert(e.message); }
+});
+
+// ---------- נתוני שימוש (למנהל) ----------
+const EVENT_NAMES = {
+  deal_click: 'לחיצות על מבצעים', notification: 'התראות שנשלחו', home_add: 'פריטים שנוספו ל„חסר בבית”',
+  home_bought: 'פריטים שסומנו כנקנו', scan: 'סריקות', signup: 'משתמשים חדשים',
+};
+async function loadStats() {
+  let m;
+  try { m = await api('GET', '/api/metrics?days=30'); } catch { return; }
+  const n = (x) => (x || 0).toLocaleString('he-IL');
+  const tiles = [
+    ['רשומים', m.registered], ['משקי בית', m.households], ['פעילים היום', m.active.today],
+    ['פעילים ב-7 ימים', m.active.week], ['פעילים ב-30 יום', m.active.month],
+    ...Object.entries(EVENT_NAMES).map(([k, label]) => [label, m.totals[k]]),
+  ];
+  $('#kpis').replaceChildren(...tiles.map(([label, v]) => {
+    const t = document.createElement('div');
+    t.className = 'kpi';
+    t.append(Object.assign(document.createElement('b'), { textContent: n(v) }), Object.assign(document.createElement('span'), { textContent: label }));
+    return t;
+  }));
+  renderActiveChart(m.series);
+  const rows = m.chains.slice(0, 20);
+  const tr = (cells, tag = 'td') => {
+    const r = document.createElement('tr');
+    r.append(...cells.map((c) => Object.assign(document.createElement(tag), { textContent: c })));
+    return r;
+  };
+  $('#chainStats').replaceChildren(
+    tr(['רשת', 'מבצעים שהוצגו', 'לחיצות'], 'th'),
+    ...(rows.length ? rows.map((c) => tr([c.name, n(c.shown), n(c.clicks)])) : [tr(['עוד אין נתונים', '', ''])]),
+  );
+}
+// גרף עמודות: משתמשים פעילים בכל יום. ריחוף/נגיעה בעמודה מציגים את התאריך והמספר
+function renderActiveChart(series) {
+  const box = $('#activeChart');
+  const max = Math.max(1, ...series.map((d) => d.active));
+  const day = (k) => new Date(k + 'T12:00').toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' });
+  const tip = Object.assign(document.createElement('div'), { className: 'tip', hidden: true });
+  const plot = Object.assign(document.createElement('div'), { className: 'plot' });
+  for (const d of series) {
+    const col = document.createElement('div');
+    col.className = 'col';
+    col.tabIndex = 0;
+    const bar = Object.assign(document.createElement('i'), {});
+    bar.style.height = `${(d.active / max) * 100}%`;
+    col.append(bar);
+    col.setAttribute('aria-label', `${day(d.date)}: ${d.active} פעילים`);
+    const show = () => {
+      tip.textContent = `${day(d.date)} · ${d.active} פעילים`;
+      tip.hidden = false;
+      const r = col.getBoundingClientRect(), b = box.getBoundingClientRect();
+      tip.style.left = `${Math.min(Math.max(r.left - b.left + r.width / 2, 50), b.width - 50)}px`;
+      col.classList.add('on');
+    };
+    const hide = () => { tip.hidden = true; col.classList.remove('on'); };
+    col.addEventListener('pointerenter', show);
+    col.addEventListener('pointerleave', hide);
+    col.addEventListener('focus', show);
+    col.addEventListener('blur', hide);
+    plot.append(col);
+  }
+  const axis = Object.assign(document.createElement('div'), { className: 'axis muted small' });
+  axis.append(Object.assign(document.createElement('span'), { textContent: day(series[0].date) }), Object.assign(document.createElement('span'), { textContent: day(series[series.length - 1].date) }));
+  const top = Object.assign(document.createElement('div'), { className: 'ymax muted small', textContent: `עד ${max}` });
+  box.setAttribute('aria-label', `משתמשים פעילים ב-30 הימים האחרונים, מקסימום ${max} ביום`);
+  box.replaceChildren(top, plot, axis, tip);
+}
+$('#statsRefresh').addEventListener('click', loadStats);
+$('#statsCsv').addEventListener('click', async () => {
+  try {
+    const res = await fetch('/api/metrics.csv', { headers: { 'x-app-token': token } });
+    if (!res.ok) throw new Error('ההורדה נכשלה');
+    const url = URL.createObjectURL(await res.blob());
+    const a = Object.assign(document.createElement('a'), { href: url, download: `usage-${new Date().toISOString().slice(0, 10)}.csv` });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch (e) { alert(e.message); }
+});
+
+// ---------- אישור תנאי שימוש ----------
+$('#termsOk').addEventListener('change', (e) => { $('#termsAccept').disabled = !e.target.checked; });
+$('#termsDlg').addEventListener('cancel', (e) => e.preventDefault()); // אי אפשר לדלג
+$('#termsForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try { S = await api('POST', '/api/terms/accept'); $('#termsDlg').close(); render(); } catch (ex) { alert(ex.message); }
+});
+
 // ---------- חסר בבית (משותף לבני הבית) ----------
 const plain = (s) => String(s).split('|')[0].replace(/[׳'"״]/g, '').trim().toLowerCase();
 
@@ -353,6 +476,7 @@ function openDealSheet(text) {
   $('#sheetTitle').textContent = `${foodIcon(text)} מבצעים על „${text}”`;
   $('#sheetBody').replaceChildren(...ds.map(dealCard));
   $('#dealSheet').showModal();
+  track('deal_sheet');
 }
 $('#sheetClose').addEventListener('click', () => $('#dealSheet').close());
 $('#dealSheet').addEventListener('click', (e) => { if (e.target === $('#dealSheet')) $('#dealSheet').close(); });
@@ -472,13 +596,14 @@ $('#copyLink').addEventListener('click', async () => {
     getSelection().removeAllRanges(); getSelection().addRange(r);
     document.execCommand('copy');
   }
+  track('copy_link');
   $('#copyLink').textContent = '✔ הועתק';
   setTimeout(() => ($('#copyLink').textContent = '📋 העתקת הקישור'), 2000);
 });
 if (navigator.share) {
   $('#shareLink').hidden = false;
   $('#shareLink').classList.add(/iPhone|iPad|Macintosh/.test(navigator.userAgent) ? 'is-ios' : 'is-other');
-  $('#shareLink').addEventListener('click', () => navigator.share({ title: 'הקניות שלי', text: 'הצטרפות לאפליקציה „הקניות שלי”:', url: location.origin }).catch(() => {}));
+  $('#shareLink').addEventListener('click', () => navigator.share({ title: 'הקניות שלי', text: 'הצטרפות לאפליקציה „הקניות שלי”:', url: location.origin }).then(() => track('share_link'), () => {}));
 }
 
 // ---------- קול: הכתבה (דיבור ← טקסט) והודעה קולית ----------
@@ -517,6 +642,7 @@ if (SR) {
   $('#mic').addEventListener('click', () => {
     if (rec) return rec.stop();
     rec = new SR();
+    track('dictation');
     rec.lang = 'he-IL';
     rec.interimResults = true;
     rec.continuous = false;
@@ -719,6 +845,7 @@ async function boot() {
   S = await api('GET', '/api/state');
   document.body.classList.remove('logged-out');
   render();
+  if (S.needTerms && !$('#termsDlg').open) { $('#termsOk').checked = false; $('#termsAccept').disabled = true; $('#termsDlg').showModal(); }
   if (!S.location) showTab('settings');
   else if (!S.list.length) showTab('list');
   updatePushState();
