@@ -93,8 +93,8 @@ module.exports = {
   countries: ['AU'],
   async scan({ list, errors, report }) {
     report.note = 'מבצעי השבוע באתרי Woolworths ו-Coles. המחירים באתרים ארציים, ושתי הרשתות פרוסות בכל הערים.';
-    const terms = await translate(list.map((x) => x.text), 'en');
-    for (const e of list) report.items[e.text] = { term: terms[e.text] || e.text, translated: Boolean(terms[e.text]), offers: 0 };
+    const terms = await translate(list.map((x) => x.text), 'en', 'AU');
+    for (const e of list) report.items[e.text] = { term: terms[e.text]?.term || e.text, translated: Boolean(terms[e.text]), how: terms[e.text]?.how, offers: 0 };
     const deals = [];
     for (const retailer of [woolworths, coles]) {
       const r = { name: retailer.name, nearby: null, stores: [], deals: 0, error: null };

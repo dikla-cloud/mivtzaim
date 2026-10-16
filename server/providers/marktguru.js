@@ -70,23 +70,38 @@ module.exports = {
       const host = SITES[place.countryCode];
       const s = new Session();
       const { apiKey, clientKey } = await apiKeys(s, host);
-      const terms = await translate(list.map((x) => x.text), 'de');
+      const terms = await translate(list.map((x) => x.text), 'de', place.countryCode);
       const now = new Date();
+      const search = async (q) => {
+        const url = `https://api.${host}/api/v1/offers/search?as=web&limit=30&offset=0&zipCode=${encodeURIComponent(place.postcode)}&q=${encodeURIComponent(q)}`;
+        const res = await s.fetch(url, { headers: { 'x-apikey': apiKey, 'x-clientkey': clientKey, Accept: 'application/json' } });
+        return (await res.json()).results || [];
+      };
       for (const entry of list) {
-        const q = terms[entry.text] || entry.text;
-        const info = (report.items[entry.text] = { term: q, offers: 0, translated: Boolean(terms[entry.text]) });
+        const q = terms[entry.text]?.term || entry.text;
+        const info = (report.items[entry.text] = { term: q, offers: 0, translated: Boolean(terms[entry.text]), how: terms[entry.text]?.how });
         try {
-          const url = `https://api.${host}/api/v1/offers/search?as=web&limit=30&offset=0&zipCode=${encodeURIComponent(place.postcode)}&q=${encodeURIComponent(q)}`;
-          const res = await s.fetch(url, { headers: { 'x-apikey': apiKey, 'x-clientkey': clientKey, Accept: 'application/json' } });
-          const json = await res.json();
-          info.offers = (json.results || []).length;
-          for (const o of json.results || []) {
+          const results = await search(q);
+          info.offers = results.length;
+          for (const o of results) {
             const d = toDeal(o, entry, now);
             if (d) deals.push(d);
           }
         } catch (e) {
           info.error = e.message;
           errors.push(`marktguru / ${q}: ${e.message}`);
+        }
+      }
+      // אם אף מוצר לא החזיר תוצאות – בדיקת שפיות עם מוצר שתמיד יש עליו מבצעים
+      const items = Object.values(report.items);
+      if (items.length && items.every((i) => !i.offers && !i.error)) {
+        try {
+          const n = (await search('Milch')).length;
+          report.note += n
+            ? ` · בדיקת ביקורת: חיפוש „Milch” החזיר ${n} תוצאות, כלומר החיבור לעלונים תקין ופשוט אין כרגע מבצעים על המוצרים ברשימה.`
+            : ' · בדיקת ביקורת: גם חיפוש „Milch” החזיר 0 תוצאות. כנראה שהממשק של marktguru השתנה או שהמיקוד לא נתמך.';
+        } catch (e) {
+          report.note += ` · בדיקת ביקורת נכשלה: ${e.message}`;
         }
       }
     }

@@ -178,7 +178,7 @@ function renderReport() {
   const abroad = p.countryCode && p.countryCode !== 'IL';
   for (const it of R.items) {
     let line = `${foodIcon(it.text)} ${it.text}`;
-    if (it.term && it.term !== it.text) line += ` → חיפוש „${it.term}”`;
+    if (it.term && it.term !== it.text) line += ` → חיפוש „${it.term}”${it.how === 'online' ? ' (תרגום אוטומטי – אם הוא שגוי, אפשר לתקן עם |)' : it.how === 'manual' ? ' (תרגום ידני)' : ''}`;
     if (it.offers != null) line += ` · ${it.offers} תוצאות בעלונים`;
     line += ` · ${it.found ? `${it.found} מבצעים בתוקף` : 'אין מבצע כרגע'}`;
     const li = el('li', line);

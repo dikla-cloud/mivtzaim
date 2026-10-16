@@ -1,33 +1,44 @@
-// תרגום פריטי הרשימה לשפה המקומית (לחיפוש בעלונים), בשירות התרגום החינמי MyMemory.
-// נשמר במטמון כדי לא לתרגם שוב. אפשר גם לכתוב תרגום ידני ברשימה: "חלב 3% | Milch"
+// תרגום פריטי הרשימה לשפה המקומית (לחיפוש בעלונים ובאתרי הרשתות). סדר העדיפויות:
+// 1. תרגום ידני ברשימה: "חלב 3% | Milch"
+// 2. מילון מוצרי המכולת המובנה (glossary.js)
+// 3. שירות התרגום החינמי MyMemory – רק אם התשובה נראית כמו שם מוצר (בלי משפטים ופיסוק)
 const db = require('./db');
+const glossary = require('./glossary');
 
 const latinAlt = (text) => text.split('|').map((s) => s.trim()).find((s) => /[a-zà-ÿ]/i.test(s));
+
+// MyMemory מחזיר לפעמים "תרגומים" מזיכרון משותף שאינם קשורים ("Ah, Wein von Samos.")
+const plausible = (src, t) => t && !/[.!?"“”„:;()]/.test(t) && t.split(/\s+/).length <= Math.max(3, src.split(/\s+/).length + 1) && !/[֐-׿]/.test(t);
 
 async function translateOne(text, lang) {
   const url = `https://api.mymemory.translated.net/get?langpair=he|${lang}&q=${encodeURIComponent(text)}${process.env.VAPID_SUBJECT ? `&de=${encodeURIComponent(process.env.VAPID_SUBJECT.replace(/^mailto:/, ''))}` : ''}`;
   const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
   const json = await res.json();
-  const t = json?.responseData?.translatedText;
-  return json?.responseStatus === 200 && t && !/MYMEMORY WARNING/i.test(t) ? t : null;
+  const t = json?.responseData?.translatedText?.trim();
+  return json?.responseStatus === 200 && !/MYMEMORY WARNING/i.test(t || '') && plausible(text, t) ? t : null;
 }
 
-module.exports = async function translate(items, lang) {
+// מחזיר { [פריט]: { term, how } } – how: manual / glossary / online
+module.exports = async function translate(items, lang, country) {
   const d = db.get();
-  const cache = (d.translations ||= {})[lang] ||= {};
+  const cache = (d.translations ||= {})[`${lang}:v2`] ||= {}; // v2: מטמון חדש, בלי התרגומים השגויים מהגרסה הקודמת
   const out = {};
   let changed = false;
   for (const t of items) {
     const manual = latinAlt(t);
-    if (manual) { out[t] = manual; continue; }
-    if (!cache[t]) {
+    if (manual) { out[t] = { term: manual, how: 'manual' }; continue; }
+    const g = glossary.lookup(t, lang, country);
+    if (g) { out[t] = { term: g, how: 'glossary' }; continue; }
+    if (!(t in cache)) {
       try {
-        const tr = await translateOne(t.split('|')[0].trim(), lang);
-        if (tr) { cache[t] = tr; changed = true; }
+        cache[t] = await translateOne(t.split('|')[0].trim(), lang);
+        changed = true;
       } catch { /* בלי תרגום – נחפש בטקסט המקורי */ }
     }
-    if (cache[t]) out[t] = cache[t];
+    if (cache[t]) out[t] = { term: cache[t], how: 'online' };
   }
   if (changed) db.save();
   return out;
 };
+
+module.exports.plausible = plausible;

@@ -15,7 +15,23 @@ test('list item alternatives with |', () => {
 });
 
 test('manual translation after | is used without calling any service', async () => {
-  assert.deepEqual(await translate(['חלב 3% | Milch'], 'de'), { 'חלב 3% | Milch': 'Milch' });
+  assert.deepEqual(await translate(['חלב 3% | Milch'], 'de'), { 'חלב 3% | Milch': { term: 'Milch', how: 'manual' } });
+});
+
+test('glossary translates the items that the online service got wrong', async () => {
+  const { lookup } = require('../server/glossary');
+  assert.equal(lookup('עוף', 'de'), 'Hähnchen');
+  assert.equal(lookup('שמן זית', 'de'), 'Olivenöl');
+  assert.equal(lookup('בשר טחון', 'de', 'AT'), 'Faschiertes');
+  assert.equal(lookup('בשר טחון', 'de', 'DE'), 'Hackfleisch');
+  assert.equal(lookup('בשר צלי', 'de'), 'Rinderbraten');
+  assert.equal(lookup("קוטג' 5%", 'en'), 'cottage cheese');
+  assert.equal(lookup('שוקולד חלב', 'de'), 'Schokolade');
+  assert.equal(lookup('משהו אחר', 'de'), null);
+  const { plausible } = require('../server/translate');
+  assert.ok(!plausible('שמן זית', 'Ah, Wein von Samos.'));
+  assert.ok(!plausible('עוף', 'Einfach.'));
+  assert.ok(plausible('קולרבי', 'Kohlrabi'));
 });
 
 test('marktguru offer → deal, expired dropped', () => {
