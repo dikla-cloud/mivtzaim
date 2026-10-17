@@ -95,6 +95,8 @@ const I18N = {
   '📷 נמצא ברקוד {code}, אבל שם המוצר לא ידוע. כתבו את השם בשדה.': ['📷 Barcode {code} gefunden, aber das Produkt ist unbekannt. Bitte den Namen eintippen.', '📷 Found barcode {code}, but the product is unknown. Please type the name.'],
 
   // ---------- השוואת עגלה ----------
+  "מה חסר?": ["Was fehlt?", "What's missing?"],
+  "השוואת מחיר העגלה עובדת כרגע רק בישראל: רק שם הרשתות מפרסמות מחירון מלא לכל סניף. בחו\"ל יש רק עלוני מבצעים, ולכן אי אפשר לחשב את מחיר כל העגלה.": ["Der Warenkorb-Vergleich funktioniert derzeit nur in Israel: Nur dort veröffentlichen die Ketten vollständige Preislisten pro Filiale. Hier gibt es nur Flugblätter.", "Cart comparison currently works only in Israel: only there do chains publish a full price list for every store. Elsewhere there are only deal flyers."],
   "🧮 השוואת מחיר העגלה": ["🧮 Warenkorb vergleichen", "🧮 Compare cart prices"],
   "בחרו עד 4 סניפים, ונחשב כמה תעלה היום רשימת „חסר בבית” בכל אחד מהם (לפי קובצי המחירים והמבצעים של הרשתות).": ["Wähle bis zu 4 Filialen. Wir berechnen, was deine Einkaufsliste heute in jeder kostet.", "Choose up to 4 stores and we will work out what your shopping list costs in each one today (from the chains’ price and deal files)."],
   "השוואה": ["Vergleichen", "Compare"],
@@ -312,6 +314,8 @@ const I18N = {
 
 // ערבית (מפתח: הנוסח העברי)
 const I18N_AR = {
+  "מה חסר?": "ماذا ينقص؟",
+  "השוואת מחיר העגלה עובדת כרגע רק בישראל: רק שם הרשתות מפרסמות מחירון מלא לכל סניף. בחו\"ל יש רק עלוני מבצעים, ולכן אי אפשר לחשב את מחיר כל העגלה.": "مقارنة سعر العربة تعمل حاليًا في إسرائيل فقط: هناك فقط تنشر الشبكات قائمة أسعار كاملة لكل فرع. في الخارج توجد نشرات عروض فقط.",
   "🧮 השוואת מחיר העגלה": "🧮 مقارنة سعر العربة",
   "בחרו עד 4 סניפים, ונחשב כמה תעלה היום רשימת „חסר בבית” בכל אחד מהם (לפי קובצי המחירים והמבצעים של הרשתות).": "اختر حتى 4 فروع، وسنحسب كم ستكلّف قائمة مشترياتك اليوم في كل واحد منها (حسب ملفات الأسعار والعروض للشبكات).",
   "השוואה": "قارن",

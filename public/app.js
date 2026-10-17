@@ -483,6 +483,9 @@ $('#sheetClose').addEventListener('click', () => $('#dealSheet').close());
 $('#dealSheet').addEventListener('click', (e) => { if (e.target === $('#dealSheet')) $('#dealSheet').close(); });
 
 function renderHome() {
+  // השוואת מחיר העגלה אפשרית רק בישראל (רק שם יש מחירון מלא לכל סניף)
+  const cc = S.location?.place?.countryCode;
+  $('#cartAbroad').hidden = !cc || cc === 'IL';
   const items = [...(S.home || [])].sort((a, b) => a.done - b.done);
   const open = items.filter((x) => !x.done).length;
   $('#homeCount').hidden = !open;
@@ -824,6 +827,7 @@ $('#cartBtn').addEventListener('click', async () => {
   $('#cartPick').hidden = false;
   $('#cartResult').hidden = true;
   $('#cartStores').replaceChildren();
+  $('#cartPickInfo').className = 'small';
   $('#cartPickInfo').textContent = t('טוען את הסניפים באזור…');
   $('#cartGo').disabled = true;
   $('#cartDlg').showModal();
@@ -834,7 +838,10 @@ $('#cartBtn').addEventListener('click', async () => {
     cartSel = r.selected.map((x) => cartStores.find((s) => storeKey(s) === storeKey(x))).filter(Boolean);
     if (!cartStores.length) return ($('#cartPickInfo').textContent = t('לא נמצאו סניפים ברדיוס החיפוש. אפשר להגדיל את הרדיוס בהגדרות.'));
     renderCartPick(r.max);
-  } catch (e) { $('#cartPickInfo').textContent = e.message; }
+  } catch (e) {
+    $('#cartPickInfo').textContent = e.message;
+    $('#cartPickInfo').className = 'note-warn';
+  }
 });
 $('#cartClose').addEventListener('click', () => $('#cartDlg').close());
 $('#cartBack').addEventListener('click', () => { $('#cartResult').hidden = true; $('#cartPick').hidden = false; });
