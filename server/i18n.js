@@ -30,6 +30,9 @@ const T = {
   'שלום {name}, ההתראות פועלות ✔': { de: 'Hallo {name}, die Benachrichtigungen funktionieren ✔', en: 'Hi {name}, notifications are working ✔' },
 
   'ברקוד לא תקין': { de: 'Ungültiger Barcode', en: 'Invalid barcode' },
+  'השוואת עגלה זמינה כרגע רק בישראל': { de: 'Der Warenkorb-Vergleich ist derzeit nur in Israel verfügbar', en: 'Cart comparison is currently available only in Israel' },
+  'בחרו לפחות סניף אחד': { de: 'Bitte mindestens eine Filiale wählen', en: 'Choose at least one store' },
+  'רשימת „חסר בבית” ריקה': { de: 'Die Einkaufsliste ist leer', en: 'The shopping list is empty' },
 
   // סריקה
   'לא הוגדר מיקום': { de: 'Kein Standort festgelegt', en: 'No location set' },
@@ -98,6 +101,9 @@ const T_AR = {
   "בדיקת התראה": "تنبيه تجريبي",
   "שלום {name}, ההתראות פועלות ✔": "مرحبًا {name}، التنبيهات تعمل ✔",
   "ברקוד לא תקין": "باركود غير صالح",
+  "השוואת עגלה זמינה כרגע רק בישראל": "مقارنة سعر العربة متاحة حاليًا في إسرائيل فقط",
+  "בחרו לפחות סניף אחד": "اختر فرعًا واحدًا على الأقل",
+  "רשימת „חסר בבית” ריקה": "قائمة المشتريات فارغة",
   "לא הוגדר מיקום": "لم يُحدَّد موقع",
   "אין עדיין מקור מבצעים חינמי ל{country}. נתמכות כרגע: ישראל, אוסטריה, גרמניה ואוסטרליה.": "لا يوجد بعد مصدر عروض مجاني لـ{country}. المدعوم حاليًا: إسرائيل، النمسا، ألمانيا وأستراليا.",
   "המדינה הזו": "هذه الدولة",

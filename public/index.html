@@ -110,6 +110,9 @@
       <div class="row" id="homeActions" hidden>
         <button id="clearDone">🧹 ניקוי פריטים שנקנו</button>
       </div>
+      <div class="row il-only">
+        <button id="cartBtn" class="primary">🧮 השוואת מחיר העגלה</button>
+      </div>
       <p class="muted small">בסופר: לוחצים על פריט כשהוא נכנס לעגלה. „ניקוי פריטים שנקנו” משאיר ברשימה רק את מה שעוד לא נקנה. הרשימה לחיפוש מבצעים לא משתנה.</p>
     </section>
 
@@ -258,6 +261,28 @@
       <label class="toggle"><input type="checkbox" id="termsOk" required> קראתי ואני מסכים/ה</label>
       <button class="primary" id="termsAccept" disabled>אישור והמשך</button>
     </form>
+  </dialog>
+
+  <dialog id="cartDlg">
+    <div class="sheet-head">
+      <h3>🧮 השוואת מחיר העגלה</h3>
+      <button type="button" id="cartClose" class="sheet-x" aria-label="סגירה">✕</button>
+    </div>
+    <div id="cartPick">
+      <p class="muted small">בחרו עד 4 סניפים, ונחשב כמה תעלה היום רשימת „חסר בבית” בכל אחד מהם (לפי קובצי המחירים והמבצעים של הרשתות).</p>
+      <p id="cartPickInfo" class="small"></p>
+      <div id="cartStores" class="cart-stores"></div>
+      <div class="row">
+        <button id="cartGo" class="primary" disabled>השוואה</button>
+      </div>
+    </div>
+    <div id="cartResult" hidden>
+      <p id="cartSummary" class="small"></p>
+      <div id="cartCards" class="cart-cards"></div>
+      <div class="tablewrap"><table id="cartTable" class="stats cart-table"></table></div>
+      <p class="muted small">לכל פריט נבחר המוצר הזול ביותר שמתאים לשם, ואם יש עליו מבצע ליחידה – מחיר המבצע (🏷️). לתוצאה מדויקת יותר כתבו ברשימה שם מפורט (למשל „חלב 3% 1 ליטר”) או ברקוד. כדאי לבדוק את המחירים בחנות.</p>
+      <div class="row"><button id="cartBack">שינוי סניפים</button></div>
+    </div>
   </dialog>
 
   <dialog id="dealSheet">

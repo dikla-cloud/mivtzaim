@@ -28,4 +28,8 @@ function matchOne(query, itemName, itemCode) {
   return qt.length > 0 && qt.every((t) => variants.some((w) => w.startsWith(t)));
 }
 
-module.exports = { normalize, matches };
+// לשימוש חוזר על הרבה מוצרים (השוואת עגלה): מכינים את מילות שם המוצר פעם אחת
+const variantsOf = (name) => tokens(name).flatMap((w) => (/^[הובלמש]/.test(w) && w.length > 2 ? [w, w.slice(1)] : [w]));
+const matchVariants = (queryTokens, variants) => queryTokens.length > 0 && queryTokens.every((t) => variants.some((w) => w.startsWith(t)));
+
+module.exports = { normalize, matches, tokens, variantsOf, matchVariants };

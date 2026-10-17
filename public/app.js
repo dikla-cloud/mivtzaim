@@ -797,6 +797,112 @@ setInterval(() => { if (!$('#tab-home').hidden) refreshHome(); }, 10000);
 document.addEventListener('visibilitychange', refreshHome);
 document.querySelector('nav [data-tab=home]').addEventListener('click', refreshHome);
 
+// ---------- השוואת מחיר העגלה בין סניפים ----------
+let cartStores = [];
+let cartSel = [];
+const storeKey = (s) => `${s.chain}|${s.storeId}`;
+function renderCartPick(max) {
+  $('#cartPickInfo').textContent = t('נבחרו {n} מתוך {max}', { n: cartSel.length, max });
+  $('#cartGo').disabled = !cartSel.length;
+  $('#cartStores').replaceChildren(...cartStores.map((s) => {
+    const on = cartSel.some((x) => storeKey(x) === storeKey(s));
+    const l = document.createElement('label');
+    l.className = 'cart-store' + (on ? ' on' : '');
+    const cb = Object.assign(document.createElement('input'), { type: 'checkbox', checked: on, disabled: !on && cartSel.length >= max });
+    cb.addEventListener('change', () => {
+      cartSel = cb.checked ? [...cartSel, s] : cartSel.filter((x) => storeKey(x) !== storeKey(s));
+      renderCartPick(max);
+    });
+    const txt = Object.assign(document.createElement('span'), {});
+    txt.append(Object.assign(document.createElement('b'), { textContent: `${s.chainName} · ${s.name}` }),
+      Object.assign(document.createElement('small'), { className: 'muted', textContent: ` ${s.km} ${t('ק"מ')}${s.address ? ` · ${s.address}` : ''}` }));
+    l.append(cb, txt);
+    return l;
+  }));
+}
+$('#cartBtn').addEventListener('click', async () => {
+  $('#cartPick').hidden = false;
+  $('#cartResult').hidden = true;
+  $('#cartStores').replaceChildren();
+  $('#cartPickInfo').textContent = t('טוען את הסניפים באזור…');
+  $('#cartGo').disabled = true;
+  $('#cartDlg').showModal();
+  try {
+    const r = await api('GET', '/api/compare/stores');
+    cartStores = r.stores;
+    // הבחירה הקודמת נשמרת, רק אם הסניפים עדיין באזור
+    cartSel = r.selected.map((x) => cartStores.find((s) => storeKey(s) === storeKey(x))).filter(Boolean);
+    if (!cartStores.length) return ($('#cartPickInfo').textContent = t('לא נמצאו סניפים ברדיוס החיפוש. אפשר להגדיל את הרדיוס בהגדרות.'));
+    renderCartPick(r.max);
+  } catch (e) { $('#cartPickInfo').textContent = e.message; }
+});
+$('#cartClose').addEventListener('click', () => $('#cartDlg').close());
+$('#cartBack').addEventListener('click', () => { $('#cartResult').hidden = true; $('#cartPick').hidden = false; });
+$('#cartGo').addEventListener('click', async () => {
+  const b = $('#cartGo');
+  b.disabled = true;
+  b.textContent = t('בודק מחירים בסניפים… (עד דקה)');
+  try {
+    renderCart(await api('POST', '/api/compare', { stores: cartSel }));
+    track('cart_compare');
+  } catch (e) { alert(e.message); } finally {
+    b.disabled = !cartSel.length;
+    b.textContent = t('השוואה');
+  }
+});
+function renderCart(r) {
+  $('#cartPick').hidden = true;
+  $('#cartResult').hidden = false;
+  const ok = r.stores.filter((s) => !s.error).sort((a, b) => a.commonTotal - b.commonTotal);
+  $('#cartSummary').textContent = r.common === r.items.length
+    ? t('כל {n} הפריטים נמצאו בכל הסניפים.', { n: r.items.length })
+    : t('הסכום משווה {common} פריטים שנמצאו בכל הסניפים (מתוך {n}). פריטים שחסרים בסניף מסומנים ב-—.', { common: r.common, n: r.items.length });
+  const cards = [...ok, ...r.stores.filter((s) => s.error)].map((s) => {
+    const c = document.createElement('div');
+    const best = storeKey(s) === r.cheapest;
+    c.className = 'cart-card' + (best ? ' best' : '');
+    c.append(Object.assign(document.createElement('div'), { className: 'cc-name', textContent: `${s.chainName} · ${s.name}` }));
+    if (s.error) {
+      c.append(Object.assign(document.createElement('div'), { className: 'warn small', textContent: t('לא הצלחנו לבדוק: {err}', { err: s.error }) }));
+      return c;
+    }
+    c.append(Object.assign(document.createElement('div'), { className: 'cc-total', textContent: money(s.commonTotal) }));
+    const extra = s.total !== s.commonTotal ? t(' · כל מה שנמצא: {total}', { total: money(s.total) }) : '';
+    c.append(Object.assign(document.createElement('div'), { className: 'muted small', textContent: t('{found} מתוך {n} פריטים', { found: s.found, n: r.items.length }) + extra }));
+    if (best && ok.length > 1) c.prepend(Object.assign(document.createElement('span'), { className: 'badge best-badge', textContent: t('🏆 הכי זול') }));
+    return c;
+  });
+  $('#cartCards').replaceChildren(...cards);
+  const tr = (cells, tag = 'td') => {
+    const row = document.createElement('tr');
+    for (const c of cells) {
+      const cell = document.createElement(tag);
+      if (c instanceof Node) cell.append(c); else cell.textContent = c;
+      row.append(cell);
+    }
+    return row;
+  };
+  const head = tr([t('פריט'), ...ok.map((s) => {
+    const h = document.createElement('span');
+    h.append(s.chainName, Object.assign(document.createElement('small'), { className: 'muted', textContent: s.name }));
+    return h;
+  })], 'th');
+  const rows = r.items.map((item) => {
+    const prices = ok.map((s) => s.lines.find((l) => l.text === item)).map((l) => (l && !l.missing ? l.price : null));
+    const min = Math.min(...prices.filter((p) => p != null));
+    return tr([`${foodIcon(item)} ${item}`, ...ok.map((s, i) => {
+      const l = s.lines.find((x) => x.text === item);
+      const cell = document.createElement('span');
+      if (!l || l.missing) { cell.textContent = '—'; cell.className = 'muted'; return cell; }
+      cell.append(Object.assign(document.createElement('b'), { textContent: `${l.promo ? '🏷️ ' : ''}${money(l.price)}`, className: prices[i] === min && ok.length > 1 ? 'cheap' : '' }));
+      cell.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: l.name }));
+      cell.title = l.name;
+      return cell;
+    })]);
+  });
+  $('#cartTable').replaceChildren(head, ...rows);
+}
+
 // ---------- רשימה לחיפוש מבצעים ----------
 const splitItems = (txt) => txt.split(/[\n,;]+/).map((s) => s.replace(/^[\s\-*•\d.)]+(?=\D)/, '').trim()).filter(Boolean);
 

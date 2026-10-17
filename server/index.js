@@ -9,6 +9,8 @@ const auth = require('./auth');
 const scanner = require('./scanner');
 const metrics = require('./metrics');
 const i18n = require('./i18n');
+const compare = require('./compare');
+const translate = require('./translate');
 
 // הגדרות ההתקנה: שפת ברירת מחדל ומדינה (למשל התקנה נפרדת לאוסטריה: APP_LANG=de APP_COUNTRY=AT)
 const APP_COUNTRY = (process.env.APP_COUNTRY || 'IL').toUpperCase();
@@ -366,6 +368,45 @@ app.get('/api/product/:code', async (req, res) => {
   cache[key] = { name, at: Date.now() };
   db.save();
   res.json({ code, name });
+});
+
+// ---------- השוואת עלות העגלה („חסר בבית”) בין סניפים (ישראל) ----------
+async function inIsrael(u) {
+  if (!u.location) return false;
+  const place = await scanner.placeOf(u.location);
+  return !place || place.countryCode === 'IL';
+}
+app.get('/api/compare/stores', async (req, res) => {
+  const u = req.user;
+  if (!u.location) return res.status(400).json({ error: T(req, 'לא הוגדר מיקום') });
+  if (!(await inIsrael(u))) return res.status(400).json({ error: T(req, 'השוואת עגלה זמינה כרגע רק בישראל') });
+  const errors = [];
+  const stores = await compare.nearbyStores(u, errors);
+  res.json({ stores, selected: u.compareStores || [], max: compare.MAX_STORES, errors });
+});
+app.post('/api/compare', async (req, res) => {
+  const u = req.user;
+  const stores = (Array.isArray(req.body?.stores) ? req.body.stores : [])
+    .filter((s) => s && typeof s.chain === 'string' && s.storeId != null)
+    .slice(0, compare.MAX_STORES)
+    .map((s) => ({ chain: s.chain, storeId: String(s.storeId).slice(0, 20), name: String(s.name || '').slice(0, 80) }));
+  if (!stores.length) return res.status(400).json({ error: T(req, 'בחרו לפחות סניף אחד') });
+  let items = db.householdOf(u).home.filter((x) => !x.done).map((x) => x.text);
+  if (!items.length) return res.status(400).json({ error: T(req, 'רשימת „חסר בבית” ריקה') });
+  // פריטים בערבית: קובצי המחירים בעברית, ולכן מוסיפים את התרגום לעברית לחיפוש
+  const arabic = items.filter((t) => translate.sourceLang(t) === 'ar');
+  if (arabic.length) {
+    const tr = await translate(arabic, 'he', 'IL');
+    items = items.map((t) => (tr[t] ? `${t}|${tr[t].term}` : t));
+  }
+  u.compareStores = stores;
+  metrics.count('compare');
+  const result = await compare.compare(items, stores);
+  // מציגים את הפריט כפי שנכתב (בלי התרגום שנוסף לחיפוש)
+  for (const st of result.stores) for (const l of st.lines || []) l.text = l.text.split('|')[0];
+  result.items = result.items.map((t) => t.split('|')[0]);
+  db.save();
+  res.json(result);
 });
 
 app.post('/api/subscribe', (req, res) => {

@@ -89,6 +89,7 @@ function findDeals({ list, promos, prices, chain, store, now = new Date() }) {
 }
 
 module.exports = {
+  chainStores,
   id: 'israel',
   name: 'קובצי שקיפות מחירים (ישראל)',
   countries: ['IL'],

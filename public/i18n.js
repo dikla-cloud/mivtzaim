@@ -94,6 +94,24 @@ const I18N = {
   '📷 נמצא ברקוד {code}, אבל שם המוצר לא ידוע. אפשר להוסיף שם לפני הברקוד, למשל: „קפה | {code}”': ['📷 Barcode {code} gefunden, aber das Produkt ist unbekannt. Du kannst einen Namen davor schreiben, z. B. „Kaffee | {code}“', '📷 Found barcode {code}, but the product is unknown. You can add a name before it, e.g. “coffee | {code}”'],
   '📷 נמצא ברקוד {code}, אבל שם המוצר לא ידוע. כתבו את השם בשדה.': ['📷 Barcode {code} gefunden, aber das Produkt ist unbekannt. Bitte den Namen eintippen.', '📷 Found barcode {code}, but the product is unknown. Please type the name.'],
 
+  // ---------- השוואת עגלה ----------
+  "🧮 השוואת מחיר העגלה": ["🧮 Warenkorb vergleichen", "🧮 Compare cart prices"],
+  "בחרו עד 4 סניפים, ונחשב כמה תעלה היום רשימת „חסר בבית” בכל אחד מהם (לפי קובצי המחירים והמבצעים של הרשתות).": ["Wähle bis zu 4 Filialen. Wir berechnen, was deine Einkaufsliste heute in jeder kostet.", "Choose up to 4 stores and we will work out what your shopping list costs in each one today (from the chains’ price and deal files)."],
+  "השוואה": ["Vergleichen", "Compare"],
+  "לכל פריט נבחר המוצר הזול ביותר שמתאים לשם, ואם יש עליו מבצע ליחידה – מחיר המבצע (🏷️). לתוצאה מדויקת יותר כתבו ברשימה שם מפורט (למשל „חלב 3% 1 ליטר”) או ברקוד. כדאי לבדוק את המחירים בחנות.": ["Für jeden Eintrag wird das günstigste passende Produkt gewählt, bei Angebot der Angebotspreis (🏷️). Genauer wird es mit genauen Namen oder Barcodes. Bitte Preise im Geschäft prüfen.", "For each item the cheapest matching product is used, and its sale price if it has a single-unit deal (🏷️). For a more exact result, write a detailed name (e.g. “milk 3% 1 litre”) or a barcode. Check prices in the store."],
+  "שינוי סניפים": ["Filialen ändern", "Change stores"],
+  "נבחרו {n} מתוך {max}": ["{n} von {max} gewählt", "{n} of {max} selected"],
+  "טוען את הסניפים באזור…": ["Lade Filialen in der Nähe…", "Loading nearby stores…"],
+  "לא נמצאו סניפים ברדיוס החיפוש. אפשר להגדיל את הרדיוס בהגדרות.": ["Keine Filialen im Suchradius. Du kannst den Radius in den Einstellungen erhöhen.", "No stores within the search radius. You can increase it in Settings."],
+  "בודק מחירים בסניפים… (עד דקה)": ["Prüfe Preise… (bis zu einer Minute)", "Checking prices… (up to a minute)"],
+  "כל {n} הפריטים נמצאו בכל הסניפים.": ["Alle {n} Einträge wurden in allen Filialen gefunden.", "All {n} items were found in every store."],
+  "הסכום משווה {common} פריטים שנמצאו בכל הסניפים (מתוך {n}). פריטים שחסרים בסניף מסומנים ב-—.": ["Die Summe vergleicht {common} Einträge, die es überall gibt (von {n}). Fehlende sind mit — markiert.", "The total compares the {common} items found in every store (out of {n}). Items missing in a store are marked —."],
+  "לא הצלחנו לבדוק: {err}": ["Prüfung fehlgeschlagen: {err}", "Could not check: {err}"],
+  " · כל מה שנמצא: {total}": [" · alles Gefundene: {total}", " · everything found: {total}"],
+  "{found} מתוך {n} פריטים": ["{found} von {n} Einträgen", "{found} of {n} items"],
+  "🏆 הכי זול": ["🏆 Am günstigsten", "🏆 Cheapest"],
+  "פריט": ["Eintrag", "Item"],
+
   // ---------- רשימה לחיפוש מבצעים ----------
   'המוצרים שהאפליקציה מחפשת עליהם מבצעים ושולחת עליהם התראות. זו רשימה קבועה: היא לא מתרוקנת כשקונים.': [
     'Für diese Produkte sucht die App Angebote und schickt Benachrichtigungen. Die Liste bleibt fix, auch wenn du einkaufst.',
@@ -294,6 +312,22 @@ const I18N = {
 
 // ערבית (מפתח: הנוסח העברי)
 const I18N_AR = {
+  "🧮 השוואת מחיר העגלה": "🧮 مقارنة سعر العربة",
+  "בחרו עד 4 סניפים, ונחשב כמה תעלה היום רשימת „חסר בבית” בכל אחד מהם (לפי קובצי המחירים והמבצעים של הרשתות).": "اختر حتى 4 فروع، وسنحسب كم ستكلّف قائمة مشترياتك اليوم في كل واحد منها (حسب ملفات الأسعار والعروض للشبكات).",
+  "השוואה": "قارن",
+  "לכל פריט נבחר המוצר הזול ביותר שמתאים לשם, ואם יש עליו מבצע ליחידה – מחיר המבצע (🏷️). לתוצאה מדויקת יותר כתבו ברשימה שם מפורט (למשל „חלב 3% 1 ליטר”) או ברקוד. כדאי לבדוק את המחירים בחנות.": "لكل غرض اختير أرخص منتج يطابق الاسم، وإذا كان عليه عرض للوحدة – سعر العرض (🏷️). لنتيجة أدق اكتب في القائمة اسمًا مفصّلًا (مثلًا «حليب 3% لتر») أو باركود. يُنصح بالتحقق من الأسعار في المتجر.",
+  "שינוי סניפים": "تغيير الفروع",
+  "נבחרו {n} מתוך {max}": "تم اختيار {n} من {max}",
+  "טוען את הסניפים באזור…": "جارٍ تحميل الفروع في المنطقة…",
+  "לא נמצאו סניפים ברדיוס החיפוש. אפשר להגדיל את הרדיוס בהגדרות.": "لم يُعثر على فروع ضمن نطاق البحث. يمكن زيادة النطاق في الإعدادات.",
+  "בודק מחירים בסניפים… (עד דקה)": "جارٍ فحص الأسعار في الفروع… (حتى دقيقة)",
+  "כל {n} הפריטים נמצאו בכל הסניפים.": "تم العثور على كل الأغراض ({n}) في كل الفروع.",
+  "הסכום משווה {common} פריטים שנמצאו בכל הסניפים (מתוך {n}). פריטים שחסרים בסניף מסומנים ב-—.": "المجموع يقارن {common} أغراض وُجدت في كل الفروع (من أصل {n}). الأغراض الناقصة في فرع مُعلَّمة بـ —.",
+  "לא הצלחנו לבדוק: {err}": "لم نتمكن من الفحص: {err}",
+  " · כל מה שנמצא: {total}": " · كل ما وُجد: {total}",
+  "{found} מתוך {n} פריטים": "{found} من {n} أغراض",
+  "🏆 הכי זול": "🏆 الأرخص",
+  "פריט": "الغرض",
   "הקניות שלי": "مشترياتي",
   "כניסה לחשבון שלך": "تسجيل الدخول إلى حسابك",
   "שם": "الاسم",
