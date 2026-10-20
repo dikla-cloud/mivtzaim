@@ -1,41 +1,31 @@
-// בדיקה חד-פעמית: מאיפה SaleFinder (אוסטרליה) טוען את המוצרים בקטלוגים של Coles / Woolworths / ALDI.
+// בדיקה חד-פעמית: איך כתובים מוצרים ומחירים בעמוד ההדפסה של קטלוג SaleFinder ובעמוד החיפוש.
 // רק קוראת ומדפיסה – לא משנה כלום. הרצה: node server/probe-salefinder.js
 const UA = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36' };
-const get = async (u, ms = 25000) => {
+const get = async (u, ms = 40000) => {
   const res = await fetch(u, { headers: UA, redirect: 'follow', signal: AbortSignal.timeout(ms) });
-  return { status: res.status, type: res.headers.get('content-type'), text: await res.text() };
+  return { status: res.status, text: await res.text() };
 };
-const show = (label, r) => console.log(`\n### ${label} → ${r.status} · ${r.text.length} תווים · ${r.type}\n${r.text.replace(/\s+/g, ' ').slice(0, 400)}`);
+const flat = (s) => s.replace(/\s+/g, ' ');
+
+async function show(label, url) {
+  try {
+    const r = await get(url);
+    const html = flat(r.text);
+    const prices = html.match(/\$\s?\d+(?:\.\d\d)?/g) || [];
+    console.log(`\n##### ${label} → ${r.status} · ${html.length} תווים · ${prices.length} מחירים`);
+    const i = html.search(/\$\s?\d+\.\d\d/);
+    if (i >= 0) console.log(html.slice(Math.max(0, i - 900), i + 500));
+    const classes = [...new Set([...html.matchAll(/class="([^"]*(?:price|item|product|sale|name)[^"]*)"/gi)].map((m) => m[1]))].slice(0, 25);
+    console.log('classes:', classes.join(' | '));
+  } catch (e) {
+    console.log(`\n##### ${label} → שגיאה: ${e.message}`);
+  }
+}
 
 (async () => {
-  try {
-    const home = await get('https://www.salefinder.com.au/');
-    const cats = [...new Set([...home.text.matchAll(/https?:\/\/(?:www\.)?salefinder\.com\.au\/((?:coles|woolworths|aldi|iga)[^"'\s]*catalogue[^"'\s]*)/gi)].map((m) => m[0]))];
-    console.log(`### קטלוגים של סופרים בדף הבית: ${cats.length}\n${cats.slice(0, 6).join('\n')}`);
-    const retailerPages = ['https://www.salefinder.com.au/coles-catalogue', 'https://www.salefinder.com.au/woolworths-catalogue'];
-    for (const u of retailerPages) {
-      try {
-        const r = await get(u);
-        const links = [...new Set([...r.text.matchAll(/\/(?:coles|woolworths)-catalogue\/[^"'\s#]+\/(\d+)\/[^"'\s#]*/gi)].map((m) => m[0]))];
-        const embeds = [...new Set([...r.text.matchAll(/(?:https?:)?\/\/embed\.salefinder\.com\.au\/[^"'\s)]+/gi)].map((m) => m[0]))];
-        console.log(`\n### ${u} → ${r.status} · קטלוגים: ${links.length}\n${links.slice(0, 4).join('\n')}\nembed: ${embeds.slice(0, 6).join(' ')}`);
-        const id = links[0]?.match(/\/(\d+)\//)?.[1];
-        if (id) {
-          const page = await get(`https://www.salefinder.com.au${links[0].split('#')[0]}`);
-          const urls = [...new Set([...page.text.matchAll(/(?:https?:)?\/\/[a-z.]*salefinder\.com\.au\/[^"'\s)]*(?:json|productlist|catalogue|svgData|items)[^"'\s)]*/gi)].map((m) => m[0]))];
-          console.log(`### דף הקטלוג ${id}: ${urls.slice(0, 10).join('\n') || '(אין)'}`);
-          for (const c of [
-            `https://embed.salefinder.com.au/productlist/view/${id}/?format=json`,
-            `https://embed.salefinder.com.au/catalogue/getAreaSVG/${id}/?format=json`,
-            `https://embed.salefinder.com.au/catalogues/view/${id}/?format=json`,
-          ]) {
-            try { show(c, await get(c)); } catch (e) { console.log(`\n### ${c} → שגיאה: ${e.message}`); }
-          }
-        }
-      } catch (e) { console.log(`\n### ${u} → שגיאה: ${e.message}`); }
-    }
-    for (const u of ['https://www.salefinder.com.au/search?q=milk', 'https://www.salefinder.com.au/search/milk?qs=1']) {
-      try { const r = await get(u, 40000); console.log(`\n### ${u} → ${r.status} · ${r.text.length} תווים`); } catch (e) { console.log(`\n### ${u} → שגיאה: ${e.message}`); }
-    }
-  } catch (e) { console.log('שגיאה:', e.message); }
+  const list = flat((await get('https://www.salefinder.com.au/coles-catalogue')).text);
+  const id = (list.match(/\/coles-catalogue\/coles-catalogue[^"'\s#]*\/(\d+)\//) || [])[1];
+  console.log('Coles catalogue id:', id);
+  if (id) await show('עמוד הדפסה של הקטלוג', `https://salefinder.com.au/catalogue/printpage/${id}/?all=1`);
+  await show('חיפוש milk', 'https://www.salefinder.com.au/search/milk?qs=1');
 })();

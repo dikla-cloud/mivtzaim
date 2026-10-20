@@ -16,6 +16,12 @@ INSTANCE="${5:-mivtzaim}"
 APP_LANG="${6:-he}"
 APP_COUNTRY="${7:-IL}"
 PORT="${8:-3000}"
+# הגנה מפני פקודה משובשת (למשל שתי פקודות שנדבקו לשורה אחת)
+if [ "$#" -gt 8 ] || ! [[ "$INSTANCE" =~ ^mivtzaim[a-z0-9-]*$ ]] || ! [[ "$APP_LANG" =~ ^(he|de|en|ar)$ ]] \
+  || ! [[ "$APP_COUNTRY" =~ ^[A-Z]{2}$ ]] || ! [[ "$PORT" =~ ^[0-9]{4,5}$ ]] || ! [[ "$EMAIL" =~ ^[^@[:space:]]+@[^@[:space:]]+\.[a-z]{2,}$ ]]; then
+  echo "✘ הפקודה לא תקינה (אולי שתי פקודות נדבקו לשורה אחת?). מריצים את פקודת העדכון לבד, בשורה נקייה."
+  exit 1
+fi
 APP_DIR=/opt/mivtzaim
 DATA_DIR=/var/lib/$INSTANCE
 RUN_USER="$(id -un)"
