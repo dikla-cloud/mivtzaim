@@ -1054,19 +1054,47 @@ window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); inst
 $('#install').addEventListener('click', () => installEvt?.prompt());
 
 // ---------- שפה ----------
-for (const sel of [$('#topLang'), $('#loginLang')]) {
-  sel.replaceChildren(...Object.entries(LANGS).map(([k, name]) => Object.assign(document.createElement('option'), { value: k, textContent: `🌐 ${name}`, selected: k === LANG })));
-}
+$('#loginLang').replaceChildren(...Object.entries(LANGS).map(([k, name]) => Object.assign(document.createElement('option'), { value: k, textContent: `🌐 ${name}`, selected: k === LANG })));
 $('#loginLang').addEventListener('change', (e) => setLang(e.target.value));
 function setLang(l) {
   try { localStorage.setItem('lang', l); } catch { /* */ }
   location.reload();
 }
-$('#topLang').addEventListener('change', async (e) => {
-  const l = e.target.value;
-  if (S) await api('PUT', '/api/settings', { lang: l }).catch(() => {});
-  setLang(l);
+
+// ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
+const APP_VERSION = '2026.10.20';
+$('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
+$('#menuClose').addEventListener('click', () => $('#menuDlg').close());
+$('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });
+$('#menuLangs').replaceChildren(...Object.entries(LANGS).map(([k, name]) => {
+  const b = Object.assign(document.createElement('button'), { type: 'button', textContent: name, className: k === LANG ? 'on' : '' });
+  b.setAttribute('aria-pressed', String(k === LANG));
+  b.addEventListener('click', async () => {
+    if (k === LANG) return;
+    if (S) await api('PUT', '/api/settings', { lang: k }).catch(() => {});
+    setLang(k);
+  });
+  return b;
+}));
+$('#menuAbout').addEventListener('click', () => { $('#menuDlg').close(); $('#aboutDlg').showModal(); });
+$('#aboutClose').addEventListener('click', () => $('#aboutDlg').close());
+$('#aboutVersion').textContent = t('גרסה {v}', { v: APP_VERSION });
+// רענון: מוחקים את העותק השמור של האפליקציה בטלפון וטוענים מחדש מהשרת
+$('#menuRefresh').addEventListener('click', async () => {
+  $('#menuRefresh').textContent = t('🔄 מרענן…');
+  try {
+    for (const k of (await caches?.keys?.()) || []) await caches.delete(k);
+    const reg = await navigator.serviceWorker?.getRegistration();
+    await reg?.update();
+  } catch { /* */ }
+  location.reload();
 });
+
+// ---------- מסך פתיחה: לוגו והסבר קצר לשנייה וחצי ----------
+setTimeout(() => {
+  $('#splash').classList.add('out');
+  setTimeout(() => $('#splash').remove(), 400);
+}, 1500);
 
 // ---------- הפעלה ----------
 translatePage();

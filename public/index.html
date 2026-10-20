@@ -15,6 +15,12 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="logged-out">
+  <div id="splash" aria-hidden="true">
+    <img src="icon.svg" alt="">
+    <h1 class="splash-name">הקניות שלי</h1>
+    <p class="splash-tag">המבצעים על המוצרים שלך, ליד הבית</p>
+    <p class="splash-sub">רשימת קניות משותפת לכל הבית · התראות על מבצעים · השוואת מחיר העגלה</p>
+  </div>
   <section id="login">
     <form id="loginForm" class="card">
       <div class="login-top">
@@ -32,9 +38,13 @@
 
   <header>
     <div class="topbar">
-      <h1>הקניות שלי</h1>
+      <div class="brand">
+        <button type="button" id="menuBtn" aria-label="תפריט" title="תפריט" aria-haspopup="dialog">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <h1>הקניות שלי</h1>
+      </div>
       <div class="top-actions">
-      <select id="topLang" class="lang-mini" aria-label="שפה"></select>
       <button id="gear" data-tab="settings" aria-pressed="false" title="הגדרות">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
         <span>הגדרות</span>
@@ -262,6 +272,43 @@
       <label class="toggle"><input type="checkbox" id="termsOk" required> קראתי ואני מסכים/ה</label>
       <button class="primary" id="termsAccept" disabled>אישור והמשך</button>
     </form>
+  </dialog>
+
+  <dialog id="menuDlg" aria-label="תפריט">
+    <div class="menu-head">
+      <img src="icon.svg" alt="">
+      <b>הקניות שלי</b>
+      <button type="button" id="menuClose" class="sheet-x" aria-label="סגירה">✕</button>
+    </div>
+    <div class="menu-list">
+      <button type="button" id="menuAbout">ℹ️ אודות</button>
+      <a href="privacy.html" target="_blank">🔒 מדיניות פרטיות</a>
+      <a href="terms.html" target="_blank">📄 תנאי שימוש</a>
+      <div class="menu-lang">
+        <span>🌐 שפה</span>
+        <div id="menuLangs" class="lang-chips"></div>
+      </div>
+      <button type="button" id="menuRefresh">🔄 רענון האפליקציה</button>
+    </div>
+  </dialog>
+
+  <dialog id="aboutDlg">
+    <div class="sheet-head">
+      <h3>ℹ️ אודות</h3>
+      <button type="button" id="aboutClose" class="sheet-x" aria-label="סגירה">✕</button>
+    </div>
+    <div class="about">
+      <img src="icon.svg" alt="">
+      <p><b>הקניות שלי</b> עוזרת לחסוך בקניות: היא מחפשת מבצעים על המוצרים שבחרת בסופרים ליד הבית, שולחת התראה עם המחיר ותאריך הסיום, ומנהלת רשימת קניות משותפת לכל בני הבית.</p>
+      <ul>
+        <li>🏷️ מבצעים מהרשתות באזור שלך</li>
+        <li>🔔 התראות על מוצרים מהרשימה שלך</li>
+        <li>🏠 רשימת „חסר בבית” משותפת</li>
+        <li>🧮 השוואת מחיר העגלה בין סניפים</li>
+      </ul>
+      <p class="muted small">המחירים מגיעים מקובצי השקיפות שהרשתות מפרסמות לפי חוק, ובחו"ל מעלוני המבצעים. כדאי תמיד לבדוק את המחיר בחנות. השירות חינמי ושומר על הפרטיות: המידע שלך לא נמכר.</p>
+      <p class="muted small" id="aboutVersion"></p>
+    </div>
   </dialog>
 
   <dialog id="cartDlg">
