@@ -21,18 +21,36 @@
     <p class="splash-tag"><span>מבצעים, רשימת קניות</span><br><span>והשוואת מחירים</span></p>
   </div>
   <section id="login">
-    <form id="loginForm" class="card">
+    <div class="card login-card">
       <div class="login-top">
         <h1>הקניות שלי</h1>
         <select id="loginLang" class="lang-mini" aria-label="שפה"></select>
       </div>
       <p id="loginHint" class="muted">כניסה לחשבון שלך</p>
-      <label>שם<input id="loginName" autocomplete="username" required></label>
-      <label>סיסמה<input id="loginPass" type="password" autocomplete="current-password" required></label>
+      <!-- כניסה עם קוד למייל (כשהשרת יודע לשלוח מייל) -->
+      <form id="codeForm" hidden>
+        <div id="codeStep1">
+          <label>המייל שלך<input id="codeEmail" type="email" autocomplete="email" inputmode="email" required></label>
+          <button class="primary" id="codeSend">שליחת קוד כניסה</button>
+        </div>
+        <div id="codeStep2" hidden>
+          <p id="codeSent" class="small"></p>
+          <label>הקוד מהמייל<input id="codeValue" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*"></label>
+          <button class="primary" id="codeEnter">כניסה</button>
+          <button type="button" id="codeResend" class="linkish">שליחת קוד חדש</button>
+          <button type="button" id="codeChange" class="linkish">שינוי המייל</button>
+        </div>
+      </form>
+      <!-- כניסה בשם וסיסמה: בכניסה הראשונה (יצירת המנהל), או כשהשרת עוד לא שולח מיילים -->
+      <form id="loginForm" hidden>
+        <label>שם<input id="loginName" autocomplete="username" required></label>
+        <label id="loginEmailWrap" hidden>המייל שלך<input id="loginEmail" type="email" autocomplete="email"></label>
+        <label>סיסמה<input id="loginPass" type="password" autocomplete="current-password" required></label>
+        <button class="primary">כניסה</button>
+      </form>
       <p id="loginError" class="error" hidden></p>
-      <button class="primary">כניסה</button>
       <p class="muted small legal-links"><a href="terms.html">תנאי שימוש</a> · <a href="privacy.html">מדיניות פרטיות</a></p>
-    </form>
+    </div>
   </section>
 
   <header>
@@ -55,6 +73,7 @@
       <button type="button" id="locBtn" title="עדכון המיקום לפי המקום שבו את/ה נמצא/ת עכשיו">📍 עדכון מיקום</button>
     </div>
     <p id="sources" class="muted small"></p>
+    <button type="button" id="emailBanner" class="note-warn email-banner" hidden>📧 הוסיפו מייל לחשבון – הכניסה לאפליקציה היא עם קוד שנשלח למייל. לחצו כאן</button>
   </header>
 
   <nav role="tablist">
@@ -159,7 +178,11 @@
       <div class="card">
         <h3>החשבון שלי</h3>
         <p class="muted">החשבון: <b id="meName"></b></p>
-        <details>
+        <form id="emailForm">
+          <label>המייל שלי (לכניסה לאפליקציה)<input type="email" id="myEmail" autocomplete="email" placeholder="name@example.com"></label>
+          <div class="row"><button class="primary" id="emailSave">שמירת המייל</button><span id="emailSaved" class="saved" hidden>✔ נשמר</span></div>
+        </form>
+        <details id="passBox">
           <summary>החלפת סיסמה</summary>
           <form id="passForm">
             <label>סיסמה נוכחית<input type="password" id="passCur" autocomplete="current-password" required></label>
@@ -209,12 +232,13 @@
         <form id="addUser">
           <h4>הוספת משתמש</h4>
           <label>שם<input id="newUserName" required minlength="2" maxlength="30" autocomplete="off"></label>
-          <label>סיסמה ראשונית (לפחות 6 תווים)<input id="newUserPass" required minlength="6" autocomplete="new-password"></label>
+          <label>מייל (איתו נכנסים לאפליקציה)<input id="newUserEmail" type="email" autocomplete="off"></label>
+          <label id="newUserPassWrap">סיסמה ראשונית (לפחות 6 תווים)<input id="newUserPass" minlength="6" autocomplete="new-password"></label>
           <label class="toggle" id="newHouseholdWrap" hidden><input type="checkbox" id="newHousehold"> משק בית נפרד (בלי רשימת ״חסר בבית״ משותפת איתי)</label>
           <label class="toggle"><input type="checkbox" id="shareHousehold" checked> שיתוף עם בן בית נוסף (רואה ומעדכן את רשימת ״חסר בבית״ שלי)</label>
           <button class="primary">הוסף</button>
         </form>
-        <p class="muted small">אחרי ההוספה שלחו לו את הקישור לאפליקציה, את השם ואת הסיסמה. אחרי הכניסה הוא יוכל להחליף את הסיסמה בעצמו.</p>
+        <p class="muted small"><span id="inviteHint">אחרי ההוספה שלחו לו את הקישור לאפליקציה. הוא ייכנס עם המייל שלו, בקוד שיישלח אליו.</span></p>
         <div class="linkbox">
           <code id="appUrl" dir="ltr"></code>
           <button type="button" id="copyLink">📋 העתקת הקישור</button>

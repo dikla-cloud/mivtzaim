@@ -246,8 +246,8 @@ body.not-il .il-only { display: none; }
 
 /* הוספה מצילום */
 label.photo { display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
-#loginForm .login-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-#loginForm .lang-mini { min-width: 0; padding: 6px 10px; font-size: .9rem; }
+#login .login-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+#login .lang-mini { min-width: 0; padding: 6px 10px; font-size: .9rem; }
 
 /* ראש המסך: ☰ + שם האפליקציה */
 .top-actions { display: flex; align-items: center; gap: 8px; }
@@ -323,3 +323,9 @@ label.photo { display: inline-flex; align-items: center; justify-content: center
 .share-ico { width: 20px; height: 20px; vertical-align: -4px; fill: var(--accent); stroke: var(--accent); stroke-width: 1.8; margin-inline-end: 2px; }
 #menuDlg[open] { display: flex; flex-direction: column; }
 .menu-version { margin-top: auto; padding: 14px 18px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); }
+
+/* שכחתי סיסמה */
+button.linkish { display: block; margin: 10px auto 0; border: 0; background: none; color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; padding: 4px; }
+#emailForm label { margin-top: 4px; }
+#login form .primary { width: 100%; margin-top: 8px; }
+.email-banner { display: block; width: 100%; margin-top: 8px; text-align: start; border: 0; font-weight: 600; cursor: pointer; }

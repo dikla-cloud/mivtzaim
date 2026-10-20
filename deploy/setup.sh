@@ -78,6 +78,8 @@ Environment=APP_COUNTRY=$APP_COUNTRY
 Environment=APP_TOKEN=$TOKEN
 Environment=VAPID_SUBJECT=mailto:$EMAIL
 Environment=GEOCODER_UA=MivtzaimApp/1.0 ($EMAIL)
+# הגדרות מייל לשחזור סיסמה (לא חובה): MAIL_USER=… MAIL_PASS=…
+EnvironmentFile=-/etc/mivtzaim/mail.env
 
 [Install]
 WantedBy=multi-user.target

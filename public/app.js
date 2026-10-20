@@ -13,7 +13,7 @@ async function api(method, url, body) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const json = await res.json().catch(() => ({}));
-  if (res.status === 401 && url !== '/api/login') {
+  if (res.status === 401 && !url.startsWith('/api/login')) {
     showLogin();
     throw new Error(t('נדרשת כניסה'));
   }
@@ -32,31 +32,66 @@ function track(type, chain) {
 }
 
 // ---------- כניסה ----------
+let setupInfo = {};
+const loginErr = (msg) => { $('#loginError').textContent = msg || ''; $('#loginError').hidden = !msg; };
 async function showLogin() {
   document.body.classList.add('logged-out');
-  try {
-    const { firstRun } = await (await fetch('/api/setup')).json();
-    $('#loginHint').textContent = t(firstRun
-      ? 'כניסה ראשונה: בחרו שם, והקלידו את הסיסמה שהוגדרה בהתקנה. החשבון הזה יהיה המנהל.'
-      : 'כניסה לחשבון שלך');
-  } catch { /* בלי חיבור */ }
+  try { setupInfo = await (await fetch('/api/setup')).json(); } catch { /* בלי חיבור */ }
+  const first = setupInfo.firstRun;
+  const byEmail = !first && setupInfo.emailLogin;
+  $('#codeForm').hidden = !byEmail;
+  $('#loginForm').hidden = byEmail;
+  $('#loginEmailWrap').hidden = !first;
+  $('#loginEmail').required = Boolean(first);
+  $('#codeStep1').hidden = false;
+  $('#codeStep2').hidden = true;
+  loginErr('');
+  $('#loginHint').textContent = t(first
+    ? 'כניסה ראשונה: בחרו שם, כתבו את המייל שלכם והקלידו את הסיסמה שהוגדרה בהתקנה. החשבון הזה יהיה המנהל.'
+    : byEmail ? 'כתבו את המייל שלכם, ונשלח אליו קוד כניסה.' : 'כניסה לחשבון שלך');
+}
+
+async function loggedIn(tok) {
+  token = tok;
+  store.set('session', token);
+  $('#loginPass').value = '';
+  $('#codeValue').value = '';
+  await boot();
 }
 
 $('#loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const err = $('#loginError');
-  err.hidden = true;
+  loginErr('');
   try {
-    const r = await api('POST', '/api/login', { name: $('#loginName').value, password: $('#loginPass').value });
-    token = r.token;
-    store.set('session', token);
-    $('#loginPass').value = '';
-    await boot();
-  } catch (ex) {
-    err.textContent = ex.message;
-    err.hidden = false;
-  }
+    const r = await api('POST', '/api/login', { name: $('#loginName').value, password: $('#loginPass').value, email: $('#loginEmail').value.trim() });
+    await loggedIn(r.token);
+  } catch (ex) { loginErr(ex.message); }
 });
+
+// כניסה עם קוד למייל
+async function sendLoginCode() {
+  loginErr('');
+  const b = $('#codeSend');
+  b.disabled = true;
+  try {
+    const r = await api('POST', '/api/login/code', { email: $('#codeEmail').value.trim() });
+    $('#codeSent').textContent = t('שלחנו קוד ל-{to}. אם הוא לא מגיע, כדאי לבדוק גם בדואר הזבל.', { to: r.to });
+    $('#codeStep1').hidden = true;
+    $('#codeStep2').hidden = false;
+    $('#codeValue').focus();
+  } catch (ex) { loginErr(ex.message); } finally { b.disabled = false; }
+}
+$('#codeForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!$('#codeStep1').hidden) return sendLoginCode();
+  loginErr('');
+  try {
+    const r = await api('POST', '/api/login/verify', { email: $('#codeEmail').value.trim(), code: $('#codeValue').value });
+    await loggedIn(r.token);
+  } catch (ex) { loginErr(ex.message); }
+});
+$('#codeResend').addEventListener('click', sendLoginCode);
+$('#codeChange').addEventListener('click', () => { $('#codeStep1').hidden = false; $('#codeStep2').hidden = true; loginErr(''); $('#codeEmail').focus(); });
 
 const fmtDate = (s) => new Date(s).toLocaleDateString(LOCALE, { weekday: 'short', day: 'numeric', month: 'numeric' });
 const money = (n, cur = 'ILS') => {
@@ -81,6 +116,10 @@ function render() {
   $('#status').textContent = S.location ? t('📍 {place} · רדיוס {km} ק"מ · {scanned}', { place: S.location.label, km: S.radiusKm, scanned }) : t('לחצו על ״עדכון מיקום״ כדי להתחיל');
   $('#sources').textContent = S.lastSources.length ? t('מקור הנתונים: {src}', { src: S.lastSources.join(', ') }) : '';
   $('#meName').textContent = S.me.name;
+  // כניסה עם מייל: בלי סיסמאות. מי שעוד אין לו מייל בחשבון – תזכורת בראש המסך
+  $('#passBox').hidden = S.emailLogin;
+  $('#emailBanner').hidden = !S.emailLogin || Boolean(S.me.email);
+  if (document.activeElement !== $('#myEmail')) $('#myEmail').value = S.me.email || '';
   $('#deleteMeBox').hidden = S.me.admin;
   $('#statsCard').hidden = !S.me.admin;
   renderFamily();
@@ -255,6 +294,12 @@ function renderFamily() {
     ? t('הזמנת משתמשים חדשים נעשית דרך מנהל האפליקציה.')
     : left ? t('באפליקציה {count} משתמשים מתוך {max} אפשריים (נשארו {left}).', { count: L.count, max: L.maxUsers, left }) : `${t('הגעתם למספר המשתמשים המקסימלי ({max}).', { max: L.maxUsers })}${S.me.admin ? t(' אפשר להגדיל אותו למעלה.') : ''}`;
   $('#newHouseholdWrap').hidden = !S.me.admin;
+  $('#newUserPassWrap').hidden = S.emailLogin;
+  $('#newUserEmail').required = S.emailLogin;
+  $('#newUserPass').required = !S.emailLogin;
+  $('#inviteHint').textContent = t(S.emailLogin
+    ? 'אחרי ההוספה שלחו לו את הקישור לאפליקציה. הוא ייכנס עם המייל שלו, בקוד שיישלח אליו.'
+    : 'אחרי ההוספה שלחו לו את הקישור לאפליקציה, את השם ואת הסיסמה. אחרי הכניסה הוא יוכל להחליף את הסיסמה בעצמו.');
   // משתמש רגיל יכול להוסיף רק בן בית למשק הבית שלו
   $('#shareHousehold').disabled = !S.me.admin;
   if (!S.me.admin) { $('#shareHousehold').checked = true; $('#newHousehold').checked = false; }
@@ -265,10 +310,16 @@ function renderFamily() {
     who.append(Object.assign(document.createElement('b'), { textContent: u.name }));
     who.append(Object.assign(document.createElement('span'), {
       className: 'muted small',
-      textContent: ` ${t(u.household === S.me.household ? '· 🏠 משק הבית שלך' : '· משק בית אחר')}${u.admin ? t(' · מנהל') : ''}${u.location ? ` · 📍 ${u.location}` : t(' · עוד לא נכנס')}`,
+      textContent: ` ${t(u.household === S.me.household ? '· 🏠 משק הבית שלך' : '· משק בית אחר')}${u.admin ? t(' · מנהל') : ''}${u.location ? ` · 📍 ${u.location}` : t(' · עוד לא נכנס')}${S.me.admin ? ` · ${u.email ? `📧 ${u.email}` : t('📧 אין מייל')}` : ''}`,
     }));
     li.append(who);
     if (!S.me.admin) return li; // ניהול סיסמאות ומחיקה – למנהל בלבד
+    const emailBtn = Object.assign(document.createElement('button'), { textContent: t('📧 מייל') });
+    emailBtn.addEventListener('click', async () => {
+      const e = prompt(t('המייל של {name} (איתו הוא נכנס לאפליקציה):', { name: u.name }), u.email || '');
+      if (!e) return;
+      try { S = await api('PUT', `/api/users/${encodeURIComponent(u.name)}/email`, { email: e.trim() }); render(); } catch (ex) { alert(ex.message); }
+    });
     const reset = Object.assign(document.createElement('button'), { textContent: t('סיסמה חדשה') });
     reset.addEventListener('click', async () => {
       const p = prompt(t('סיסמה חדשה עבור {name} (לפחות 6 תווים):', { name: u.name }));
@@ -276,7 +327,7 @@ function renderFamily() {
       try { S = await api('PUT', `/api/users/${encodeURIComponent(u.name)}/password`, { password: p }); render(); toast(t('הסיסמה של {name} עודכנה', { name: u.name })); } catch (e) { alert(e.message); }
     });
     const acts = Object.assign(document.createElement('span'), { className: 'acts' });
-    acts.append(reset);
+    acts.append(S.emailLogin ? emailBtn : reset);
     if (u.name !== S.me.name) {
       const mine = u.household === S.me.household;
       const hh = Object.assign(document.createElement('button'), { textContent: t(mine ? 'הפרדה ממשק הבית שלי' : 'צירוף למשק הבית שלי') });
@@ -326,11 +377,24 @@ $('#shareHousehold').addEventListener('change', (e) => { if (S.me.admin) $('#new
 $('#addUser').addEventListener('submit', async (e) => {
   e.preventDefault();
   try {
-    S = await api('POST', '/api/users', { name: $('#newUserName').value, password: $('#newUserPass').value, newHousehold: $('#newHousehold').checked });
+    S = await api('POST', '/api/users', { name: $('#newUserName').value, password: S.emailLogin ? undefined : $('#newUserPass').value, newHousehold: $('#newHousehold').checked, email: $('#newUserEmail').value.trim() });
     toast(t('{name} נוסף/ה', { name: $('#newUserName').value }));
     $('#addUser').reset();
     $('#shareHousehold').checked = true;
     render();
+  } catch (ex) { alert(ex.message); }
+});
+
+$('#emailBanner').addEventListener('click', () => { showTab('settings'); $('#myEmail').focus(); });
+$('#emailForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    const email = $('#myEmail').value.trim();
+    if (S.emailLogin && email !== S.me.email && !confirm(t('מעכשיו תיכנסו לאפליקציה עם {email}. לוודא שהכתובת נכונה?', { email }))) return;
+    S = await api('PUT', '/api/me/email', { email });
+    render();
+    $('#emailSaved').hidden = false;
+    setTimeout(() => ($('#emailSaved').hidden = true), 3000);
   } catch (ex) { alert(ex.message); }
 });
 

@@ -11,6 +11,7 @@ const metrics = require('./metrics');
 const i18n = require('./i18n');
 const compare = require('./compare');
 const translate = require('./translate');
+const mail = require('./mail');
 
 // הגדרות ההתקנה: שפת ברירת מחדל ומדינה (למשל התקנה נפרדת לאוסטריה: APP_LANG=de APP_COUNTRY=AT)
 const APP_COUNTRY = (process.env.APP_COUNTRY || 'IL').toUpperCase();
@@ -19,7 +20,7 @@ const appName = (l) => process.env.APP_NAME || APP_NAMES[i18n.pick(l)];
 const T = (req, he, vars) => i18n.tr(req.lang, he, vars);
 
 // גרסת תנאי השימוש ומדיניות הפרטיות. כשמשנים אותם – מעלים את הגרסה, וכל משתמש יתבקש לאשר מחדש.
-const TERMS_VERSION = '2026-10-16';
+const TERMS_VERSION = '2026-10-20';
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -49,7 +50,7 @@ app.use('/api', (req, res, next) => { req.lang = i18n.pick(req.get('x-app-lang')
 const failures = new Map(); // הגנה מניחוש סיסמאות: השהיה אחרי ניסיונות כושלים
 
 app.post('/api/login', async (req, res) => {
-  const { name, password } = req.body || {};
+  const { name, password, email } = req.body || {};
   const key = `${req.ip}|${db.userKey(name)}`;
   const f = failures.get(key) || 0;
   if (f) await new Promise((r) => setTimeout(r, Math.min(f, 10) * 1000));
@@ -59,10 +60,65 @@ app.post('/api/login', async (req, res) => {
     return res.status(401).json({ error: T(req, db.users().length ? 'שם או סיסמה שגויים' : 'הסיסמה הראשונית שגויה') });
   }
   failures.delete(key);
+  if (!u.email && validEmail(email)) { u.email = email.trim(); db.save(); } // כניסה ראשונה: המייל של המנהל
   res.json({ token: auth.newSession(u) });
 });
 
-app.get('/api/setup', (req, res) => res.json({ firstRun: !db.users().length, lang: i18n.DEFAULT_LANG, country: APP_COUNTRY }));
+// ---------- כניסה עם קוד למייל (בלי סיסמה) ----------
+// אם הוגדרה בשרת שליחת מייל – נכנסים עם קוד חד-פעמי שנשלח למייל של החשבון.
+// אם לא – הכניסה בשם וסיסמה ממשיכה לעבוד, כדי שאף אחד לא יינעל בחוץ.
+const validEmail = (e) => typeof e === 'string' && e.length <= 100 && /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(e.trim());
+const normEmail = (e) => String(e || '').trim().toLowerCase();
+const mask = (e) => e.replace(/^(.)[^@]*(@.*)$/, '$1***$2');
+const hashCode = (code, salt) => crypto.createHash('sha256').update(`${salt}:${code}`).digest('hex');
+const CODE_TTL = 15 * 60000;
+const userByEmail = (e) => db.users().find((u) => u.email && normEmail(u.email) === normEmail(e));
+const emailTaken = (e, except) => db.users().some((u) => u !== except && u.email && normEmail(u.email) === normEmail(e));
+
+app.post('/api/login/code', async (req, res) => {
+  const email = normEmail(req.body?.email);
+  if (!validEmail(email)) return res.status(400).json({ error: T(req, 'כתובת המייל לא תקינה') });
+  if (!mail.configured()) return res.status(400).json({ error: T(req, 'כניסה עם מייל עוד לא הוגדרה בשרת') });
+  const u = userByEmail(email);
+  if (!u) return res.status(400).json({ error: T(req, 'המייל הזה לא רשום באפליקציה. בקשו ממי שהזמין אתכם להוסיף אותו.') });
+  if (u.loginCode && Date.now() - u.loginCode.sentAt < 60000) return res.status(429).json({ error: T(req, 'קוד כבר נשלח. אפשר לבקש קוד חדש בעוד דקה.') });
+  const code = String(crypto.randomInt(100000, 1000000));
+  const salt = crypto.randomBytes(8).toString('hex');
+  u.loginCode = { hash: hashCode(code, salt), salt, exp: Date.now() + CODE_TTL, tries: 0, sentAt: Date.now() };
+  db.save();
+  const L = u.lang || req.lang;
+  try {
+    await mail.send({
+      to: u.email,
+      subject: i18n.tr(L, 'קוד הכניסה שלך: {code}', { code }),
+      text: i18n.tr(L, 'שלום {name},\n\nקוד הכניסה לאפליקציה ״{app}״: {code}\nהקוד בתוקף 15 דקות.\n\nאם לא ביקשת להיכנס, אפשר להתעלם מהמייל הזה.', { name: u.name, code, app: appName(L) }),
+    });
+  } catch (e) {
+    delete u.loginCode;
+    db.save();
+    console.error('mail:', e.message);
+    return res.status(500).json({ error: T(req, 'שליחת המייל נכשלה. נסו שוב מאוחר יותר.') });
+  }
+  res.json({ ok: true, to: mask(u.email) });
+});
+
+app.post('/api/login/verify', (req, res) => {
+  const u = userByEmail(req.body?.email);
+  const code = String(req.body?.code || '').trim();
+  const bad = () => res.status(400).json({ error: T(req, 'הקוד לא נכון או שפג תוקפו. אפשר לבקש קוד חדש.') });
+  if (!u?.loginCode || Date.now() > u.loginCode.exp) return bad();
+  const ok = /^\d{6}$/.test(code) && crypto.timingSafeEqual(Buffer.from(hashCode(code, u.loginCode.salt)), Buffer.from(u.loginCode.hash));
+  if (!ok) {
+    if (++u.loginCode.tries >= 5) delete u.loginCode; // אחרי 5 ניסיונות שגויים הקוד מבוטל
+    db.save();
+    return bad();
+  }
+  delete u.loginCode;
+  db.save();
+  res.json({ token: auth.newSession(u) });
+});
+
+app.get('/api/setup', (req, res) => res.json({ firstRun: !db.users().length, emailLogin: mail.configured(), lang: i18n.DEFAULT_LANG, country: APP_COUNTRY }));
 
 app.use('/api', (req, res, next) => {
   req.token = req.get('x-app-token');
@@ -80,9 +136,10 @@ const adminOnly = (req, res, next) => (req.user.admin ? next() : res.status(403)
 const userInfo = (x) => ({ name: x.name, admin: x.admin, household: x.household, lastScan: x.lastScan, location: x.location?.label || null });
 
 const state = (u) => ({
-  me: { name: u.name, admin: u.admin, household: db.householdOf(u).id },
-  // המנהל רואה את כל המשתמשים; כל אחד אחר – את בני משק הבית שלו
-  users: db.users().filter((x) => u.admin || x.household === u.household).map(userInfo),
+  me: { name: u.name, admin: u.admin, household: db.householdOf(u).id, email: u.email || '' },
+  emailLogin: mail.configured(),
+  // המנהל רואה את כל המשתמשים (גם את המייל, כדי להשלים מיילים חסרים); כל אחד אחר – את בני משק הבית שלו
+  users: db.users().filter((x) => u.admin || x.household === u.household).map((x) => ({ ...userInfo(x), ...(u.admin ? { email: x.email || '' } : {}) })),
   home: db.householdOf(u).home,
   limits: { ...db.get().limits, count: db.users().length },
   needTerms: u.termsVersion !== TERMS_VERSION,
@@ -113,9 +170,12 @@ app.put('/api/password', (req, res) => {
 // ---------- בני משפחה (מנהל בלבד) ----------
 // כל משתמש יכול להוסיף מישהו נוסף ממשק הבית שלו (המנהל יכול גם להוסיף משק בית חדש)
 app.post('/api/users', (req, res) => {
-  const { name, password, newHousehold } = req.body || {};
+  const { name, password, newHousehold, email } = req.body || {};
   if (!auth.validName(name)) return res.status(400).json({ error: T(req, 'השם צריך להכיל 2–30 תווים') });
-  if (!auth.validPassword(password)) return res.status(400).json({ error: T(req, 'הסיסמה צריכה להכיל לפחות 6 תווים') });
+  // כניסה עם מייל: מספיק מייל. בלי שליחת מייל בשרת: צריך סיסמה ראשונית
+  if (email ? !validEmail(email) : mail.configured()) return res.status(400).json({ error: T(req, 'כתובת המייל לא תקינה') });
+  if (email && emailTaken(email)) return res.status(400).json({ error: T(req, 'המייל הזה כבר שייך למשתמש אחר') });
+  if (password || !email) { if (!auth.validPassword(password)) return res.status(400).json({ error: T(req, 'הסיסמה צריכה להכיל לפחות 6 תווים') }); }
   if (db.get().users[db.userKey(name)]) return res.status(400).json({ error: T(req, 'כבר יש משתמש בשם הזה') });
   const { maxUsers, membersCanInvite } = db.get().limits;
   if (!req.user.admin && !membersCanInvite) return res.status(403).json({ error: T(req, 'רק מנהל האפליקציה יכול להזמין משתמשים חדשים') });
@@ -123,8 +183,9 @@ app.post('/api/users', (req, res) => {
     return res.status(400).json({ error: `${T(req, 'הגעתם למספר המשתמשים המקסימלי באפליקציה ({max}).', { max: maxUsers })} ${T(req, req.user.admin ? 'אפשר להגדיל אותו בהגדרות ← בני הבית.' : 'אפשר לבקש מהמנהל להגדיל אותו.')}` });
   }
   db.newUser(name, {
-    pass: auth.hashPassword(password),
+    ...(password ? { pass: auth.hashPassword(password) } : {}),
     household: req.user.admin && newHousehold ? null : db.householdOf(req.user).id,
+    ...(email ? { email: email.trim() } : {}),
   });
   metrics.count('signup');
   db.save();
@@ -243,6 +304,18 @@ app.put('/api/limits', adminOnly, (req, res) => {
   res.json(state(req.user));
 });
 
+// המנהל מעדכן מייל של משתמש (למשל למשתמשים ותיקים שנוצרו עם סיסמה)
+app.put('/api/users/:name/email', adminOnly, (req, res) => {
+  const u = db.get().users[db.userKey(req.params.name)];
+  if (!u) return res.status(404).json({ error: T(req, 'משתמש לא נמצא') });
+  const email = String(req.body?.email || '').trim();
+  if (!validEmail(email)) return res.status(400).json({ error: T(req, 'כתובת המייל לא תקינה') });
+  if (emailTaken(email, u)) return res.status(400).json({ error: T(req, 'המייל הזה כבר שייך למשתמש אחר') });
+  u.email = email;
+  db.save();
+  res.json(state(req.user));
+});
+
 // המנהל מצרף משתמש למשק הבית שלו, או מפריד אותו למשק בית משלו
 app.put('/api/users/:name/household', adminOnly, (req, res) => {
   const u = db.get().users[db.userKey(req.params.name)];
@@ -279,6 +352,17 @@ app.delete('/api/me', (req, res) => {
   if (!db.users().some((x) => x.household === u.household)) delete d.households[u.household];
   db.save();
   res.json({ ok: true });
+});
+
+// המייל של החשבון (לשחזור סיסמה). ריק = מחיקה
+app.put('/api/me/email', (req, res) => {
+  const email = String(req.body?.email || '').trim();
+  if (email && !validEmail(email)) return res.status(400).json({ error: T(req, 'כתובת המייל לא תקינה') });
+  if (email && emailTaken(email, req.user)) return res.status(400).json({ error: T(req, 'המייל הזה כבר שייך למשתמש אחר') });
+  if (!email && mail.configured()) return res.status(400).json({ error: T(req, 'בלי מייל לא תוכלו להיכנס שוב לאפליקציה') });
+  if (email) req.user.email = email; else delete req.user.email;
+  db.save();
+  res.json(state(req.user));
 });
 
 // ---------- תנאי שימוש ומדיניות פרטיות ----------

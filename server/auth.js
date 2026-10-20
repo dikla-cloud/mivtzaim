@@ -8,7 +8,7 @@ function hashPassword(password) {
 }
 
 function checkPassword(pass, password) {
-  if (!pass) return false;
+  if (!pass || typeof password !== 'string') return false;
   const h = crypto.scryptSync(String(password), pass.salt, 64);
   return crypto.timingSafeEqual(h, Buffer.from(pass.hash, 'hex'));
 }

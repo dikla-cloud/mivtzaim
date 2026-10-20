@@ -34,6 +34,17 @@ const T = {
   'בחרו לפחות סניף אחד': { de: 'Bitte mindestens eine Filiale wählen', en: 'Choose at least one store' },
   'רשימת ״חסר בבית״ ריקה': { de: 'Die Einkaufsliste ist leer', en: 'The shopping list is empty' },
 
+  "קוד כבר נשלח. אפשר לבקש קוד חדש בעוד דקה.": { de: "Ein Code wurde gerade gesendet. Ein neuer ist in einer Minute möglich.", en: "A code was just sent. You can ask for a new one in a minute." },
+  "שליחת המייל נכשלה. נסו שוב מאוחר יותר.": { de: "Die E-Mail konnte nicht gesendet werden. Bitte später erneut versuchen.", en: "Sending the email failed. Please try again later." },
+  "הקוד לא נכון או שפג תוקפו. אפשר לבקש קוד חדש.": { de: "Der Code ist falsch oder abgelaufen. Du kannst einen neuen anfordern.", en: "The code is wrong or has expired. You can ask for a new one." },
+  "כתובת המייל לא תקינה": { de: "Ungültige E-Mail-Adresse", en: "Invalid email address" },
+
+  "כניסה עם מייל עוד לא הוגדרה בשרת": { de: "Die Anmeldung per E-Mail ist am Server noch nicht eingerichtet", en: "Email sign-in is not set up on the server yet" },
+  "המייל הזה לא רשום באפליקציה. בקשו ממי שהזמין אתכם להוסיף אותו.": { de: "Diese E-Mail ist nicht registriert. Bitte die Person, die dich eingeladen hat, sie hinzuzufügen.", en: "This email is not registered. Ask whoever invited you to add it." },
+  "קוד הכניסה שלך: {code}": { de: "Dein Anmeldecode: {code}", en: "Your sign-in code: {code}" },
+  "שלום {name},\n\nקוד הכניסה לאפליקציה ״{app}״: {code}\nהקוד בתוקף 15 דקות.\n\nאם לא ביקשת להיכנס, אפשר להתעלם מהמייל הזה.": { de: "Hallo {name},\n\ndein Anmeldecode für „{app}“: {code}\nDer Code gilt 15 Minuten.\n\nWenn du dich nicht anmelden wolltest, kannst du diese E-Mail ignorieren.", en: "Hi {name},\n\nYour sign-in code for “{app}”: {code}\nThe code is valid for 15 minutes.\n\nIf you did not try to sign in, you can ignore this email." },
+  "המייל הזה כבר שייך למשתמש אחר": { de: "Diese E-Mail gehört schon zu einem anderen Konto", en: "This email already belongs to another user" },
+  "בלי מייל לא תוכלו להיכנס שוב לאפליקציה": { de: "Ohne E-Mail kannst du dich nicht mehr anmelden", en: "Without an email you won’t be able to sign in again" },
   // סריקה
   'לא הוגדר מיקום': { de: 'Kein Standort festgelegt', en: 'No location set' },
   'אין עדיין מקור מבצעים חינמי ל{country}. נתמכות כרגע: ישראל, אוסטריה, גרמניה ואוסטרליה.': {
@@ -80,6 +91,16 @@ const T = {
 
 // ערבית (מפתח: הנוסח העברי)
 const T_AR = {
+  "כניסה עם מייל עוד לא הוגדרה בשרת": "الدخول عبر البريد لم يُفعَّل بعد في الخادم",
+  "המייל הזה לא רשום באפליקציה. בקשו ממי שהזמין אתכם להוסיף אותו.": "هذا البريد غير مسجّل في التطبيق. اطلب ممن دعاك إضافته.",
+  "קוד הכניסה שלך: {code}": "رمز الدخول: {code}",
+  "שלום {name},\n\nקוד הכניסה לאפליקציה ״{app}״: {code}\nהקוד בתוקף 15 דקות.\n\nאם לא ביקשת להיכנס, אפשר להתעלם מהמייל הזה.": "مرحبًا {name}،\n\nرمز الدخول إلى تطبيق «{app}»: {code}\nالرمز صالح لمدة 15 دقيقة.\n\nإذا لم تحاول الدخول، يمكنك تجاهل هذه الرسالة.",
+  "המייל הזה כבר שייך למשתמש אחר": "هذا البريد مرتبط بمستخدم آخر",
+  "בלי מייל לא תוכלו להיכנס שוב לאפליקציה": "بدون بريد إلكتروني لن تتمكن من الدخول مجددًا",
+  "קוד כבר נשלח. אפשר לבקש קוד חדש בעוד דקה.": "تم إرسال رمز للتو. يمكن طلب رمز جديد بعد دقيقة.",
+  "שליחת המייל נכשלה. נסו שוב מאוחר יותר.": "فشل إرسال البريد. حاول مرة أخرى لاحقًا.",
+  "הקוד לא נכון או שפג תוקפו. אפשר לבקש קוד חדש.": "الرمز غير صحيح أو انتهت صلاحيته. يمكن طلب رمز جديد.",
+  "כתובת המייל לא תקינה": "عنوان البريد غير صالح",
   "SaleFinder (קטלוגי מבצעים, אוסטרליה)": "SaleFinder (نشرات العروض، أستراليا)",
   "חיפוש בקטלוגי המבצעים של רשתות המזון באוסטרליה (SaleFinder). המחירים ארציים או לפי מדינה.": "بحث في نشرات عروض شبكات الأغذية في أستراليا (SaleFinder). الأسعار على مستوى الدولة أو الولاية.",
   "{chain} (קטלוג מבצעים)": "{chain} (نشرة العروض)",
