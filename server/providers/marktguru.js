@@ -1,5 +1,5 @@
 // אוסטריה וגרמניה: עלוני המבצעים של כל הרשתות (Billa, Spar, Hofer, Lidl, Penny, REWE, Edeka, Aldi…)
-// לפי מיקוד, דרך marktguru. זה ממשק לא רשמי של האתר – אם הוא ישתנה, יופיע על כך הסבר ב„הערות מהסריקה”.
+// לפי מיקוד, דרך marktguru. זה ממשק לא רשמי של האתר – אם הוא ישתנה, יופיע על כך הסבר ב״הערות מהסריקה״.
 const { Session } = require('../http');
 const translate = require('../translate');
 const { tr } = require('../i18n');
@@ -17,7 +17,7 @@ async function apiKeys(s, host) {
   return (keysCache[host] = { apiKey, clientKey, at: Date.now() });
 }
 
-// החיפוש של marktguru מחזיר גם מוצרים שרק מכילים את המילה („Butter” ← Buttercroissant, Margarine).
+// החיפוש של marktguru מחזיר גם מוצרים שרק מכילים את המילה (״Butter״ ← Buttercroissant, Margarine).
 // בגרמנית העיקר במילה מורכבת הוא החלק האחרון: Teebutter היא חמאה, Buttercroissant הוא קרואסון.
 // לכן מוצר נחשב רק אם אחת המילים בשמו מסתיימת במילה שחיפשנו.
 const words = (s) => String(s).toLowerCase().replace(/-/g, '').split(/[^a-zäöüßàâçéèêëîïôûùüÿñæœ]+/).filter(Boolean);
@@ -114,8 +114,8 @@ module.exports = {
         try {
           const n = (await search('Milch')).length;
           report.note += n
-            ? t(' · בדיקת ביקורת: חיפוש „Milch” החזיר {n} תוצאות, כלומר החיבור לעלונים תקין ופשוט אין כרגע מבצעים על המוצרים ברשימה.', { n })
-            : t(' · בדיקת ביקורת: גם חיפוש „Milch” החזיר 0 תוצאות. כנראה שהממשק של marktguru השתנה או שהמיקוד לא נתמך.');
+            ? t(' · בדיקת ביקורת: חיפוש ״Milch״ החזיר {n} תוצאות, כלומר החיבור לעלונים תקין ופשוט אין כרגע מבצעים על המוצרים ברשימה.', { n })
+            : t(' · בדיקת ביקורת: גם חיפוש ״Milch״ החזיר 0 תוצאות. כנראה שהממשק של marktguru השתנה או שהמיקוד לא נתמך.');
         } catch (e) {
           report.note += t(' · בדיקת ביקורת נכשלה: {err}', { err: e.message });
         }

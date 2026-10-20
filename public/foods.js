@@ -48,7 +48,7 @@ const FOOD_ICONS_LATIN = [
   ['hundefutter', '🐕'], ['dog food', '🐕'], ['katzenfutter', '🐈'], ['cat food', '🐈'],
 ];
 
-// ערבית (בלי ה„ال” בתחילת המילה)
+// ערבית (בלי ה״ال״ בתחילת המילה)
 const FOOD_ICONS_AR = [
   ['شوكولا', '🍫'], ['فستق', '🥜'], ['بامبا', '🥜'], ['جوز', '🌰'], ['لوز', '🌰'], ['بطاطا', '🥔'], ['بطاطس', '🥔'], ['برتقال', '🍊'], ['تفاح', '🍎'],
   ['بوظة', '🍦'], ['آيس كريم', '🍦'], ['بسكوت', '🍪'], ['كعك', '🍰'], ['كيك', '🍰'], ['شيبس', '🍿'], ['لبنة', '🧀'], ['لبن', '🥣'], ['زبادي', '🥣'], ['رقائق', '🥣'],
@@ -73,7 +73,7 @@ function foodIcon(text) {
   const hit = FOOD_ICONS.find(([k]) => (k.includes(' ') ? t.includes(k) : words.some((w) => w.startsWith(k))));
   if (hit) return hit[1];
   const ends = (w, k) => { const i = w.lastIndexOf(k); return i >= 0 && w.length - (i + k.length) <= 2 && (i === 0 || k.length >= 3); };
-  // „=מילה” – רק מילה שלמה (Eis ולא Reis/Preis)
+  // ״=מילה״ – רק מילה שלמה (Eis ולא Reis/Preis)
   const latin = FOOD_ICONS_LATIN.find(([k]) => (k[0] === '=' ? words.includes(k.slice(1)) : k.includes(' ') ? t.includes(k) : words.some((w) => ends(w.replace(/-/g, ''), k))));
   return latin ? latin[1] : '🛒';
 }

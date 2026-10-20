@@ -131,14 +131,14 @@ app.post('/api/users', (req, res) => {
   res.json(state(req.user));
 });
 
-// ---------- „חסר בבית”: רשימה משותפת לכל בני משק הבית ----------
+// ---------- ״חסר בבית״: רשימה משותפת לכל בני משק הבית ----------
 // כל פעולה היא על פריט בודד, כדי שכמה טלפונים יוכלו לעדכן באותו זמן בלי לדרוס זה את זה
 const home = (req) => db.householdOf(req.user).home;
 const homeState = (req) => ({ home: home(req) });
 
 app.get('/api/home', (req, res) => res.json(homeState(req)));
 
-// השוואת פריטים בלי תלות ברווחים, גרשיים, אותיות גדולות/קטנות וה' הידיעה („החלב” = „חלב”)
+// השוואת פריטים בלי תלות ברווחים, גרשיים, אותיות גדולות/קטנות וה' הידיעה (״החלב״ = ״חלב״)
 const sameItem = (a, b) => {
   const n = (s) => String(s).replace(/[׳'"״.,]/g, '').replace(/\s+/g, ' ').trim().toLowerCase().replace(/^ה(?=[\u05D0-\u05EA]{2})/, '');
   return n(a) === n(b);
@@ -215,7 +215,7 @@ app.delete('/api/home/:id', (req, res) => {
   res.json(homeState(req));
 });
 
-// „ניקוי פריטים שנקנו”: נשארים רק מה שעוד לא נקנה. רשימת המבצעים לא מושפעת.
+// ״ניקוי פריטים שנקנו״: נשארים רק מה שעוד לא נקנה. רשימת המבצעים לא מושפעת.
 app.post('/api/home/clear-done', (req, res) => {
   const h = db.householdOf(req.user);
   h.home = h.home.filter((x) => !x.done);
@@ -269,7 +269,7 @@ app.delete('/api/users/:name', adminOnly, (req, res) => {
 });
 
 // מחיקת החשבון שלי: החשבון, הרשימה לחיפוש מבצעים, המיקום וההתראות נמחקים.
-// רשימת „חסר בבית” נמחקת רק אם לא נשאר בה אף בן בית אחר.
+// רשימת ״חסר בבית״ נמחקת רק אם לא נשאר בה אף בן בית אחר.
 app.delete('/api/me', (req, res) => {
   const u = req.user;
   if (u.admin) return res.status(400).json({ error: T(req, 'חשבון המנהל לא נמחק מכאן, כי בלעדיו אי אפשר לנהל את האפליקציה.') });
@@ -370,7 +370,7 @@ app.get('/api/product/:code', async (req, res) => {
   res.json({ code, name });
 });
 
-// ---------- השוואת עלות העגלה („חסר בבית”) בין סניפים (ישראל) ----------
+// ---------- השוואת עלות העגלה (״חסר בבית״) בין סניפים (ישראל) ----------
 async function inIsrael(u) {
   if (!u.location) return false;
   const place = await scanner.placeOf(u.location);
@@ -392,7 +392,7 @@ app.post('/api/compare', async (req, res) => {
     .map((s) => ({ chain: s.chain, storeId: String(s.storeId).slice(0, 20), name: String(s.name || '').slice(0, 80) }));
   if (!stores.length) return res.status(400).json({ error: T(req, 'בחרו לפחות סניף אחד') });
   let items = db.householdOf(u).home.filter((x) => !x.done).map((x) => x.text);
-  if (!items.length) return res.status(400).json({ error: T(req, 'רשימת „חסר בבית” ריקה') });
+  if (!items.length) return res.status(400).json({ error: T(req, 'רשימת ״חסר בבית״ ריקה') });
   // פריטים בערבית: קובצי המחירים בעברית, ולכן מוסיפים את התרגום לעברית לחיפוש
   const arabic = items.filter((t) => translate.sourceLang(t) === 'ar');
   if (arabic.length) {
@@ -446,5 +446,5 @@ module.exports = app;
 
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => console.log(`„הקניות שלי” פועלת: http://localhost:${PORT}${process.env.DEMO === '1' ? ' (מצב הדגמה)' : ''}`));
+  app.listen(PORT, () => console.log(`״הקניות שלי״ פועלת: http://localhost:${PORT}${process.env.DEMO === '1' ? ' (מצב הדגמה)' : ''}`));
 }

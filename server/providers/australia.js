@@ -1,6 +1,6 @@
 // אוסטרליה: המבצעים (Specials) באתרי Woolworths ו-Coles.
 // שתי הרשתות מפרסמות מחירים ארציים באתר, והן פרוסות בכל הערים הגדולות.
-// אלה ממשקים לא רשמיים של האתרים – אם אחד מהם ישתנה או יחסום, זה יופיע ב„מה נבדק בסריקה”.
+// אלה ממשקים לא רשמיים של האתרים – אם אחד מהם ישתנה או יחסום, זה יופיע ב״מה נבדק בסריקה״.
 const { Session } = require('../http');
 const translate = require('../translate');
 const { tr } = require('../i18n');
@@ -117,7 +117,7 @@ module.exports = {
           r.deals += found.length;
           deals.push(...found);
         } catch (e) {
-          r.error = tr(lang, 'חיפוש „{term}” נכשל: {err}', { term: info.term, err: e.message });
+          r.error = tr(lang, 'חיפוש ״{term}״ נכשל: {err}', { term: info.term, err: e.message });
           errors.push(`${retailer.name} / ${info.term}: ${e.message}`);
         }
       }

@@ -32,7 +32,7 @@ const T = {
   'ברקוד לא תקין': { de: 'Ungültiger Barcode', en: 'Invalid barcode' },
   'השוואת עגלה זמינה כרגע רק בישראל': { de: 'Der Warenkorb-Vergleich ist derzeit nur in Israel verfügbar', en: 'Cart comparison is currently available only in Israel' },
   'בחרו לפחות סניף אחד': { de: 'Bitte mindestens eine Filiale wählen', en: 'Choose at least one store' },
-  'רשימת „חסר בבית” ריקה': { de: 'Die Einkaufsliste ist leer', en: 'The shopping list is empty' },
+  'רשימת ״חסר בבית״ ריקה': { de: 'Die Einkaufsliste ist leer', en: 'The shopping list is empty' },
 
   // סריקה
   'לא הוגדר מיקום': { de: 'Kein Standort festgelegt', en: 'No location set' },
@@ -44,11 +44,11 @@ const T = {
   'marktguru (עלוני מבצעים)': { de: 'marktguru (Flugblätter)', en: 'marktguru (store flyers)' },
   'חיפוש בעלוני המבצעים של כל הרשתות באזור המיקוד {zip}': { de: 'Suche in den Flugblättern aller Ketten im PLZ-Gebiet {zip}', en: 'Searching the flyers of all chains in postcode area {zip}' },
   'לא זוהה מיקוד למיקום הנוכחי, ולכן אי אפשר לחפש בעלונים': { de: 'Für den Standort wurde keine Postleitzahl erkannt, deshalb ist keine Flugblatt-Suche möglich', en: 'No postcode was found for this location, so flyers cannot be searched' },
-  ' · בדיקת ביקורת: חיפוש „Milch” החזיר {n} תוצאות, כלומר החיבור לעלונים תקין ופשוט אין כרגע מבצעים על המוצרים ברשימה.': {
+  ' · בדיקת ביקורת: חיפוש ״Milch״ החזיר {n} תוצאות, כלומר החיבור לעלונים תקין ופשוט אין כרגע מבצעים על המוצרים ברשימה.': {
     de: ' · Kontrolle: Die Suche nach „Milch“ ergab {n} Treffer. Die Verbindung funktioniert, es gibt nur gerade keine Angebote für deine Produkte.',
     en: ' · Check: searching for “Milch” returned {n} results, so the connection works and there are simply no deals on your items right now.',
   },
-  ' · בדיקת ביקורת: גם חיפוש „Milch” החזיר 0 תוצאות. כנראה שהממשק של marktguru השתנה או שהמיקוד לא נתמך.': {
+  ' · בדיקת ביקורת: גם חיפוש ״Milch״ החזיר 0 תוצאות. כנראה שהממשק של marktguru השתנה או שהמיקוד לא נתמך.': {
     de: ' · Kontrolle: Auch „Milch“ ergab 0 Treffer. Vermutlich hat sich marktguru geändert oder die PLZ wird nicht unterstützt.',
     en: ' · Check: “Milch” also returned 0 results. marktguru probably changed, or the postcode is not supported.',
   },
@@ -60,7 +60,7 @@ const T = {
     en: 'Weekly specials from Woolworths and Coles. Prices are national; both chains are in every city.',
   },
   '{chain} (מחיר ארצי באתר)': { de: '{chain} (landesweiter Preis)', en: '{chain} (national online price)' },
-  'חיפוש „{term}” נכשל: {err}': { de: 'Suche nach „{term}“ fehlgeschlagen: {err}', en: 'Search for “{term}” failed: {err}' },
+  'חיפוש ״{term}״ נכשל: {err}': { de: 'Suche nach „{term}“ fehlgeschlagen: {err}', en: 'Search for “{term}” failed: {err}' },
   'קובצי שקיפות מחירים (ישראל)': { de: 'Preistransparenz-Dateien (Israel)', en: 'Price transparency files (Israel)' },
 
   // התראות
@@ -103,21 +103,21 @@ const T_AR = {
   "ברקוד לא תקין": "باركود غير صالح",
   "השוואת עגלה זמינה כרגע רק בישראל": "مقارنة سعر العربة متاحة حاليًا في إسرائيل فقط",
   "בחרו לפחות סניף אחד": "اختر فرعًا واحدًا على الأقل",
-  "רשימת „חסר בבית” ריקה": "قائمة المشتريات فارغة",
+  "רשימת ״חסר בבית״ ריקה": "قائمة المشتريات فارغة",
   "לא הוגדר מיקום": "لم يُحدَّد موقع",
   "אין עדיין מקור מבצעים חינמי ל{country}. נתמכות כרגע: ישראל, אוסטריה, גרמניה ואוסטרליה.": "لا يوجد بعد مصدر عروض مجاني لـ{country}. المدعوم حاليًا: إسرائيل، النمسا، ألمانيا وأستراليا.",
   "המדינה הזו": "هذه الدولة",
   "marktguru (עלוני מבצעים)": "marktguru (نشرات العروض)",
   "חיפוש בעלוני המבצעים של כל הרשתות באזור המיקוד {zip}": "بحث في نشرات العروض لكل الشبكات في منطقة الرمز البريدي {zip}",
   "לא זוהה מיקוד למיקום הנוכחי, ולכן אי אפשר לחפש בעלונים": "لم يُحدَّد رمز بريدي للموقع الحالي، لذلك لا يمكن البحث في النشرات",
-  " · בדיקת ביקורת: חיפוש „Milch” החזיר {n} תוצאות, כלומר החיבור לעלונים תקין ופשוט אין כרגע מבצעים על המוצרים ברשימה.": " · فحص: البحث عن «Milch» أعاد {n} نتائج، أي أن الاتصال يعمل ولا توجد حاليًا عروض على منتجاتك.",
-  " · בדיקת ביקורת: גם חיפוש „Milch” החזיר 0 תוצאות. כנראה שהממשק של marktguru השתנה או שהמיקוד לא נתמך.": " · فحص: البحث عن «Milch» أيضًا أعاد 0 نتائج. على الأرجح تغيّر marktguru أو أن الرمز البريدي غير مدعوم.",
+  " · בדיקת ביקורת: חיפוש ״Milch״ החזיר {n} תוצאות, כלומר החיבור לעלונים תקין ופשוט אין כרגע מבצעים על המוצרים ברשימה.": " · فحص: البحث عن «Milch» أعاد {n} نتائج، أي أن الاتصال يعمل ولا توجد حاليًا عروض على منتجاتك.",
+  " · בדיקת ביקורת: גם חיפוש ״Milch״ החזיר 0 תוצאות. כנראה שהממשק של marktguru השתנה או שהמיקוד לא נתמך.": " · فحص: البحث عن «Milch» أيضًا أعاد 0 نتائج. على الأرجح تغيّر marktguru أو أن الرمز البريدي غير مدعوم.",
   " · בדיקת ביקורת נכשלה: {err}": " · فشل الفحص: {err}",
   "{chain} (סניפים באזור)": "{chain} (فروع في المنطقة)",
   "Woolworths + Coles (אוסטרליה)": "Woolworths + Coles (أستراليا)",
   "מבצעי השבוע באתרי Woolworths ו-Coles. המחירים באתרים ארציים, ושתי הרשתות פרוסות בכל הערים.": "عروض الأسبوع في مواقع Woolworths وColes. الأسعار على مستوى الدولة، والشبكتان موجودتان في كل المدن.",
   "{chain} (מחיר ארצי באתר)": "{chain} (سعر قُطري في الموقع)",
-  "חיפוש „{term}” נכשל: {err}": "فشل البحث عن «{term}»: {err}",
+  "חיפוש ״{term}״ נכשל: {err}": "فشل البحث عن «{term}»: {err}",
   "קובצי שקיפות מחירים (ישראל)": "ملفات شفافية الأسعار (إسرائيل)",
   "מבצע": "عرض",
   "{n} ב-": "{n} بـ ",
