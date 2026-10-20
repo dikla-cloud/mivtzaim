@@ -1076,6 +1076,33 @@ $('#menuLangs').replaceChildren(...Object.entries(LANGS).map(([k, name]) => {
   });
   return b;
 }));
+// התקנה על המכשיר: נעלם כשהאפליקציה כבר מותקנת (נפתחת מהאייקון)
+const isInstalled = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+$('#menuInstall').hidden = isInstalled();
+window.addEventListener('appinstalled', () => { $('#menuInstall').hidden = true; $('#installHelp').hidden = true; });
+$('#menuInstall').addEventListener('click', async () => {
+  if (installEvt) {
+    installEvt.prompt();
+    const { outcome } = await installEvt.userChoice.catch(() => ({}));
+    if (outcome === 'accepted') { $('#menuInstall').hidden = true; installEvt = null; }
+    return;
+  }
+  // בלי חלון התקנה אוטומטי (למשל אייפון): הסבר קצר
+  $('#installHelp').textContent = t(isIOS
+    ? 'באייפון (Safari): כפתור השיתוף ← „הוספה למסך הבית”.'
+    : 'בתפריט הדפדפן ⋮ בוחרים „התקנת אפליקציה” או „הוספה למסך הבית”.');
+  $('#installHelp').hidden = !$('#installHelp').hidden;
+});
+// שיתוף האפליקציה עם אחרים
+$('#menuShare').addEventListener('click', async () => {
+  const data = { title: t('הקניות שלי'), text: t('הקניות שלי – מבצעים, רשימת קניות והשוואת מחירים:'), url: location.origin };
+  if (navigator.share) {
+    try { await navigator.share(data); track('share_link'); } catch { /* בוטל */ }
+    return;
+  }
+  try { await navigator.clipboard.writeText(location.origin); toast(t('הקישור לאפליקציה הועתק ✔')); track('copy_link'); } catch { prompt(t('הקישור לאפליקציה:'), location.origin); }
+});
 $('#menuAbout').addEventListener('click', () => { $('#menuDlg').close(); $('#aboutDlg').showModal(); });
 $('#aboutClose').addEventListener('click', () => $('#aboutDlg').close());
 $('#aboutVersion').textContent = t('גרסה {v}', { v: APP_VERSION });

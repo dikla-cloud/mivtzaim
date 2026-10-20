@@ -18,8 +18,7 @@
   <div id="splash" aria-hidden="true">
     <img src="icon.svg" alt="">
     <h1 class="splash-name">הקניות שלי</h1>
-    <p class="splash-tag">המבצעים על המוצרים שלך, ליד הבית</p>
-    <p class="splash-sub">רשימת קניות משותפת לכל הבית · התראות על מבצעים · השוואת מחיר העגלה</p>
+    <p class="splash-tag">מבצעים, רשימת קניות והשוואת מחירים</p>
   </div>
   <section id="login">
     <form id="loginForm" class="card">
@@ -281,13 +280,16 @@
       <button type="button" id="menuClose" class="sheet-x" aria-label="סגירה">✕</button>
     </div>
     <div class="menu-list">
-      <button type="button" id="menuAbout">ℹ️ אודות</button>
-      <a href="privacy.html" target="_blank">🔒 מדיניות פרטיות</a>
-      <a href="terms.html" target="_blank">📄 תנאי שימוש</a>
       <div class="menu-lang">
         <span>🌐 שפה</span>
         <div id="menuLangs" class="lang-chips"></div>
       </div>
+      <button type="button" id="menuAbout">ℹ️ אודות</button>
+      <a href="privacy.html" target="_blank">🔒 מדיניות פרטיות</a>
+      <a href="terms.html" target="_blank">📄 תנאי שימוש</a>
+      <button type="button" id="menuInstall">📲 התקנה על המכשיר</button>
+      <p id="installHelp" class="menu-help small" hidden></p>
+      <button type="button" id="menuShare">📤 שיתוף האפליקציה</button>
       <button type="button" id="menuRefresh">🔄 רענון האפליקציה</button>
     </div>
   </dialog>

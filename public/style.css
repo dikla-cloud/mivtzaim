@@ -288,11 +288,11 @@ label.photo { display: inline-flex; align-items: center; justify-content: center
 
 /* מסך פתיחה */
 #splash { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  padding: 24px; text-align: center; color: #fff; background: linear-gradient(180deg, #14897f, #0c6159); transition: opacity .4s; }
+  padding: 24px; text-align: center; color: #0c6159; background: #fbbf24; transition: opacity .4s; }
 #splash.out { opacity: 0; pointer-events: none; }
 #splash img { width: 112px; height: 112px; border-radius: 26px; box-shadow: 0 10px 30px rgb(0 0 0 / .25); margin-bottom: 14px; }
 #splash .splash-name { font-size: 2rem; margin: 0; }
-#splash .splash-tag { font-size: 1.1rem; font-weight: 600; margin: 4px 0 0; }
+#splash .splash-tag { font-size: 1.15rem; font-weight: 700; margin: 6px 0 0; max-width: 300px; }
 #splash .splash-sub { font-size: .9rem; opacity: .85; margin: 6px 0 0; max-width: 300px; }
 
 /* תפריט צד */
@@ -318,3 +318,5 @@ label.photo { display: inline-flex; align-items: center; justify-content: center
 .about img { display: block; width: 72px; height: 72px; border-radius: 18px; margin: 4px auto 12px; }
 .about ul { padding-inline-start: 4px; list-style: none; }
 .about li { margin: 4px 0; }
+.menu-help { margin: -6px 18px 8px; padding: 8px 12px; background: var(--accent-soft); border-radius: 10px; }
+.menu-lang:first-child { border-top: 0; margin-top: 0; }

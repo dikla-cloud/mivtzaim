@@ -95,6 +95,14 @@ const I18N = {
   '📷 נמצא ברקוד {code}, אבל שם המוצר לא ידוע. כתבו את השם בשדה.': ['📷 Barcode {code} gefunden, aber das Produkt ist unbekannt. Bitte den Namen eintippen.', '📷 Found barcode {code}, but the product is unknown. Please type the name.'],
 
   // ---------- תפריט, אודות ומסך פתיחה ----------
+  "מבצעים, רשימת קניות והשוואת מחירים": ["Angebote, Einkaufsliste und Preisvergleich", "Deals, shopping list and price comparison"],
+  "📲 התקנה על המכשיר": ["📲 Auf dem Gerät installieren", "📲 Install on this device"],
+  "📤 שיתוף האפליקציה": ["📤 App teilen", "📤 Share the app"],
+  "באייפון (Safari): כפתור השיתוף ← „הוספה למסך הבית”.": ["Am iPhone (Safari): Teilen-Knopf → „Zum Home-Bildschirm“.", "On iPhone (Safari): Share button → “Add to Home Screen”."],
+  "בתפריט הדפדפן ⋮ בוחרים „התקנת אפליקציה” או „הוספה למסך הבית”.": ["Im Browser-Menü ⋮ „App installieren“ oder „Zum Startbildschirm hinzufügen“ wählen.", "In the browser menu ⋮ choose “Install app” or “Add to Home screen”."],
+  "הקניות שלי – מבצעים, רשימת קניות והשוואת מחירים:": ["Meine Einkäufe – Angebote, Einkaufsliste und Preisvergleich:", "My Shopping – deals, shopping list and price comparison:"],
+  "הקישור לאפליקציה הועתק ✔": ["Link zur App kopiert ✔", "App link copied ✔"],
+  "הקישור לאפליקציה:": ["Link zur App:", "App link:"],
   "תפריט": ["Menü", "Menu"],
   "ℹ️ אודות": ["ℹ️ Über die App", "ℹ️ About"],
   "🔒 מדיניות פרטיות": ["🔒 Datenschutz", "🔒 Privacy policy"],
@@ -331,6 +339,14 @@ const I18N = {
 
 // ערבית (מפתח: הנוסח העברי)
 const I18N_AR = {
+  "מבצעים, רשימת קניות והשוואת מחירים": "عروض، قائمة مشتريات ومقارنة أسعار",
+  "📲 התקנה על המכשיר": "📲 التثبيت على الجهاز",
+  "📤 שיתוף האפליקציה": "📤 مشاركة التطبيق",
+  "באייפון (Safari): כפתור השיתוף ← „הוספה למסך הבית”.": "في الآيفون (Safari): زر المشاركة ← «إضافة إلى الشاشة الرئيسية».",
+  "בתפריט הדפדפן ⋮ בוחרים „התקנת אפליקציה” או „הוספה למסך הבית”.": "في قائمة المتصفح ⋮ اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».",
+  "הקניות שלי – מבצעים, רשימת קניות והשוואת מחירים:": "مشترياتي – عروض، قائمة مشتريات ومقارنة أسعار:",
+  "הקישור לאפליקציה הועתק ✔": "تم نسخ رابط التطبيق ✔",
+  "הקישור לאפליקציה:": "رابط التطبيق:",
   "תפריט": "القائمة",
   "ℹ️ אודות": "ℹ️ حول التطبيق",
   "🔒 מדיניות פרטיות": "🔒 سياسة الخصوصية",
