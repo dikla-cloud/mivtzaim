@@ -1,5 +1,5 @@
 // אחסון פשוט בקובץ JSON. לכל בן משפחה יש חשבון עם רשימה, מיקום והתראות משלו,
-// ובני אותו משק בית (household) חולקים את רשימת „חסר בבית”.
+// ובני אותו משק בית (household) חולקים את רשימת ״חסר בבית״.
 const fs = require('fs');
 const path = require('path');
 
@@ -50,12 +50,12 @@ function get() {
     // משתמשים מגרסה קודמת (לפני משקי בית) – כל אחד מקבל משק בית משלו
     for (const u of Object.values(db.users)) if (!u.household || !db.households[u.household]) u.household = newHousehold();
     // תיקון חד-פעמי: גרסה קודמת צירפה את כל המשתמשים הקיימים למשק הבית של המנהל.
-    // מפרידים אותם; רשימת „חסר בבית” נשארת אצל המנהל. אפשר לצרף מחדש מההגדרות.
+    // מפרידים אותם; רשימת ״חסר בבית״ נשארת אצל המנהל. אפשר לצרף מחדש מההגדרות.
     if (!db.householdsV2) {
       for (const u of Object.values(db.users)) if (!u.admin) u.household = newHousehold();
       db.householdsV2 = true;
     }
-    // שינוי ברירת מחדל: מיקום מתעדכן בלחיצה על „עדכון מיקום”, לא אוטומטית (אפשר להפעיל שוב בהגדרות)
+    // שינוי ברירת מחדל: מיקום מתעדכן בלחיצה על ״עדכון מיקום״, לא אוטומטית (אפשר להפעיל שוב בהגדרות)
     if (!db.locationV2) {
       for (const u of Object.values(db.users)) u.followLocation = false;
       db.locationV2 = true;

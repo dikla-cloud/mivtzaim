@@ -108,7 +108,7 @@ module.exports = {
       return { ...e, match: `${e.text}|${tr.term}` };
     });
     for (const chain of CHAINS.filter((c) => !enabledChains || enabledChains.includes(c.id))) {
-      // מה נבדק ברשת הזו – מוצג למשתמש ב„מה נבדק בסריקה”
+      // מה נבדק ברשת הזו – מוצג למשתמש ב״מה נבדק בסריקה״
       const r = { name: chain.name, nearby: 0, stores: [], deals: 0, error: null };
       report.chains.push(r);
       try {

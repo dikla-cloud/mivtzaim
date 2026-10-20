@@ -40,7 +40,7 @@ async function scan(d) {
     const list = d.list.filter((x) => x.text.trim());
     const errors = [];
     const place = (await placeOf(d.location)) || { countryCode: '', country: '', city: '', postcode: '', label: d.location.label };
-    // דוח „מה נבדק” – נשמר עם תוצאות הסריקה ומוצג באפליקציה
+    // דוח ״מה נבדק״ – נשמר עם תוצאות הסריקה ומוצג באפליקציה
     const report = { place: { ...place }, radiusKm: d.radiusKm, providers: [], chains: [], items: {}, note: '' };
     const ctx = { list, location: d.location, place, radiusKm: d.radiusKm, enabledChains: d.chains, errors, report, lang };
 

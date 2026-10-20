@@ -1,4 +1,4 @@
-// ניצת הדובדבן: אין קובצי שקיפות, אז קוראים את דף „מבצעי מועדון” באתר.
+// ניצת הדובדבן: אין קובצי שקיפות, אז קוראים את דף ״מבצעי מועדון״ באתר.
 // הדף מקשר לקטגוריות (productslist.aspx?offerid=-1&catid=…), ובכל קטגוריה כרטיסי מוצרים
 // עם מחיר רגיל (מחוק) ומחיר מבצע. המבצעים זהים בכל הסניפים, ולא מתפרסם תאריך סיום.
 // רשימת הסניפים מגיעה מהנתונים המובנים (JSON-LD) בדף הסניפים.
@@ -57,7 +57,7 @@ function parseStores(html) {
   }
   const seen = new Set();
   return found.map((o) => {
-    const street = decode(o.address.streetAddress || '').replace(/^.*:\s*/, ''); // „עברנו לכתובת החדשה: החרט 7…”
+    const street = decode(o.address.streetAddress || '').replace(/^.*:\s*/, ''); // ״עברנו לכתובת החדשה: החרט 7…״
     const city = decode(o.address.addressLocality || '');
     return {
       storeId: decode(o.name).replace(/^ניצת הדובדבן\s*-\s*/, '') || city,
