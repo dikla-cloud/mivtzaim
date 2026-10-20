@@ -127,3 +127,12 @@ test('marktguru: only products whose main word is the search term', () => {
   assert.ok(relevant('Tomate', 'Rispentomaten'));
   assert.ok(relevant('Eier', 'Freilandeier 10 Stk'));
 });
+
+test('australia: long item names are searched in shorter forms', () => {
+  const { queries, relevant } = require('../server/providers/salefinder');
+  assert.deepEqual(queries('Pepsi max 300ml'), ['pepsi max']);
+  assert.deepEqual(queries('Bulla dairy low fat cottage cheese original 500g'), ['bulla dairy cottage cheese', 'cottage cheese', 'bulla dairy']);
+  assert.deepEqual(queries('Cobs lightly salted slightly sweet popcorn'), ['cobs popcorn']);
+  assert.ok(relevant('pepsi max', 'Pepsi Max Cola Soft Drink Bottle 1.25L'));
+  assert.ok(!relevant('pepsi max', 'Coca-Cola Classic 1.25L'));
+});

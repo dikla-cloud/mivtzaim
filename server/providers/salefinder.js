@@ -7,7 +7,7 @@ const { tr } = require('../i18n');
 
 const BASE = process.env.SALEFINDER_BASE || 'https://www.salefinder.com.au';
 const BROWSER = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36' };
-const PAGE = { headers: BROWSER, timeout: 40000, tries: 2 };
+const PAGE = { headers: BROWSER, timeout: 60000, tries: 1 }; // האתר איטי; ניסיון אחד ארוך עדיף על כמה קצרים
 const PER_ITEM = 8;
 // רשתות מזון. מבצעים של רשתות אחרות (בתי מרקחת, חשמל…) לא נכנסים
 const GROCERS = { coles: 'Coles', woolworths: 'Woolworths', aldi: 'ALDI', iga: 'IGA', foodland: 'Foodland', drakes: 'Drakes', 'harris-farm-markets': 'Harris Farm', costco: 'Costco' };
@@ -55,9 +55,35 @@ function parseSearch(html, cats = new Map()) {
   return out;
 }
 
-// המוצר באמת מכיל את המילה שחיפשנו (מילה שלמה), כדי לא לקבל „Milk Chocolate” על „Milk” כשיש מוצרים טובים יותר
+// מילות החיפוש בלי גדלים ומספרים („Pepsi max 300ml” ← pepsi max)
+const STOP = new Set(['the', 'and', 'with', 'of', 'a', 'pack', 'x', 'original', 'classic', 'lightly', 'slightly', 'salted', 'sweet', 'low', 'fat',
+  'reduced', 'light', 'lite', 'fresh', 'natural', 'new', 'value', 'bottle', 'can', 'cans', 'bag', 'box', 'large', 'small', 'medium']);
 const words = (s) => String(s).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
-const relevant = (term, name) => { const n = words(name); return words(term).every((w) => n.includes(w) || n.includes(`${w}s`)); };
+const keyWords = (s) => words(s).filter((w) => !/\d/.test(w) && !STOP.has(w) && w.length > 1);
+// מוצר רלוונטי: לפחות 60% ממילות החיפוש מופיעות בשמו (כך גם שמות ארוכים ומפורטים מוצאים תוצאות)
+function relevant(term, name) {
+  const q = keyWords(term);
+  if (!q.length) return true;
+  const n = words(name);
+  const hit = q.filter((w) => n.includes(w) || n.includes(`${w}s`) || n.includes(w.replace(/s$/, ''))).length;
+  return hit / q.length >= 0.6;
+}
+// חיפושים קצרים יותר אם אין תוצאות: קודם בלי גדלים ותיאורים, ואז שתי המילים האחרונות (בדרך כלל סוג המוצר) או הראשונות (המותג)
+function queries(term) {
+  const k = keyWords(term);
+  return [...new Set([k.join(' '), k.slice(-2).join(' '), k.slice(0, 2).join(' ')].filter(Boolean))];
+}
+
+// תוצאות חיפוש נשמרות 6 שעות לכל המשתמשים יחד (האתר איטי)
+const searchCache = new Map();
+async function search(s, q, cats) {
+  const hit = searchCache.get(q);
+  if (hit && Date.now() - hit.at < CATALOGUE_TTL) return hit.items;
+  const items = parseSearch(await s.text(`${BASE}/search/${encodeURIComponent(q)}?qs=1`, PAGE), cats);
+  searchCache.set(q, { at: Date.now(), items });
+  if (searchCache.size > 300) searchCache.delete(searchCache.keys().next().value);
+  return items;
+}
 
 module.exports = {
   id: 'salefinder',
@@ -65,6 +91,7 @@ module.exports = {
   countries: ['AU'],
   parseSearch,
   relevant,
+  queries,
   GROCERS,
   async scan({ list, errors, report, lang }) {
     report.note = tr(lang, 'חיפוש בקטלוגי המבצעים של רשתות המזון באוסטרליה (SaleFinder). המחירים ארציים או לפי מדינה.');
@@ -77,8 +104,11 @@ module.exports = {
       const term = terms[entry.text]?.term || entry.text;
       const info = (report.items[entry.text] = { term, translated: Boolean(terms[entry.text]), how: terms[entry.text]?.how, offers: 0 });
       try {
-        const items = parseSearch(await s.text(`${BASE}/search/${encodeURIComponent(term)}?qs=1`, PAGE), cats)
-          .filter((i) => Object.values(GROCERS).includes(i.retailer) && relevant(term, i.name));
+        let items = [];
+        for (const q of queries(term)) {
+          items = (await search(s, q, cats)).filter((i) => Object.values(GROCERS).includes(i.retailer) && relevant(q, i.name));
+          if (items.length) { info.term = q; break; }
+        }
         info.offers = items.length;
         for (const i of items.slice(0, PER_ITEM)) {
           byChain[i.retailer] = (byChain[i.retailer] || 0) + 1;
