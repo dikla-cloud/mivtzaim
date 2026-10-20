@@ -68,34 +68,32 @@ test('weblist finds standard transparency file links (absolute and relative)', (
   assert.equal(l[1].url, 'https://blob.example/PromoFull7290055700007-012-202610160300.gz?sv=1&x=2');
 });
 
-test('australia: Woolworths + Coles specials, per-retailer errors in report', async () => {
-  const au = require('../server/providers/australia');
+test('australia: SaleFinder search → grocery deals only, retailer from catalogue id', async () => {
+  const sf = require('../server/providers/salefinder');
+  const item = (id, cat, name, price, save, extra = '') => `<div class="item-landscape" data-itemid="${id}" data-itemname="${name}"> <span class="item-details"> <h1><a href="/${cat}/dairy/${id}/" class="item-name"> ${name} </a></h1> <div class="price-options "> ${save ? `Save $${save}<br />` : ''}<span class="price"> $${price} </span> </div> ${extra}</div>`;
+  const search = item('1', '68406', 'Coles Full Cream Milk 3L', '4.50', '0.60') + item('2', '67930', 'LittleOak Goat Milk Toddler 800g', '43.99', '4.96')
+    + item('3', '68440', 'Woolworths Lite Milk 2L', '3.10') + item('4', '68406', 'Coles Milk Chocolate Block', '2.00');
   const real = global.fetch;
-  global.fetch = async (url, opts) => {
+  global.fetch = async (url) => {
     const u = String(url);
-    const json = (o) => new Response(JSON.stringify(o), { status: 200, headers: { 'content-type': 'application/json' } });
-    if (u.includes('api.mymemory')) return json({ responseStatus: 200, responseData: { translatedText: 'milk' } });
-    if (u === 'https://www.woolworths.com.au/') return new Response('ok', { status: 200 });
-    if (u.includes('woolworths.com.au/apis/ui/Search/products')) {
-      assert.equal(JSON.parse(opts.body).SearchTerm, 'milk');
-      return json({ Products: [{ Products: [
-        { Stockcode: 1, DisplayName: 'Woolworths Full Cream Milk 3L', Price: 4.5, WasPrice: 5.1, IsOnSpecial: true },
-        { Stockcode: 2, DisplayName: 'Other Milk', Price: 3, WasPrice: 3, IsOnSpecial: false },
-      ] }] });
-    }
-    if (u === 'https://www.coles.com.au/') return new Response('<html>blocked</html>', { status: 200 });
-    throw new Error('unexpected ' + u);
+    const html = (t) => new Response(t, { status: 200, headers: { 'content-type': 'text/html' } });
+    if (u.includes('api.mymemory')) return new Response(JSON.stringify({ responseStatus: 200, responseData: { translatedText: 'milk' } }));
+    if (u.endsWith('/coles-catalogue')) return html('<a href="/coles-catalogue/coles-catalogue-nsw-metro/68406/catalogue2">x</a>');
+    if (u.endsWith('/woolworths-catalogue')) return html('<a href="/woolworths-catalogue/weekly-catalogue-nsw/68440/catalogue2">x</a>');
+    if (u.includes('/search/milk')) return html(search);
+    return html('');
   };
   try {
     const report = { chains: [], items: {}, note: '' };
-    const errors = [];
-    const deals = await au.scan({ list: [{ text: 'חלב' }], errors, report });
-    assert.equal(deals.length, 1);
-    assert.deepEqual([deals[0].chain, deals[0].promoPrice, deals[0].regularPrice, deals[0].currency], ['Woolworths', 4.5, 5.1, 'AUD']);
-    assert.equal(report.items['חלב'].term, 'milk');
-    assert.equal(report.items['חלב'].offers, 2);
-    assert.equal(report.chains[0].deals, 1);
-    assert.match(report.chains[1].error, /Coles/);
+    const deals = await sf.scan({ list: [{ text: 'milk' }], errors: [], report, lang: 'en' });
+    // רק רשתות מזון (בלי בית המרקחת), ורק מוצרים שהמילה בשמם
+    assert.deepEqual(deals.map((d) => [d.chain, d.product, d.promoPrice, d.regularPrice]), [
+      ['Coles', 'Coles Full Cream Milk 3L', 4.5, 5.1],
+      ['Woolworths', 'Woolworths Lite Milk 2L', 3.1, null],
+      ['Coles', 'Coles Milk Chocolate Block', 2, null],
+    ]);
+    assert.equal(deals[0].url, 'https://www.salefinder.com.au/68406/dairy/1/');
+    assert.deepEqual(report.chains.map((c) => [c.name, c.deals]), [['Coles', 2], ['Woolworths', 1]]);
   } finally {
     global.fetch = real;
   }

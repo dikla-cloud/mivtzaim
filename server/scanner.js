@@ -6,10 +6,10 @@ const push = require('./push');
 const metrics = require('./metrics');
 const israel = require('./providers/israel');
 const marktguru = require('./providers/marktguru');
-const australia = require('./providers/australia');
+const salefinder = require('./providers/salefinder');
 
 // מקורות נתונים חינמיים לפי מדינה
-const PROVIDERS = [israel, marktguru, australia];
+const PROVIDERS = [israel, marktguru, salefinder];
 
 const inIsrael = ({ lat, lon }) => lat > 29.4 && lat < 33.4 && lon > 34.2 && lon < 35.95;
 const inAustria = ({ lat, lon }) => lat > 46.3 && lat < 49.1 && lon > 9.5 && lon < 17.2;

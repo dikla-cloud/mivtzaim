@@ -319,7 +319,7 @@ const I18N = {
   'ההתראות כבויות במכשיר הזה.': ['Benachrichtigungen sind auf diesem Gerät aus.', 'Notifications are off on this device.'],
   'הפעלת ההתראות נכשלה: ': ['Aktivieren fehlgeschlagen: ', 'Turning on notifications failed: '],
   'רשתות בישראל': ['Ketten in Israel', 'Chains in Israel'],
-  'בחו"ל נתמכות כרגע אוסטריה וגרמניה (כל הרשתות הגדולות, לפי עלוני המבצעים) ואוסטרליה (Woolworths ו-Coles).': ['Außerhalb Israels: Österreich und Deutschland (alle großen Ketten über die Flugblätter) und Australien (Woolworths und Coles).', 'Outside Israel: Austria and Germany (all major chains, via store flyers) and Australia (Woolworths and Coles).'],
+  'בחו"ל נתמכות כרגע אוסטריה וגרמניה (כל הרשתות הגדולות, לפי עלוני המבצעים) ואוסטרליה (Coles,‏ Woolworths,‏ ALDI ועוד).': ['Außerhalb Israels: Österreich und Deutschland (alle großen Ketten über die Flugblätter) und Australien (Coles, Woolworths, ALDI und mehr).', 'Outside Israel: Austria and Germany (all major chains, via store flyers) and Australia (Coles, Woolworths, ALDI and more).'],
 
   // ---------- התקנה ותנאים ----------
   'התקנה בטלפון': ['Am Handy installieren', 'Install on your phone'],
@@ -612,7 +612,7 @@ const I18N_AR = {
   "ההתראות כבויות במכשיר הזה.": "التنبيهات متوقفة على هذا الجهاز.",
   "הפעלת ההתראות נכשלה: ": "فشل تفعيل التنبيهات: ",
   "רשתות בישראל": "الشبكات في إسرائيل",
-  "בחו\"ל נתמכות כרגע אוסטריה וגרמניה (כל הרשתות הגדולות, לפי עלוני המבצעים) ואוסטרליה (Woolworths ו-Coles).": "خارج إسرائيل: النمسا وألمانيا (كل الشبكات الكبرى، حسب نشرات العروض) وأستراليا (Woolworths وColes).",
+  "בחו\"ל נתמכות כרגע אוסטריה וגרמניה (כל הרשתות הגדולות, לפי עלוני המבצעים) ואוסטרליה (Woolworths ו-Coles).": "خارج إسرائيل: النمسا وألمانيا (كل الشبكات الكبرى، حسب نشرات العروض) وأستراليا (Coles وWoolworths وALDI وغيرها).",
   "התקנה בטלפון": "التثبيت على الهاتف",
   "אנדרואיד (Chrome):": "أندرويد (Chrome):",
   "תפריט ⋮ ← ״התקנת אפליקציה״ / ״הוספה למסך הבית״.": "القائمة ⋮ ← «تثبيت التطبيق» / «إضافة إلى الشاشة الرئيسية».",

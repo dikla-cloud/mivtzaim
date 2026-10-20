@@ -61,6 +61,9 @@ const T = {
   },
   '{chain} (מחיר ארצי באתר)': { de: '{chain} (landesweiter Preis)', en: '{chain} (national online price)' },
   'חיפוש ״{term}״ נכשל: {err}': { de: 'Suche nach „{term}“ fehlgeschlagen: {err}', en: 'Search for “{term}” failed: {err}' },
+  "SaleFinder (קטלוגי מבצעים, אוסטרליה)": { de: "SaleFinder (Prospekte, Australien)", en: "SaleFinder (store catalogues, Australia)" },
+  "חיפוש בקטלוגי המבצעים של רשתות המזון באוסטרליה (SaleFinder). המחירים ארציים או לפי מדינה.": { de: "Suche in den Prospekten der Lebensmittelketten in Australien (SaleFinder). Preise national oder je Bundesstaat.", en: "Searching the catalogues of Australian grocery chains (SaleFinder). Prices are national or per state." },
+  "{chain} (קטלוג מבצעים)": { de: "{chain} (Prospekt)", en: "{chain} (catalogue)" },
   'קובצי שקיפות מחירים (ישראל)': { de: 'Preistransparenz-Dateien (Israel)', en: 'Price transparency files (Israel)' },
 
   // התראות
@@ -77,6 +80,9 @@ const T = {
 
 // ערבית (מפתח: הנוסח העברי)
 const T_AR = {
+  "SaleFinder (קטלוגי מבצעים, אוסטרליה)": "SaleFinder (نشرات العروض، أستراليا)",
+  "חיפוש בקטלוגי המבצעים של רשתות המזון באוסטרליה (SaleFinder). המחירים ארציים או לפי מדינה.": "بحث في نشرات عروض شبكات الأغذية في أستراليا (SaleFinder). الأسعار على مستوى الدولة أو الولاية.",
+  "{chain} (קטלוג מבצעים)": "{chain} (نشرة العروض)",
   "שם או סיסמה שגויים": "اسم أو كلمة مرور خاطئة",
   "הסיסמה הראשונית שגויה": "كلمة المرور الأولية خاطئة",
   "נדרשת כניסה": "يرجى تسجيل الدخول",
