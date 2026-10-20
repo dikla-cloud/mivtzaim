@@ -95,6 +95,9 @@ const I18N = {
   '📷 נמצא ברקוד {code}, אבל שם המוצר לא ידוע. כתבו את השם בשדה.': ['📷 Barcode {code} gefunden, aber das Produkt ist unbekannt. Bitte den Namen eintippen.', '📷 Found barcode {code}, but the product is unknown. Please type the name.'],
 
   // ---------- תפריט, אודות ומסך פתיחה ----------
+  "מבצעים, רשימת קניות": ["Angebote, Einkaufsliste", "Deals, shopping list"],
+  "והשוואת מחירים": ["und Preisvergleich", "and price comparison"],
+  "שיתוף האפליקציה": ["App teilen", "Share the app"],
   "מבצעים, רשימת קניות והשוואת מחירים": ["Angebote, Einkaufsliste und Preisvergleich", "Deals, shopping list and price comparison"],
   "📲 התקנה על המכשיר": ["📲 Auf dem Gerät installieren", "📲 Install on this device"],
   "📤 שיתוף האפליקציה": ["📤 App teilen", "📤 Share the app"],
@@ -339,6 +342,9 @@ const I18N = {
 
 // ערבית (מפתח: הנוסח העברי)
 const I18N_AR = {
+  "מבצעים, רשימת קניות": "عروض، قائمة مشتريات",
+  "והשוואת מחירים": "ومقارنة أسعار",
+  "שיתוף האפליקציה": "مشاركة التطبيق",
   "מבצעים, רשימת קניות והשוואת מחירים": "عروض، قائمة مشتريات ومقارنة أسعار",
   "📲 התקנה על המכשיר": "📲 التثبيت على الجهاز",
   "📤 שיתוף האפליקציה": "📤 مشاركة التطبيق",

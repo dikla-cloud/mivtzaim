@@ -18,7 +18,7 @@
   <div id="splash" aria-hidden="true">
     <img src="icon.svg" alt="">
     <h1 class="splash-name">הקניות שלי</h1>
-    <p class="splash-tag">מבצעים, רשימת קניות והשוואת מחירים</p>
+    <p class="splash-tag"><span>מבצעים, רשימת קניות</span><br><span>והשוואת מחירים</span></p>
   </div>
   <section id="login">
     <form id="loginForm" class="card">
@@ -289,9 +289,10 @@
       <a href="terms.html" target="_blank">📄 תנאי שימוש</a>
       <button type="button" id="menuInstall">📲 התקנה על המכשיר</button>
       <p id="installHelp" class="menu-help small" hidden></p>
-      <button type="button" id="menuShare">📤 שיתוף האפליקציה</button>
+      <button type="button" id="menuShare"><svg class="share-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="m8.3 10.7 7.4-4.3M8.3 13.3l7.4 4.3"/></svg> שיתוף האפליקציה</button>
       <button type="button" id="menuRefresh">🔄 רענון האפליקציה</button>
     </div>
+    <p id="menuVersion" class="menu-version muted small"></p>
   </dialog>
 
   <dialog id="aboutDlg">
@@ -309,7 +310,6 @@
         <li>🧮 השוואת מחיר העגלה בין סניפים</li>
       </ul>
       <p class="muted small">המחירים מגיעים מקובצי השקיפות שהרשתות מפרסמות לפי חוק, ובחו"ל מעלוני המבצעים. כדאי תמיד לבדוק את המחיר בחנות. השירות חינמי ושומר על הפרטיות: המידע שלך לא נמכר.</p>
-      <p class="muted small" id="aboutVersion"></p>
     </div>
   </dialog>
 

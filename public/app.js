@@ -1105,7 +1105,7 @@ $('#menuShare').addEventListener('click', async () => {
 });
 $('#menuAbout').addEventListener('click', () => { $('#menuDlg').close(); $('#aboutDlg').showModal(); });
 $('#aboutClose').addEventListener('click', () => $('#aboutDlg').close());
-$('#aboutVersion').textContent = t('גרסה {v}', { v: APP_VERSION });
+$('#menuVersion').textContent = t('גרסה {v}', { v: APP_VERSION });
 // רענון: מוחקים את העותק השמור של האפליקציה בטלפון וטוענים מחדש מהשרת
 $('#menuRefresh').addEventListener('click', async () => {
   $('#menuRefresh').textContent = t('🔄 מרענן…');

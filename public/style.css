@@ -320,3 +320,6 @@ label.photo { display: inline-flex; align-items: center; justify-content: center
 .about li { margin: 4px 0; }
 .menu-help { margin: -6px 18px 8px; padding: 8px 12px; background: var(--accent-soft); border-radius: 10px; }
 .menu-lang:first-child { border-top: 0; margin-top: 0; }
+.share-ico { width: 20px; height: 20px; vertical-align: -4px; fill: var(--accent); stroke: var(--accent); stroke-width: 1.8; margin-inline-end: 2px; }
+#menuDlg[open] { display: flex; flex-direction: column; }
+.menu-version { margin-top: auto; padding: 14px 18px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); }
