@@ -1039,19 +1039,32 @@ function renderCart(r) {
     }
     return row;
   };
-  const head = tr([t('פריט'), ...ok.map((s) => {
+  // עמודה שנייה: איפה כל מוצר הכי זול (נראית גם בטלפון בלי גלילה הצידה)
+  const head = tr([t('פריט'), ...(ok.length > 1 ? [t('🏆 הכי זול ב-')] : []), ...ok.map((s) => {
     const h = document.createElement('span');
     h.append(s.chainName, Object.assign(document.createElement('small'), { className: 'muted', textContent: s.name }));
     return h;
   })], 'th');
   const rows = r.items.map((item) => {
-    const prices = ok.map((s) => s.lines.find((l) => l.text === item)).map((l) => (l && !l.missing ? l.price : null));
-    const min = Math.min(...prices.filter((p) => p != null));
-    return tr([`${foodIcon(item)} ${item}`, ...ok.map((s, i) => {
-      const l = s.lines.find((x) => x.text === item);
+    const lines = ok.map((s) => s.lines.find((l) => l.text === item));
+    const prices = lines.map((l) => (l && !l.missing ? l.price : null));
+    const found = prices.filter((p) => p != null);
+    const min = found.length ? Math.min(...found) : null;
+    const winners = ok.filter((_, i) => prices[i] != null && prices[i] === min);
+    const best = document.createElement('span');
+    if (!winners.length) { best.textContent = '—'; best.className = 'muted'; } else {
+      best.className = 'best-cell';
+      best.append(Object.assign(document.createElement('b'), { textContent: money(min) }),
+        // אם יש כמה סניפים מאותה רשת – גם שם הסניף
+        Object.assign(document.createElement('small'), { textContent: winners.map((w) => (ok.filter((x) => x.chainName === w.chainName).length > 1 ? `${w.chainName} · ${w.name}` : w.chainName)).join(' | ') }));
+    }
+    return tr([`${foodIcon(item)} ${item}`, ...(ok.length > 1 ? [best] : []), ...ok.map((s, i) => {
+      const l = lines[i];
       const cell = document.createElement('span');
       if (!l || l.missing) { cell.textContent = '—'; cell.className = 'muted'; return cell; }
-      cell.append(Object.assign(document.createElement('b'), { textContent: `${l.promo ? '🏷️ ' : ''}${money(l.price)}`, className: prices[i] === min && ok.length > 1 ? 'cheap' : '' }));
+      const cheapest = ok.length > 1 && prices[i] === min;
+      if (cheapest) cell.className = 'cheapest';
+      cell.append(Object.assign(document.createElement('b'), { textContent: `${cheapest ? '✓ ' : ''}${l.promo ? '🏷️ ' : ''}${money(l.price)}`, className: cheapest ? 'cheap' : '' }));
       cell.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: l.name }));
       cell.title = l.name;
       return cell;

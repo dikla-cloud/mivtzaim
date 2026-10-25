@@ -351,3 +351,6 @@ details.fold[open] { padding-bottom: 14px; }
 .online-note { color: var(--warn); font-weight: 600; margin-top: 2px; }
 .store-group { margin: 12px 2px 2px; font-size: .95rem; color: var(--accent); }
 .store-group:first-child { margin-top: 0; }
+.cart-table .cheapest { display: block; background: var(--accent-soft); border-radius: 8px; padding: 4px 6px; margin: -4px -6px; }
+.cart-table .best-cell { display: block; color: var(--accent); }
+.cart-table .best-cell small { display: block; font-weight: 600; white-space: normal; max-width: 120px; }
