@@ -141,6 +141,8 @@ const I18N = {
   "המחירים מגיעים מקובצי השקיפות שהרשתות מפרסמות לפי חוק, ובחו\"ל מעלוני המבצעים. כדאי תמיד לבדוק את המחיר בחנות. השירות חינמי ושומר על הפרטיות: המידע שלך לא נמכר.": ["Die Preise stammen aus den Flugblättern der Ketten (in Israel aus den gesetzlichen Preisdateien). Bitte im Geschäft prüfen. Die App ist kostenlos und schützt deine Privatsphäre: deine Daten werden nicht verkauft.", "Prices come from the price files chains publish by law in Israel, and from deal flyers abroad. Always check the price in the store. The app is free and respects your privacy: your data is not sold."],
   "רשימת קניות משותפת לכל הבית · התראות על מבצעים · השוואת מחיר העגלה": ["Gemeinsame Einkaufsliste · Angebots-Benachrichtigungen · Preisvergleich", "A shared shopping list · deal alerts · cart price comparison"],
   // ---------- השוואת עגלה ----------
+  "🛒 לא כולל דמי משלוח": ["🛒 ohne Liefergebühr", "🛒 delivery fee not included"],
+  "🛒 בסניפי אונליין ההשוואה כוללת רק את מחירי המוצרים, בלי דמי משלוח (ובלי מינימום הזמנה).": ["🛒 Bei Online-Filialen enthält der Vergleich nur die Produktpreise, ohne Liefergebühr (und ohne Mindestbestellwert).", "🛒 For online stores the comparison covers product prices only, without delivery fees (or minimum order)."],
   "🛒 אונליין · משלוח עד הבית": ["🛒 Online · Lieferung nach Hause", "🛒 Online · home delivery"],
   "אונליין": ["online", "online"],
   "⏳ עוד מאתרים סניפים על המפה (בפעם הראשונה זה לוקח כמה דקות). הרשימה מתעדכנת לבד, ואפשר כבר לסמן.": ["⏳ Filialen werden noch auf der Karte gesucht (beim ersten Mal ein paar Minuten). Die Liste aktualisiert sich selbst – du kannst schon auswählen.", "⏳ Still locating stores on the map (a few minutes the first time). The list updates by itself, and you can already tick stores."],
@@ -375,6 +377,8 @@ const I18N = {
 
 // ערבית (מפתח: הנוסח העברי)
 const I18N_AR = {
+  "🛒 לא כולל דמי משלוח": "🛒 لا يشمل رسوم التوصيل",
+  "🛒 בסניפי אונליין ההשוואה כוללת רק את מחירי המוצרים, בלי דמי משלוח (ובלי מינימום הזמנה).": "🛒 في الفروع الأونلاين تشمل المقارنة أسعار المنتجات فقط، بدون رسوم التوصيل (وبدون الحد الأدنى للطلب).",
   "🛒 אונליין · משלוח עד הבית": "🛒 أونلاين · توصيل إلى البيت",
   "אונליין": "أونلاين",
   "⏳ עוד מאתרים סניפים על המפה (בפעם הראשונה זה לוקח כמה דקות). הרשימה מתעדכנת לבד, ואפשר כבר לסמן.": "⏳ ما زلنا نحدد الفروع على الخريطة (في المرة الأولى يستغرق ذلك بضع دقائق). القائمة تتحدث تلقائيًا، ويمكنك الاختيار الآن.",

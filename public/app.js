@@ -989,6 +989,8 @@ $('#storesClose').addEventListener('click', () => $('#storesDlg').close());
 $('#cartClose').addEventListener('click', () => $('#cartDlg').close());
 $('#cartBack').addEventListener('click', () => { $('#cartResult').hidden = true; $('#cartPick').hidden = false; });
 $('#cartGo').addEventListener('click', runCompare);
+// סניף אונליין: מהבחירה (בלי מרחק) או לפי השם
+const isOnlineStore = (s) => cartStores.some((x) => storeKey(x) === storeKey(s) && x.km == null) || /online|אונליין|אינטרנט/i.test(s.name || '');
 function renderCart(r) {
   $('#cartPick').hidden = true;
   $('#cartResult').hidden = false;
@@ -1008,10 +1010,12 @@ function renderCart(r) {
     c.append(Object.assign(document.createElement('div'), { className: 'cc-total', textContent: money(s.commonTotal) }));
     const extra = s.total !== s.commonTotal ? t(' · כל מה שנמצא: {total}', { total: money(s.total) }) : '';
     c.append(Object.assign(document.createElement('div'), { className: 'muted small', textContent: t('{found} מתוך {n} פריטים', { found: s.found, n: r.items.length }) + extra }));
+    if (isOnlineStore(s)) c.append(Object.assign(document.createElement('div'), { className: 'online-note small', textContent: t('🛒 לא כולל דמי משלוח') }));
     if (best && ok.length > 1) c.prepend(Object.assign(document.createElement('span'), { className: 'badge best-badge', textContent: t('🏆 הכי זול') }));
     return c;
   });
   $('#cartCards').replaceChildren(...cards);
+  $('#cartShipNote').hidden = !r.stores.some(isOnlineStore);
   const tr = (cells, tag = 'td') => {
     const row = document.createElement('tr');
     for (const c of cells) {
