@@ -123,7 +123,7 @@ async function nearbyStores(user, errors = [], { wait = Infinity } = {}) {
   const job = storesJob(user);
   if (!job.done) await Promise.race([job.promise, new Promise((r) => setTimeout(r, wait === Infinity ? 2 ** 31 - 1 : wait))]);
   errors.push(...job.errors);
-  return { stores: [...job.list].sort((a, b) => (a.km ?? -1) - (b.km ?? -1)).slice(0, 90), loading: !job.done };
+  return { stores: [...job.list].sort((a, b) => (a.km ?? -1) - (b.km ?? -1)).slice(0, 250), loading: !job.done };
 }
 
 async function compare(items, stores) {

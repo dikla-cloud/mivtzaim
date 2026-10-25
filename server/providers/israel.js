@@ -12,12 +12,14 @@ const CHAINS = process.env.DEMO === '1'
 const STORES_TTL = 7 * 86400000;
 const MAX_STORES_PER_CHAIN = Number(process.env.MAX_STORES_PER_CHAIN || 3);
 
+// מעלים את הגרסה כשמשנים את פענוח הסניפים, כדי שהרשימה השמורה תיטען מחדש
+const STORES_VERSION = 2;
 async function chainStores(chain) {
   const d = db.get();
   const c = d.storesCache[chain.id];
-  if (c && Date.now() - c.at < STORES_TTL) return c.stores;
+  if (c && c.v === STORES_VERSION && Date.now() - c.at < STORES_TTL) return c.stores;
   const stores = await chain.stores();
-  d.storesCache[chain.id] = { at: Date.now(), stores };
+  d.storesCache[chain.id] = { at: Date.now(), v: STORES_VERSION, stores };
   db.save();
   return stores;
 }

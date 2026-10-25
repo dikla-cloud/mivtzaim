@@ -349,3 +349,5 @@ details.fold[open] { padding-bottom: 14px; }
 #tab-settings > .card { margin-bottom: 8px; }
 .settings-version { text-align: center; margin: 0 0 8px; }
 .online-note { color: var(--warn); font-weight: 600; margin-top: 2px; }
+.store-group { margin: 12px 2px 2px; font-size: .95rem; color: var(--accent); }
+.store-group:first-child { margin-top: 0; }

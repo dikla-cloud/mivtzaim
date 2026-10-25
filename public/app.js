@@ -875,19 +875,33 @@ let cartSel = [];
 let cartMax = 12;
 const storeKey = (s) => `${s.chain}|${s.storeId}`;
 // רשימת סניפים עם תיבות סימון (משותף ל„הסניפים שלי” ולהשוואת העגלה)
+// סדר: קודם סניפי האונליין (לפי שם הרשת), ואחר כך כל הרשתות לפי הא-ב, ובכל רשת הסניפים מהקרוב לרחוק
+function sortStores(stores) {
+  const abc = (a, b) => a.chainName.localeCompare(b.chainName, LOCALE);
+  return [...stores].sort((a, b) => (a.km == null ? 0 : 1) - (b.km == null ? 0 : 1) || abc(a, b) || (a.km ?? 0) - (b.km ?? 0));
+}
 function storeList(box, stores, sel, max, onChange) {
-  box.replaceChildren(...stores.map((s) => {
-    const on = sel.some((x) => storeKey(x) === storeKey(s));
-    const l = document.createElement('label');
-    l.className = 'cart-store' + (on ? ' on' : '');
-    const cb = Object.assign(document.createElement('input'), { type: 'checkbox', checked: on, disabled: !on && sel.length >= max });
-    cb.addEventListener('change', () => onChange(cb.checked ? [...sel, s] : sel.filter((x) => storeKey(x) !== storeKey(s))));
-    const txt = document.createElement('span');
-    txt.append(Object.assign(document.createElement('b'), { textContent: `${s.chainName} · ${s.name}` }),
-      Object.assign(document.createElement('small'), { className: 'muted', textContent: s.km == null ? ` ${t('🛒 אונליין · משלוח עד הבית')}` : ` ${s.km} ${t('ק"מ')}${s.address ? ` · ${s.address}` : ''}${s.web ? t(' · מבצעים בלבד') : ''}` }));
-    l.append(cb, txt);
-    return l;
-  }));
+  const rows = [];
+  let group = null;
+  for (const s of sortStores(stores)) {
+    // כותרת לפני כל קבוצה: „אונליין”, ואחר כך שם כל רשת
+    const g = s.km == null ? t('🛒 אונליין · משלוח עד הבית') : s.chainName;
+    if (g !== group) { rows.push(Object.assign(document.createElement('h4'), { className: 'store-group', textContent: g })); group = g; }
+    rows.push(storeRow(s, sel, max, onChange));
+  }
+  box.replaceChildren(...rows);
+}
+function storeRow(s, sel, max, onChange) {
+  const on = sel.some((x) => storeKey(x) === storeKey(s));
+  const l = document.createElement('label');
+  l.className = 'cart-store' + (on ? ' on' : '');
+  const cb = Object.assign(document.createElement('input'), { type: 'checkbox', checked: on, disabled: !on && sel.length >= max });
+  cb.addEventListener('change', () => onChange(cb.checked ? [...sel, s] : sel.filter((x) => storeKey(x) !== storeKey(s))));
+  const txt = document.createElement('span');
+  txt.append(Object.assign(document.createElement('b'), { textContent: s.km == null ? `${s.chainName} · ${s.name}` : s.name }),
+    Object.assign(document.createElement('small'), { className: 'muted', textContent: s.km == null ? '' : ` ${s.km} ${t('ק"מ')}${s.address ? ` · ${s.address}` : ''}${s.web ? t(' · מבצעים בלבד') : ''}` }));
+  l.append(cb, txt);
+  return l;
 }
 function renderCartPick() {
   $('#cartPickInfo').textContent = t('נבחרו {n} מתוך {max}', { n: cartSel.length, max: cartMax });
