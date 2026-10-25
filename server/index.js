@@ -481,6 +481,18 @@ app.put('/api/mystores', (req, res) => {
   res.json(state(u));
 });
 
+// „תמיד להשוות את המוצר הזה”: ברקוד קבוע לפריט ב„חסר בבית” (משותף לבני הבית). code ריק = ביטול
+app.put('/api/pins', (req, res) => {
+  const h = db.householdOf(req.user);
+  const key = compare.pinKey(req.body?.text || '');
+  const code = String(req.body?.code || '').trim();
+  if (!key) return res.status(400).json({ error: T(req, 'שגיאה') });
+  h.pins ||= {};
+  if (/^\d{4,14}$/.test(code)) h.pins[key] = code; else delete h.pins[key];
+  db.save();
+  res.json({ pins: h.pins });
+});
+
 app.post('/api/compare', async (req, res) => {
   const u = req.user;
   const stores = (Array.isArray(req.body?.stores) ? req.body.stores : [])
@@ -498,7 +510,7 @@ app.post('/api/compare', async (req, res) => {
   }
   u.compareStores = stores;
   metrics.count('compare');
-  const result = await compare.compare(items, stores);
+  const result = await compare.compare(items, stores, db.householdOf(u).pins || {});
   // מציגים את הפריט כפי שנכתב (בלי התרגום שנוסף לחיפוש)
   for (const st of result.stores) for (const l of st.lines || []) l.text = l.text.split('|')[0];
   result.items = result.items.map((t) => t.split('|')[0]);

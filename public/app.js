@@ -1059,9 +1059,12 @@ function renderCart(r) {
   const rows = r.items.map((item) => {
     const lines = ok.map((s) => s.lines.find((l) => l.text === item));
     const prices = lines.map((l) => (l && !l.missing ? l.price : null));
-    const found = prices.filter((p) => p != null);
+    // „הכי זול” רק בין סניפים שיש בהם המוצר עצמו (לא מוצר דומה ≈), אם יש כאלה
+    const exactOnly = lines.some((l) => l && !l.missing && !l.similar);
+    const found = prices.filter((p, i) => p != null && (!exactOnly || !lines[i].similar));
     const min = found.length ? Math.min(...found) : null;
-    const winners = ok.filter((_, i) => prices[i] != null && prices[i] === min);
+    const isMin = (i) => prices[i] != null && prices[i] === min && (!exactOnly || !lines[i].similar);
+    const winners = ok.filter((_, i) => isMin(i));
     const best = document.createElement('span');
     if (!winners.length) { best.textContent = '—'; best.className = 'muted'; } else {
       best.className = 'best-cell';
@@ -1073,15 +1076,59 @@ function renderCart(r) {
       const l = lines[i];
       const cell = document.createElement('span');
       if (!l || l.missing) { cell.textContent = '—'; cell.className = 'muted'; return cell; }
-      const cheapest = ok.length > 1 && prices[i] === min;
+      const cheapest = ok.length > 1 && isMin(i);
       if (cheapest) cell.className = 'cheapest';
       cell.append(Object.assign(document.createElement('b'), { textContent: `${cheapest ? '✓ ' : ''}${l.promo ? '🏷️ ' : ''}${money(l.price)}`, className: cheapest ? 'cheap' : '' }));
-      cell.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: l.name }));
-      cell.title = l.name;
+      // ≈ – המוצר שמשווים לא נמכר בסניף הזה, מוצג מוצר דומה; 📌 – מוצר שנבחר ידנית
+      cell.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: `${l.similar ? '≈ ' : l.pinned ? '📌 ' : ''}${l.name}` }));
+      cell.title = l.similar ? t('≈ המוצר שמשווים לא נמכר כאן – מוצג מוצר דומה: {name}', { name: l.name }) : l.name;
+      cell.classList.add('pickable');
+      cell.addEventListener('click', () => pinProduct(item, l));
       return cell;
     })]);
   });
   $('#cartTable').replaceChildren(head, ...rows);
+  $('#cartLegend').hidden = !r.stores.some((s) => s.lines?.some((l) => l.similar || l.pinned));
+  syncTopScroll();
+}
+
+// לחיצה על מוצר בטבלה: „תמיד להשוות את המוצר הזה” (נשמר למשק הבית), או ביטול הבחירה
+async function pinProduct(item, l) {
+  const unpin = l.pinned && !l.similar;
+  const q = unpin
+    ? t('להפסיק להשוות תמיד את ״{name}״ עבור ״{item}״?', { name: l.name, item })
+    : t('להשוות תמיד את ״{name}״ עבור ״{item}״ בכל הסניפים?', { name: l.name, item });
+  if (!confirm(q)) return;
+  try {
+    await api('PUT', '/api/pins', { text: item, code: unpin ? '' : l.code });
+    runCompare();
+  } catch (e) { alert(e.message); }
+}
+
+// סרגל גלילה הצידה גם מעל הטבלה, כדי לא לגלול עד סופה
+function syncTopScroll() {
+  const wrap = $('#cartTable').parentElement;
+  const top = $('#cartTopScroll');
+  requestAnimationFrame(() => {
+    top.firstElementChild.style.width = `${wrap.scrollWidth}px`;
+    top.parentElement.hidden = wrap.scrollWidth <= wrap.clientWidth + 2;
+    top.scrollLeft = wrap.scrollLeft;
+  });
+}
+{
+  const wrap = $('#cartTable').parentElement;
+  const top = $('#cartTopScroll');
+  let busy = false;
+  const link = (from, to) => from.addEventListener('scroll', () => {
+    if (busy) return;
+    busy = true; to.scrollLeft = from.scrollLeft; requestAnimationFrame(() => { busy = false; });
+  });
+  link(top, wrap); link(wrap, top);
+  // כפתורי ◀ ▶ – בטלפון פס הגלילה מופיע רק בזמן גלילה. ‎scrollBy‎ עם RTL: שלילי = שמאלה
+  for (const [id, dir] of [['#cartScrollLeft', -1], ['#cartScrollRight', 1]]) {
+    $(id).addEventListener('click', () => wrap.scrollBy({ left: dir * wrap.clientWidth * 0.7, behavior: 'smooth' }));
+  }
+  addEventListener('resize', () => { if (!$('#cartResult').hidden) syncTopScroll(); });
 }
 
 // ---------- רשימה לחיפוש מבצעים ----------
@@ -1236,7 +1283,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.10.25';
+const APP_VERSION = '2026.10.25b';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });

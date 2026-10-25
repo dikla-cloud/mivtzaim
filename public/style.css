@@ -365,3 +365,13 @@ details.store-group[open] > summary::after { transform: rotate(180deg); }
 details.store-group > summary small { margin-inline-start: auto; }
 details.store-group > summary small.picked { color: var(--accent); font-weight: 700; }
 details.store-group > .cart-store { margin: 0 8px 6px; }
+.top-scroll { overflow-x: auto; overflow-y: hidden; height: 14px; }
+.top-scroll > div { height: 1px; }
+.cart-table .pickable { cursor: pointer; }
+.top-scroll-bar { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+.top-scroll-bar[hidden] { display: none; }
+.top-scroll-bar .top-scroll { flex: 1; }
+.top-scroll { scrollbar-width: auto; scrollbar-color: var(--accent) var(--accent-soft); }
+.top-scroll::-webkit-scrollbar { height: 10px; }
+.top-scroll::-webkit-scrollbar-track { background: var(--accent-soft); border-radius: 5px; }
+.top-scroll::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 5px; }

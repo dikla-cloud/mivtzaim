@@ -45,6 +45,38 @@ async function storeData(chain, storeId) {
   return pending.get(key);
 }
 
+// מחיר בפועל של מוצר בסניף (כולל מבצע ליחידה אחת, אם יש)
+function priced(best, data, extra = {}) {
+  const promo = data.promoByCode.get(best.code);
+  const onSale = promo && promo.price < best.price;
+  return {
+    code: best.code,
+    name: best.name,
+    regularPrice: best.price,
+    price: onSale ? promo.price : best.price,
+    promo: onSale ? { clubOnly: promo.clubOnly, description: promo.description, end: promo.end } : null,
+    ...extra,
+  };
+}
+
+// כל המוצרים בסניף שמתאימים לפריט, עם „דרגת התאמה”: 0 = המילה הראשונה בשם היא בדיוק המילה שחיפשנו,
+// 1 = מתחילה בה, 2 = המילה באמצע השם
+function candidates(text, data) {
+  const out = new Map();
+  for (const alt of String(text).split('|').map((x) => x.trim()).filter((x) => x && !/^\d+$/.test(x))) {
+    const qt = tokens(alt);
+    for (const it of data.items) {
+      if (!matchVariants(qt, it.variants)) continue;
+      const [w0, w1] = it.variants;
+      const tier = w0 === qt[0] || w1 === qt[0] ? 0 : w0?.startsWith(qt[0]) || w1?.startsWith(qt[0]) ? 1 : 2;
+      if (!out.has(it.code) || out.get(it.code).tier > tier) out.set(it.code, { ...it, tier });
+    }
+  }
+  const best = Math.min(...[...out.values()].map((c) => c.tier));
+  // אם יש התאמות טובות (0/1) – רק הן; „שוקו בטעם חלב” לא נכנס כשמחפשים „חלב”
+  return new Map([...out].filter(([, c]) => c.tier <= Math.max(best, 1)));
+}
+
 // המוצר שנבחר לפריט בסניף: ברקוד אם נכתב, אחרת הזול מבין המתאימים
 function pick(text, data) {
   const alts = String(text).split('|').map((s) => s.trim()).filter(Boolean);
@@ -65,15 +97,25 @@ function pick(text, data) {
     }
   }
   if (!best) return null;
-  const promo = data.promoByCode.get(best.code);
-  const onSale = promo && promo.price < best.price;
-  return {
-    code: best.code,
-    name: best.name,
-    regularPrice: best.price,
-    price: onSale ? promo.price : best.price,
-    promo: onSale ? { clubOnly: promo.clubOnly, description: promo.description, end: promo.end } : null,
-  };
+  return priced(best, data);
+}
+
+// בחירת אותו מוצר בכל הסניפים: ברקוד שמשותף לכמה שיותר סניפים (ובתיקו – התאמה טובה יותר, ואז הזול בממוצע).
+// כך משווים „שוקולית 850 גרם” ל„שוקולית 850 גרם”, ולא לקופסה של 500 גרם ברשת אחרת.
+function commonCode(text, datas) {
+  const counts = new Map();
+  for (const d of datas) {
+    for (const c of candidates(text, d).values()) {
+      const e = counts.get(c.code) || { code: c.code, n: 0, tier: c.tier, sum: 0 };
+      e.n += 1; e.sum += c.price; e.tier = Math.min(e.tier, c.tier);
+      counts.set(c.code, e);
+    }
+  }
+  // קודם התאמה טובה יותר („חלב” ולא „חלבה”), אחר כך כמה שיותר סניפים, ואז הזול בממוצע
+  const need = Math.min(2, datas.length);
+  const best = [...counts.values()].filter((e) => e.n >= need)
+    .sort((a, b) => a.tier - b.tier || b.n - a.n || a.sum / a.n - b.sum / b.n)[0];
+  return best ? best.code : null;
 }
 
 // הסניפים באזור שאפשר להשוות ביניהם
@@ -126,22 +168,39 @@ async function nearbyStores(user, errors = [], { wait = Infinity } = {}) {
   return { stores: [...job.list].sort((a, b) => (a.km ?? -1) - (b.km ?? -1)).slice(0, 250), loading: !job.done };
 }
 
-async function compare(items, stores) {
+// pins: מוצרים שהמשתמש קבע לפריט („תמיד להשוות את המוצר הזה”) – { [פריט]: ברקוד }
+async function compare(items, stores, pins = {}) {
   const texts = [...new Set(items.map((t) => String(t).trim()).filter(Boolean))].slice(0, 100);
   const chosen = stores.filter((s) => comparableChains().some((c) => c.id === s.chain)).slice(0, MAX_STORES);
-  const results = await Promise.all(chosen.map(async (s) => {
+  const loaded = await Promise.all(chosen.map(async (s) => {
     const chain = comparableChains().find((c) => c.id === s.chain);
     const base = { chain: s.chain, chainName: chain?.name || s.chain, storeId: String(s.storeId), name: s.name || '' };
-    if (!chain) return { ...base, error: 'unknown chain' };
     try {
-      const data = await storeData(chain, String(s.storeId));
-      const lines = texts.map((text) => ({ text, ...(pick(text, data) || { missing: true }) }));
-      const found = lines.filter((l) => !l.missing);
-      return { ...base, lines, total: round(found.reduce((a, l) => a + l.price, 0)), found: found.length };
+      return { base, data: await storeData(chain, String(s.storeId)) };
     } catch (e) {
-      return { ...base, error: e.message };
+      return { base, error: e.message };
     }
   }));
+  const good = loaded.filter((x) => x.data);
+  const datas = good.map((x) => x.data);
+  // לכל פריט: הברקוד שמשווים (שנקבע ידנית, או המשותף לכמה שיותר סניפים)
+  const codes = Object.fromEntries(texts.map((t) => {
+    const pinned = pins[pinKey(t)];
+    return [t, pinned ? { code: pinned, pinned: true } : { code: commonCode(t, datas), pinned: false }];
+  }));
+  const results = loaded.map(({ base, data, error }) => {
+    if (error) return { ...base, error };
+    const lines = texts.map((text) => {
+      const { code, pinned } = codes[text];
+      const exact = code && data.byCode.get(code);
+      if (exact) return { text, ...priced(exact, data, { pinned }) };
+      // המוצר עצמו לא נמכר כאן – מוצר דומה (הזול מבין המתאימים), מסומן ≈
+      const similar = pick(text.split('|')[0], data);
+      return similar ? { text, ...similar, similar: Boolean(code), pinned } : { text, missing: true };
+    });
+    const found = lines.filter((l) => !l.missing);
+    return { ...base, lines, total: round(found.reduce((a, l) => a + l.price, 0)), found: found.length };
+  });
   // השוואה הוגנת: סכום רק על הפריטים שנמצאו בכל הסניפים שנבדקו בהצלחה
   const ok = results.filter((r) => !r.error);
   const common = texts.filter((t) => ok.every((r) => r.lines.some((l) => l.text === t && !l.missing)));
@@ -150,6 +209,9 @@ async function compare(items, stores) {
   return { items: texts, common: common.length, cheapest: cheapest ? `${cheapest.chain}|${cheapest.storeId}` : null, stores: results, at: new Date().toISOString() };
 }
 
+// מפתח לפריט ב„מוצרים קבועים” (בלי רווחים כפולים ואותיות גדולות)
+const pinKey = (t) => String(t).split('|')[0].trim().replace(/\s+/g, ' ').toLowerCase();
+
 const round = (n) => Math.round(n * 100) / 100;
 
-module.exports = { compare, nearbyStores, pick, MAX_STORES };
+module.exports = { compare, nearbyStores, pick, candidates, commonCode, pinKey, MAX_STORES };

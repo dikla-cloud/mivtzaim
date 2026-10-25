@@ -26,3 +26,21 @@ test('cart compare: exact first word beats a longer word with the same start', (
   const its = [item('9', 'חלבה בטעם וניל', 4), item('2', 'חלב טרי 3% 1 ליטר', 7.1)];
   assert.equal(pick('חלב', { items: its, byCode: new Map(), promoByCode: new Map() }).code, '2');
 });
+
+const { commonCode, pinKey } = require('../server/compare');
+const store = (...its) => ({ items: its, byCode: new Map(its.map((i) => [i.code, i])), promoByCode: new Map() });
+
+test('cart compare: the same barcode is compared in all stores, not each store\'s cheapest', () => {
+  const a = store(item('500', 'שוקולית קופסה 500 גרם', 15), item('850', 'שוקולית שקית 850 גרם', 22));
+  const b = store(item('850', 'שוקולית שקית 850 גרם', 21), item('x', 'שוקולית פרטי 400 גרם', 9));
+  const c = store(item('850', 'שוקולית שקית 850 גרם', 23));
+  assert.equal(commonCode('שוקולית', [a, b, c]), '850');
+});
+test('cart compare: a better name match wins over a product found in more stores', () => {
+  const a = store(item('h', 'חלבה בטעם וניל', 4), item('m', 'חלב טרי 3% 1 ליטר', 7.1));
+  const b = store(item('h', 'חלבה בטעם וניל', 4), item('m', 'חלב טרי 3% 1 ליטר', 7.1));
+  const c = store(item('h', 'חלבה בטעם וניל', 4));
+  assert.equal(commonCode('חלב', [a, b, c]), 'm');
+  assert.equal(commonCode('אבוקדו', [a, b]), null);
+  assert.equal(pinKey('  Tahini   Raw | 123'), 'tahini raw');
+});
