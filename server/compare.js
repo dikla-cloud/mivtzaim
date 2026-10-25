@@ -100,7 +100,7 @@ function storesJob(user) {
       try {
         const stores = await israel.chainStores(chain);
         // סניף אונליין (למשל שופרסל ONLINE): משלוח עד הבית, בלי מיקום. רק לרשתות עם מחירון מלא
-        if (!chain.web) for (const s of stores.filter(geo.isOnline)) job.list.push(entry(chain, s, null));
+        if (!chain.web) for (const s of await geo.nearestOnline(stores, L)) job.list.push(entry(chain, s, null));
         for (const c of await geo.nearCandidates(stores, L, user.radiusKm || 10)) all.push({ chain, ...c });
       } catch (e) {
         job.errors.push(`${chain.name}: ${e.message}`);

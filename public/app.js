@@ -898,7 +898,7 @@ function storeRow(s, sel, max, onChange) {
   const cb = Object.assign(document.createElement('input'), { type: 'checkbox', checked: on, disabled: !on && sel.length >= max });
   cb.addEventListener('change', () => onChange(cb.checked ? [...sel, s] : sel.filter((x) => storeKey(x) !== storeKey(s))));
   const txt = document.createElement('span');
-  txt.append(Object.assign(document.createElement('b'), { textContent: s.km == null ? `${s.chainName} · ${s.name}` : s.name }),
+  txt.append(Object.assign(document.createElement('b'), { textContent: s.km == null ? `${s.chainName} · ${s.name.replace(/^ליקוט\s*/, t('אונליין') + ' – ')}` : s.name }),
     Object.assign(document.createElement('small'), { className: 'muted', textContent: s.km == null ? '' : ` ${s.km} ${t('ק"מ')}${s.address ? ` · ${s.address}` : ''}${s.web ? t(' · מבצעים בלבד') : ''}` }));
   l.append(cb, txt);
   return l;

@@ -157,7 +157,22 @@ function cleanAddress(a) {
 }
 
 // ״סניף״ אינטרנטי (שופרסל ONLINE וכד׳) – אין לו מיקום אמיתי
-const isOnline = (s) => /www\.|\.co\.il|on[\s-]?line|אונליין|און[\s-]?ליין|אינטרנט|משלוחים|דיגיטל|e-?commerce/i.test(`${s.name} ${s.address}`);
+// „ליקוט” = מרכז ליקוט להזמנות מהאתר (טיב טעם: ״ליקוט רמת החייל״ וכו׳)
+const isOnline = (s) => /www\.|\.co\.il|on[\s-]?line|אונליין|און[\s-]?ליין|אינטרנט|משלוחים|דיגיטל|ליקוט|e-?commerce/i.test(`${s.name} ${s.address}`);
+
+// מבין סניפי האונליין של רשת: הקרוב ביותר לפי העיר (למשל מרכז הליקוט שמשרת את האזור)
+async function nearestOnline(stores, center) {
+  const online = stores.filter(isOnline);
+  if (online.length < 2) return online;
+  let best = null;
+  for (const s of online) {
+    const city = await storeCity(s);
+    const pos = city && (await geocode(`${city}, ישראל`));
+    const km = pos ? haversineKm(center, pos) : Infinity;
+    if (!best || km < best.km) best = { s, km };
+  }
+  return [best.s];
+}
 
 // מיקום סניף. מחזיר גם איך נקבע (לבדיקה): city / address / none
 async function storePosition(s) {
@@ -209,4 +224,4 @@ async function storesWithin(stores, center, radiusKm, onStore) {
   return out.sort((a, b) => a.km - b.km);
 }
 
-module.exports = { haversineKm, geocode, reverse, storesWithin, nearCandidates, locate, isOnline, storePosition, inCity, cityName, cityFromName, storeCity, cleanAddress };
+module.exports = { haversineKm, geocode, reverse, storesWithin, nearCandidates, locate, isOnline, nearestOnline, storePosition, inCity, cityName, cityFromName, storeCity, cleanAddress };
