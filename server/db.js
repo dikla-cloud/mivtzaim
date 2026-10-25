@@ -69,6 +69,10 @@ function get() {
       for (const u of Object.values(db.users)) if (Array.isArray(u.chains) && !u.chains.includes('victory')) u.chains.push('victory');
       db.chainsVictory = true;
     }
+    if (!db.chainsHashuk) {
+      for (const u of Object.values(db.users)) if (Array.isArray(u.chains) && !u.chains.includes('hashuk')) u.chains.push('hashuk');
+      db.chainsHashuk = true;
+    }
   }
   return db;
 }

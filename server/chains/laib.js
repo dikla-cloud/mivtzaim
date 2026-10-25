@@ -1,4 +1,4 @@
-// רשתות שמפרסמות בפורטל laibcatalog.co.il (ויקטורי). רשימת הקבצים מגיעה מה-API של הפורטל:
+// רשתות שמפרסמות בפורטל laibcatalog.co.il (ויקטורי, מחסני השוק). רשימת הקבצים מגיעה מה-API של הפורטל:
 //   /webapi/api/getfiles?edi=<קוד רשת> → [{ fileName, fileType, fileDate, ... }]
 //   והקובץ עצמו: /webapi/<קוד רשת>/<fileName>
 // אם ה-API לא עונה – מנסים את עמוד הקבצים הישן (NBCompetitionRegulations.aspx), רק קבצים של קוד הרשת.
@@ -90,5 +90,8 @@ function chain(id, name, codes) {
 }
 
 module.exports = {
-  chains: [chain('victory', 'ויקטורי', (process.env.VICTORY_CODES || '7290696200003,7290058103393').split(',').map((x) => x.trim()))],
+  chains: [
+    chain('victory', 'ויקטורי', (process.env.VICTORY_CODES || '7290696200003,7290058103393').split(',').map((x) => x.trim())),
+    chain('hashuk', 'מחסני השוק', (process.env.HASHUK_CODES || '7290661400001,7290633800006').split(',').map((x) => x.trim())),
+  ],
 };
