@@ -880,16 +880,27 @@ function sortStores(stores) {
   const abc = (a, b) => a.chainName.localeCompare(b.chainName, LOCALE);
   return [...stores].sort((a, b) => (a.km == null ? 0 : 1) - (b.km == null ? 0 : 1) || abc(a, b) || (a.km ?? 0) - (b.km ?? 0));
 }
+// כל רשת היא שורה מתקפלת: רואים את כל הרשתות, ופותחים רק את מה שרוצים.
+// מצב הפתיחה נשמר בזמן הסימון (הרשימה מצוירת מחדש בכל סימון)
+const openGroups = new WeakMap();
 function storeList(box, stores, sel, max, onChange) {
-  const rows = [];
-  let group = null;
+  const open = openGroups.get(box) || new Set();
+  openGroups.set(box, open);
+  const groups = new Map();
   for (const s of sortStores(stores)) {
-    // כותרת לפני כל קבוצה: „אונליין”, ואחר כך שם כל רשת
     const g = s.km == null ? t('🛒 אונליין · משלוח עד הבית') : s.chainName;
-    if (g !== group) { rows.push(Object.assign(document.createElement('h4'), { className: 'store-group', textContent: g })); group = g; }
-    rows.push(storeRow(s, sel, max, onChange));
+    groups.set(g, [...(groups.get(g) || []), s]);
   }
-  box.replaceChildren(...rows);
+  box.replaceChildren(...[...groups].map(([g, list]) => {
+    const d = Object.assign(document.createElement('details'), { className: 'store-group', open: open.has(g) });
+    const picked = list.filter((s) => sel.some((x) => storeKey(x) === storeKey(s))).length;
+    const sum = document.createElement('summary');
+    sum.append(Object.assign(document.createElement('b'), { textContent: g }),
+      Object.assign(document.createElement('small'), { className: picked ? 'picked' : 'muted', textContent: picked ? t('{n} סניפים · נבחרו {k}', { n: list.length, k: picked }) : t('{n} סניפים', { n: list.length }) }));
+    d.append(sum, ...list.map((s) => storeRow(s, sel, max, onChange)));
+    d.addEventListener('toggle', () => (d.open ? open.add(g) : open.delete(g)));
+    return d;
+  }));
 }
 function storeRow(s, sel, max, onChange) {
   const on = sel.some((x) => storeKey(x) === storeKey(s));

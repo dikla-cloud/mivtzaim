@@ -141,6 +141,8 @@ const I18N = {
   "המחירים מגיעים מקובצי השקיפות שהרשתות מפרסמות לפי חוק, ובחו\"ל מעלוני המבצעים. כדאי תמיד לבדוק את המחיר בחנות. השירות חינמי ושומר על הפרטיות: המידע שלך לא נמכר.": ["Die Preise stammen aus den Flugblättern der Ketten (in Israel aus den gesetzlichen Preisdateien). Bitte im Geschäft prüfen. Die App ist kostenlos und schützt deine Privatsphäre: deine Daten werden nicht verkauft.", "Prices come from the price files chains publish by law in Israel, and from deal flyers abroad. Always check the price in the store. The app is free and respects your privacy: your data is not sold."],
   "רשימת קניות משותפת לכל הבית · התראות על מבצעים · השוואת מחיר העגלה": ["Gemeinsame Einkaufsliste · Angebots-Benachrichtigungen · Preisvergleich", "A shared shopping list · deal alerts · cart price comparison"],
   // ---------- השוואת עגלה ----------
+  "{n} סניפים · נבחרו {k}": ["{n} Filialen · {k} gewählt", "{n} stores · {k} chosen"],
+  "{n} סניפים": ["{n} Filialen", "{n} stores"],
   "🏆 הכי זול ב-": ["🏆 Am günstigsten bei", "🏆 Cheapest at"],
   "🛒 לא כולל דמי משלוח": ["🛒 ohne Liefergebühr", "🛒 delivery fee not included"],
   "🛒 בסניפי אונליין ההשוואה כוללת רק את מחירי המוצרים, בלי דמי משלוח (ובלי מינימום הזמנה).": ["🛒 Bei Online-Filialen enthält der Vergleich nur die Produktpreise, ohne Liefergebühr (und ohne Mindestbestellwert).", "🛒 For online stores the comparison covers product prices only, without delivery fees (or minimum order)."],
@@ -378,6 +380,8 @@ const I18N = {
 
 // ערבית (מפתח: הנוסח העברי)
 const I18N_AR = {
+  "{n} סניפים · נבחרו {k}": "{n} فروع · تم اختيار {k}",
+  "{n} סניפים": "{n} فروع",
   "🏆 הכי זול ב-": "🏆 الأرخص في",
   "🛒 לא כולל דמי משלוח": "🛒 لا يشمل رسوم التوصيل",
   "🛒 בסניפי אונליין ההשוואה כוללת רק את מחירי המוצרים, בלי דמי משלוח (ובלי מינימום הזמנה).": "🛒 في الفروع الأونلاين تشمل المقارنة أسعار المنتجات فقط، بدون رسوم التوصيل (وبدون الحد الأدنى للطلب).",

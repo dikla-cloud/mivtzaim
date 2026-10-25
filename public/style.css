@@ -349,10 +349,19 @@ details.fold[open] { padding-bottom: 14px; }
 #tab-settings > .card { margin-bottom: 8px; }
 .settings-version { text-align: center; margin: 0 0 8px; }
 .online-note { color: var(--warn); font-weight: 600; margin-top: 2px; }
-.store-group { margin: 12px 2px 2px; font-size: .95rem; color: var(--accent); }
-.store-group:first-child { margin-top: 0; }
 .cart-table .cheapest { display: block; background: var(--accent-soft); border-radius: 8px; padding: 4px 6px; margin: -4px -6px; }
 .cart-table .best-cell { display: block; color: var(--accent); }
 .cart-table .best-cell small { display: block; font-weight: 600; white-space: normal; max-width: 120px; }
 /* הודעות טעינה בבחירת סניפים – בולטות */
 #myStoresCount, #cartPickInfo, #myStoresLoading { font-weight: 700; }
+
+/* רשתות מתקפלות בבחירת סניפים */
+details.store-group { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+details.store-group > summary { list-style: none; cursor: pointer; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+details.store-group > summary::-webkit-details-marker { display: none; }
+details.store-group > summary b { color: var(--accent); }
+details.store-group > summary::after { content: '▾'; color: var(--muted); margin-inline-start: auto; transition: transform .2s; }
+details.store-group[open] > summary::after { transform: rotate(180deg); }
+details.store-group > summary small { margin-inline-start: auto; }
+details.store-group > summary small.picked { color: var(--accent); font-weight: 700; }
+details.store-group > .cart-store { margin: 0 8px 6px; }
