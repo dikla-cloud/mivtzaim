@@ -12,7 +12,7 @@ const geo = require('./geo');
   const list = stores.filter((s) => !filter || `${s.name} ${s.address} ${s.city}`.includes(filter));
   console.log(`${chain.name}: ${stores.length} סניפים${filter ? `, מתאימים ל-"${filter}": ${list.length}` : ''}`);
   for (const s of list) {
-    const city = await geo.cityName(s.city);
+    const city = await geo.storeCity(s);
     const pos = !geo.isOnline(s) && filter ? await geo.storePosition(s) : null;
     console.log(`  [${s.storeId}] ${s.name} | עיר: "${s.city}"${city && city !== s.city ? ` ← ${city}` : ''} | כתובת: "${s.address}"${geo.isOnline(s) ? ' | 🛒 אונליין' : ''}${pos ? ` | מיקום: ${pos.lat.toFixed(4)},${pos.lon.toFixed(4)} (${pos.how})` : filter && !geo.isOnline(s) ? ' | לא אותר על המפה' : ''}`);
   }

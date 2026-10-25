@@ -121,6 +121,28 @@ async function cityName(raw) {
   return CITY_ALIASES[raw] || raw;
 }
 
+// כשבקובץ אין עיר (למשל יוחננוף: עיר "0", כתובת "unknown") – מחפשים שם של יישוב בתוך שם הסניף
+// („רמת השרון” ← רמת השרון), לפי רשימת היישובים של הלמ״ס. השם הארוך ביותר שמתאים מנצח
+let cityNames = null;
+async function cityFromName(name) {
+  if (!cityNames?.length) { // רשימה ריקה (טבלת הלמ״ס עוד לא ירדה) – מנסים שוב בפעם הבאה
+    const set = new Set();
+    for (const n of Object.values(await cbsCities())) {
+      set.add(n);
+      set.add(n.split(/\s+[-–]\s+/)[0]); // „תל אביב - יפו” ← „תל אביב”
+    }
+    cityNames = [...set].filter((n) => n.length >= 3).sort((a, b) => b.length - a.length);
+  }
+  const text = ` ${norm(name)} `;
+  return cityNames.find((n) => text.includes(` ${norm(n)} `)) || '';
+}
+
+// העיר של סניף: מהשדה בקובץ, ואם אין שם עיר שאפשר לזהות – מתוך שם הסניף
+async function storeCity(s) {
+  const c = await cityName(s.city);
+  return c && !/^(0|unknown)$/i.test(c) ? c : cityFromName(s.name);
+}
+
 // ניקוי כתובת מקובץ הרשת לפני האיתור: ״רח' דרויאנוב 5״ ← ״דרויאנוב 5״, ״17 יצחק שמיר״ ← ״יצחק שמיר 17״,
 // ״החשמונאים 84 פינת קרליבך״ ← ״החשמונאים 84״
 function cleanAddress(a) {
@@ -140,12 +162,12 @@ const isOnline = (s) => /www\.|\.co\.il|on[\s-]?line|אונליין|און[\s-]?
 // מיקום סניף. מחזיר גם איך נקבע (לבדיקה): city / address / none
 async function storePosition(s) {
   if (s.lat != null) return { lat: s.lat, lon: s.lon, how: 'file' };
-  const city = await cityName(s.city);
+  const city = await storeCity(s);
   if (!city) return null;
   let center = await geocode(`${city}, ישראל`);
   if (center && !inCity(center.label, city)) center = null;
   const street = cleanAddress(s.address);
-  const addr = street && /[א-תa-z]/i.test(street) && (await geocode(`${street}, ${city}, ישראל`));
+  const addr = street && /[א-תa-z]/i.test(street) && !/^unknown$/i.test(street) && (await geocode(`${street}, ${city}, ישראל`));
   // כתובת נחשבת רק אם היא באותה עיר, וקרובה למרכז העיר (אחרת זה כנראה רחוב באותו שם בעיר אחרת)
   const addrOk = addr && inCity(addr.label, city) && (!center || haversineKm(center, addr) <= MAX_FROM_CITY_KM);
   if (addrOk) return { lat: addr.lat, lon: addr.lon, how: 'address' };
@@ -159,7 +181,7 @@ async function nearCandidates(stores, center, radiusKm) {
   for (const s of stores) {
     if (isOnline(s)) continue;
     if (s.lat != null) { out.push({ s, approx: haversineKm(center, s) }); continue; }
-    const name = await cityName(s.city);
+    const name = await storeCity(s);
     const city = name && (await geocode(`${name}, ישראל`));
     if (city && haversineKm(center, city) > radiusKm + 8) continue; // עיר רחוקה – לא צריך לאתר את הכתובת
     out.push({ s, approx: city ? haversineKm(center, city) : radiusKm + 8 });
@@ -187,4 +209,4 @@ async function storesWithin(stores, center, radiusKm, onStore) {
   return out.sort((a, b) => a.km - b.km);
 }
 
-module.exports = { haversineKm, geocode, reverse, storesWithin, nearCandidates, locate, isOnline, storePosition, inCity, cityName, cleanAddress };
+module.exports = { haversineKm, geocode, reverse, storesWithin, nearCandidates, locate, isOnline, storePosition, inCity, cityName, cityFromName, storeCity, cleanAddress };

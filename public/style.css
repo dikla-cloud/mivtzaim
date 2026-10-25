@@ -354,3 +354,5 @@ details.fold[open] { padding-bottom: 14px; }
 .cart-table .cheapest { display: block; background: var(--accent-soft); border-radius: 8px; padding: 4px 6px; margin: -4px -6px; }
 .cart-table .best-cell { display: block; color: var(--accent); }
 .cart-table .best-cell small { display: block; font-weight: 600; white-space: normal; max-width: 120px; }
+/* הודעות טעינה בבחירת סניפים – בולטות */
+#myStoresCount, #cartPickInfo, #myStoresLoading { font-weight: 700; }

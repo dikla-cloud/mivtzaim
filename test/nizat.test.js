@@ -87,3 +87,20 @@ test('geo: extra words after the house number are dropped', () => {
   assert.equal(cleanAddress('הרב מסעוד אשר פינטו 20'), 'הרב מסעוד אשר פינטו 20');
   assert.equal(cleanAddress('34 יצחק רבין'), 'יצחק רבין 34');
 });
+
+test('geo: city taken from the store name when the file has none (Yochananof: city "0")', async () => {
+  const fs = require('fs');
+  const path = require('path');
+  const file = path.join(__dirname, '..', 'data', 'cities.json');
+  const had = fs.existsSync(file);
+  if (!had) fs.writeFileSync(file, JSON.stringify({ 2650: 'רמת השרון', 5000: 'תל אביב - יפו', 6400: 'הרצליה' }));
+  try {
+    const geo = require('../server/geo');
+    assert.equal(await geo.storeCity({ name: 'רמת השרון', city: '0', address: 'unknown' }), 'רמת השרון');
+    assert.equal(await geo.storeCity({ name: 'יוחננוף תל אביב', city: '0' }), 'תל אביב');
+    assert.equal(await geo.storeCity({ name: 'יוחננוף מפוח', city: '0' }), '');
+    assert.equal(await geo.storeCity({ name: 'כלשהו', city: '6400' }), 'הרצליה');
+  } finally {
+    if (!had) fs.unlinkSync(file);
+  }
+});
