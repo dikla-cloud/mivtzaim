@@ -387,7 +387,7 @@ $('#addUser').addEventListener('submit', async (e) => {
   } catch (ex) { alert(ex.message); }
 });
 
-$('#emailBanner').addEventListener('click', () => { showTab('settings'); $('#myEmail').focus(); });
+$('#emailBanner').addEventListener('click', () => { showTab('settings'); $('#myEmail').closest('details').open = true; $('#myEmail').focus(); });
 $('#emailForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   try {
@@ -944,7 +944,8 @@ function renderMyPick() {
 }
 $('#myStoresBtn').addEventListener('click', async () => {
   $('#myStoresList').replaceChildren();
-  $('#myStoresCount').textContent = t('טוען את הסניפים באזור…');
+  $('#myStoresCount').className = 'small';
+  $('#myStoresCount').textContent = t('טוען את הסניפים באזור… (בפעם הראשונה זה יכול לקחת עד דקה)');
   $('#storesDlg').showModal();
   try {
     const r = await api('GET', '/api/compare/stores');
@@ -953,7 +954,10 @@ $('#myStoresBtn').addEventListener('click', async () => {
     mySel = r.mine.map((x) => myAll.find((s) => storeKey(s) === storeKey(x))).filter(Boolean);
     if (!myAll.length) return ($('#myStoresCount').textContent = t('לא נמצאו סניפים ברדיוס החיפוש. אפשר להגדיל את הרדיוס בהגדרות.'));
     renderMyPick();
-  } catch (e) { $('#myStoresCount').textContent = e.message; }
+  } catch (e) {
+    $('#myStoresCount').textContent = e.message;
+    $('#myStoresCount').className = 'note-warn';
+  }
 });
 $('#myStoresSave').addEventListener('click', async () => {
   try {
@@ -1174,7 +1178,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.10.20';
+const APP_VERSION = '2026.10.25';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });
@@ -1217,7 +1221,7 @@ $('#menuShare').addEventListener('click', async () => {
 });
 $('#menuAbout').addEventListener('click', () => { $('#menuDlg').close(); $('#aboutDlg').showModal(); });
 $('#aboutClose').addEventListener('click', () => $('#aboutDlg').close());
-$('#menuVersion').textContent = t('גרסה {v}', { v: APP_VERSION });
+$('#settingsVersion').textContent = t('גרסה {v}', { v: APP_VERSION });
 // רענון: מוחקים את העותק השמור של האפליקציה בטלפון וטוענים מחדש מהשרת
 async function refreshApp() {
   try {
@@ -1235,6 +1239,19 @@ setTimeout(() => {
   $('#splash').classList.add('out');
   setTimeout(() => $('#splash').remove(), 400);
 }, 1500);
+
+// ---------- הגדרות מתקפלות: כל כרטיס נפתח בלחיצה על הכותרת ----------
+document.querySelectorAll('#tab-settings > .card').forEach((card) => {
+  const h = card.querySelector(':scope > h3');
+  if (!h) return;
+  const d = Object.assign(document.createElement('details'), { className: 'fold' });
+  if (card.id) d.dataset.card = card.id;
+  const sum = document.createElement('summary');
+  sum.append(...h.childNodes);
+  h.remove();
+  d.append(sum, ...card.childNodes);
+  card.append(d);
+});
 
 // ---------- הפעלה ----------
 translatePage();

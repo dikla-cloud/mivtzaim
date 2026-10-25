@@ -80,9 +80,9 @@
   </header>
 
   <nav role="tablist">
-    <button role="tab" data-tab="deals" aria-selected="true">מבצעים</button>
-    <button role="tab" data-tab="list">רשימה לחיפוש מבצעים</button>
     <button role="tab" data-tab="home">חסר בבית <span id="homeCount" class="count" hidden></span></button>
+    <button role="tab" data-tab="list">רשימה לחיפוש מבצעים</button>
+    <button role="tab" data-tab="deals" aria-selected="true">מבצעים</button>
   </nav>
 
   <main>
@@ -178,6 +178,7 @@
     </section>
 
     <section id="tab-settings" hidden>
+      <p id="settingsVersion" class="settings-version muted small"></p>
       <div class="card">
         <h3>החשבון שלי</h3>
         <p class="muted">החשבון: <b id="meName"></b></p>
@@ -325,7 +326,6 @@
       <button type="button" id="menuShare"><svg class="share-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="m8.3 10.7 7.4-4.3M8.3 13.3l7.4 4.3"/></svg> שיתוף האפליקציה</button>
       <button type="button" id="menuRefresh">🔄 רענון האפליקציה</button>
     </div>
-    <p id="menuVersion" class="menu-version muted small"></p>
   </dialog>
 
   <dialog id="aboutDlg">

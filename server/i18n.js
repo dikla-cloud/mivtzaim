@@ -45,6 +45,7 @@ const T = {
   "שלום {name},\n\nקוד הכניסה לאפליקציה ״{app}״: {code}\nהקוד בתוקף 15 דקות.\n\nאם לא ביקשת להיכנס, אפשר להתעלם מהמייל הזה.": { de: "Hallo {name},\n\ndein Anmeldecode für „{app}“: {code}\nDer Code gilt 15 Minuten.\n\nWenn du dich nicht anmelden wolltest, kannst du diese E-Mail ignorieren.", en: "Hi {name},\n\nYour sign-in code for “{app}”: {code}\nThe code is valid for 15 minutes.\n\nIf you did not try to sign in, you can ignore this email." },
   "המייל הזה כבר שייך למשתמש אחר": { de: "Diese E-Mail gehört schon zu einem anderen Konto", en: "This email already belongs to another user" },
   "בלי מייל לא תוכלו להיכנס שוב לאפליקציה": { de: "Ohne E-Mail kannst du dich nicht mehr anmelden", en: "Without an email you won’t be able to sign in again" },
+  "בחירת סניפים והשוואת עגלה זמינות כרגע רק בישראל. המיקום שלך עכשיו: {place}. אפשר לעדכן אותו בכפתור ״עדכון מיקום״.": { de: "Filialauswahl und Warenkorb-Vergleich gibt es derzeit nur in Israel. Dein Standort: {place}. Du kannst ihn mit „Standort aktualisieren“ ändern.", en: "Choosing stores and comparing carts work only in Israel for now. Your location: {place}. You can change it with “Update location”." },
   // סריקה
   'לא הוגדר מיקום': { de: 'Kein Standort festgelegt', en: 'No location set' },
   'אין עדיין מקור מבצעים חינמי ל{country}. נתמכות כרגע: ישראל, אוסטריה, גרמניה ואוסטרליה.': {
@@ -91,6 +92,7 @@ const T = {
 
 // ערבית (מפתח: הנוסח העברי)
 const T_AR = {
+  "בחירת סניפים והשוואת עגלה זמינות כרגע רק בישראל. המיקום שלך עכשיו: {place}. אפשר לעדכן אותו בכפתור ״עדכון מיקום״.": "اختيار الفروع ومقارنة العربة متاحان حاليًا في إسرائيل فقط. موقعك الآن: {place}. يمكن تحديثه بزر «تحديث الموقع».",
   "כניסה עם מייל עוד לא הוגדרה בשרת": "الدخول عبر البريد لم يُفعَّل بعد في الخادم",
   "המייל הזה לא רשום באפליקציה. בקשו ממי שהזמין אתכם להוסיף אותו.": "هذا البريد غير مسجّل في التطبيق. اطلب ممن دعاك إضافته.",
   "קוד הכניסה שלך: {code}": "رمز الدخول: {code}",

@@ -40,7 +40,7 @@ async function geocode(query, { il = true } = {}) {
   let result = null;
   try {
     const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1${il ? '&countrycodes=il' : ''}&accept-language=he&q=${encodeURIComponent(query.trim())}`;
-    const res = await fetch(url, { headers: { 'User-Agent': process.env.GEOCODER_UA || UA } });
+    const res = await fetch(url, { headers: { 'User-Agent': process.env.GEOCODER_UA || UA }, signal: AbortSignal.timeout(15000) });
     const [hit] = await res.json();
     if (hit) result = { lat: Number(hit.lat), lon: Number(hit.lon), label: hit.display_name };
   } catch (e) {
@@ -61,7 +61,7 @@ async function reverse(lat, lon) {
   last = Date.now();
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&zoom=16&accept-language=en&lat=${lat}&lon=${lon}`;
-    const res = await fetch(url, { headers: { 'User-Agent': process.env.GEOCODER_UA || UA } });
+    const res = await fetch(url, { headers: { 'User-Agent': process.env.GEOCODER_UA || UA }, signal: AbortSignal.timeout(15000) });
     const { address: a = {}, display_name } = await res.json();
     const place = {
       countryCode: (a.country_code || '').toUpperCase(),

@@ -141,6 +141,7 @@ const I18N = {
   "המחירים מגיעים מקובצי השקיפות שהרשתות מפרסמות לפי חוק, ובחו\"ל מעלוני המבצעים. כדאי תמיד לבדוק את המחיר בחנות. השירות חינמי ושומר על הפרטיות: המידע שלך לא נמכר.": ["Die Preise stammen aus den Flugblättern der Ketten (in Israel aus den gesetzlichen Preisdateien). Bitte im Geschäft prüfen. Die App ist kostenlos und schützt deine Privatsphäre: deine Daten werden nicht verkauft.", "Prices come from the price files chains publish by law in Israel, and from deal flyers abroad. Always check the price in the store. The app is free and respects your privacy: your data is not sold."],
   "רשימת קניות משותפת לכל הבית · התראות על מבצעים · השוואת מחיר העגלה": ["Gemeinsame Einkaufsliste · Angebots-Benachrichtigungen · Preisvergleich", "A shared shopping list · deal alerts · cart price comparison"],
   // ---------- השוואת עגלה ----------
+  "טוען את הסניפים באזור… (בפעם הראשונה זה יכול לקחת עד דקה)": ["Lade Filialen in der Nähe… (beim ersten Mal bis zu einer Minute)", "Loading nearby stores… (the first time can take up to a minute)"],
   "רענון האפליקציה": ["App neu laden", "Refresh the app"],
   "🏪 הסניפים שלי": ["🏪 Meine Filialen", "🏪 My stores"],
   "בחירת סניפים לבדיקת מבצעים": ["Filialen für Angebote wählen", "Choose stores to check for deals"],
@@ -371,6 +372,7 @@ const I18N = {
 
 // ערבית (מפתח: הנוסח העברי)
 const I18N_AR = {
+  "טוען את הסניפים באזור… (בפעם הראשונה זה יכול לקחת עד דקה)": "جارٍ تحميل الفروع في المنطقة… (في المرة الأولى قد يستغرق ذلك حتى دقيقة)",
   "רענון האפליקציה": "تحديث التطبيق",
   "🏪 הסניפים שלי": "🏪 فروعي",
   "בחירת סניפים לבדיקת מבצעים": "اختيار فروع لفحص العروض",

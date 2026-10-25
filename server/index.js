@@ -464,7 +464,7 @@ async function inIsrael(u) {
 app.get('/api/compare/stores', async (req, res) => {
   const u = req.user;
   if (!u.location) return res.status(400).json({ error: T(req, 'לא הוגדר מיקום') });
-  if (!(await inIsrael(u))) return res.status(400).json({ error: T(req, 'השוואת עגלה זמינה כרגע רק בישראל') });
+  if (!(await inIsrael(u))) return res.status(400).json({ error: T(req, 'בחירת סניפים והשוואת עגלה זמינות כרגע רק בישראל. המיקום שלך עכשיו: {place}. אפשר לעדכן אותו בכפתור ״עדכון מיקום״.', { place: u.location.label || '' }) });
   const errors = [];
   const stores = await compare.nearbyStores(u, errors);
   res.json({ stores, selected: u.compareStores || [], mine: u.myStores || [], max: compare.MAX_STORES, errors });
