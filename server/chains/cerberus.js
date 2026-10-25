@@ -30,22 +30,32 @@ async function listFiles(s, search) {
   return (json.aaData || []).map((f) => f.fname).filter(Boolean);
 }
 
-// בחירת הקובץ העדכני ביותר מסוג מסוים לסניף מסוים
-function pickLatest(files, prefix, storeId) {
-  const re = new RegExp(`^${prefix}\\d+-(\\d+)-(\\d{12})`, 'i');
-  return files
-    .map((f) => ({ f, m: f.match(re) }))
-    .filter(({ m }) => m && (storeId == null || Number(m[1]) === Number(storeId)))
-    .sort((a, b) => b.m[2].localeCompare(a.m[2]))[0]?.f;
+// בחירת הקובץ העדכני ביותר מסוג מסוים לסניף מסוים.
+// שמות אפשריים: Stores7290058140886-000-202610250200.xml / Stores7290058140886-202610250200.xml /
+// PriceFull7290058140886-001-202610250200.gz / PriceFull7290058140886-001-000-20261025-020000.gz
+function parseCerberusName(f, prefix) {
+  const m = String(f).match(new RegExp(`^${prefix}(\\d{13})-(\\d{3})(?:-(\\d{3}))?-?(\\d{8})-?(\\d{4,6})`, 'i'))
+    || String(f).match(new RegExp(`^${prefix}(\\d{13})-()()(\\d{8})(\\d{4,6})`, 'i'));
+  if (!m) return null;
+  return { store: m[3] ?? m[2], stamp: m[4] + m[5].padEnd(6, '0') };
 }
+function pickLatest(files, prefix, storeId) {
+  return files
+    .map((f) => ({ f, p: parseCerberusName(f, prefix) }))
+    .filter(({ p }) => p && (storeId == null || Number(p.store) === Number(storeId)))
+    .sort((a, b) => b.p.stamp.localeCompare(a.p.stamp))[0]?.f;
+}
+const sample = (files) => `${files.length} ${files.slice(0, 4).join(', ')}`;
 
 function chain(id, name, username) {
   return {
     id, name,
     async stores() {
       const s = await login(username);
-      const f = pickLatest(await listFiles(s, 'Stores'), 'Stores');
-      if (!f) throw new Error(`${name}: לא נמצא קובץ סניפים`);
+      const files = await listFiles(s, 'Stores');
+      const f = pickLatest(files, 'Stores');
+      // לאבחון: כמה קבצים חזרו ואיך נקראים הראשונים
+      if (!f) throw new Error(`${name}: לא נמצא קובץ סניפים (קבצים: ${sample(files.length ? files : await listFiles(s, ''))})`);
       return xml.parseStores(await s.buffer(`${BASE}/file/d/${f}`));
     },
     async storeFiles(storeId) {
@@ -62,6 +72,7 @@ function chain(id, name, username) {
 }
 
 module.exports = {
+  parseCerberusName,
   pickLatest,
   chains: [
     chain('ramilevy', 'רמי לוי', 'RamiLevi'),

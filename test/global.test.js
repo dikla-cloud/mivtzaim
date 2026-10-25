@@ -136,3 +136,12 @@ test('australia: long item names are searched in shorter forms', () => {
   assert.ok(relevant('pepsi max', 'Pepsi Max Cola Soft Drink Bottle 1.25L'));
   assert.ok(!relevant('pepsi max', 'Coca-Cola Classic 1.25L'));
 });
+
+test('cerberus: file names with and without a store part', () => {
+  const { pickLatest } = require('../server/chains/cerberus');
+  const files = ['Stores7290058140886-000-202610240200.xml', 'Stores7290058140886-202610250200.xml', 'PriceFull7290058140886-001-202610250200.gz',
+    'PriceFull7290058140886-001-202610240200.gz', 'PromoFull7290058140886-002-202610250100.gz'];
+  assert.equal(pickLatest(files, 'Stores'), 'Stores7290058140886-202610250200.xml');
+  assert.equal(pickLatest(files, 'PriceFull', 1), 'PriceFull7290058140886-001-202610250200.gz');
+  assert.equal(pickLatest(files, 'PromoFull', 1), undefined);
+});
