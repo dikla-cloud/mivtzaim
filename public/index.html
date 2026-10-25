@@ -62,6 +62,9 @@
         <h1>הקניות שלי</h1>
       </div>
       <div class="top-actions">
+      <button type="button" id="refreshBtn" class="icon-btn" title="רענון האפליקציה" aria-label="רענון האפליקציה">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>
+      </button>
       <button id="gear" data-tab="settings" aria-pressed="false" title="הגדרות">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
         <span>הגדרות</span>
@@ -250,6 +253,12 @@
           </button>
         </div>
       </div>
+      <div class="card il-only">
+        <h3>🏪 הסניפים שלי</h3>
+        <p id="myStoresInfo" class="muted small"></p>
+        <div class="row"><button id="myStoresBtn" class="primary">בחירת סניפים לבדיקת מבצעים</button></div>
+        <p class="muted small">אפשר לבחור עד 12 סניפים מכל הרשתות באזור. השוואת מחיר העגלה תיעשה בסניפים האלה.</p>
+      </div>
       <div class="card">
         <h3>מיקום</h3>
         <p id="loc" class="muted"></p>
@@ -337,13 +346,27 @@
     </div>
   </dialog>
 
+  <dialog id="storesDlg">
+    <div class="sheet-head">
+      <h3>🏪 הסניפים שלי</h3>
+      <button type="button" id="storesClose" class="sheet-x" aria-label="סגירה">✕</button>
+    </div>
+    <p class="muted small">סמנו את הסניפים שבהם תרצו לבדוק מבצעים. בלי בחירה – נבדקים 3 הסניפים הקרובים מכל רשת.</p>
+    <p id="myStoresCount" class="small"></p>
+    <div id="myStoresList" class="cart-stores"></div>
+    <div class="row">
+      <button id="myStoresSave" class="primary">שמירה</button>
+      <button id="myStoresClear">ניקוי הבחירה</button>
+    </div>
+  </dialog>
+
   <dialog id="cartDlg">
     <div class="sheet-head">
       <h3>🧮 השוואת מחיר העגלה</h3>
       <button type="button" id="cartClose" class="sheet-x" aria-label="סגירה">✕</button>
     </div>
     <div id="cartPick">
-      <p class="muted small">בחרו עד 4 סניפים, ונחשב כמה תעלה היום רשימת ״חסר בבית״ בכל אחד מהם (לפי קובצי המחירים והמבצעים של הרשתות).</p>
+      <p class="muted small">בחרו סניפים, ונחשב כמה תעלה היום רשימת ״חסר בבית״ בכל אחד מהם (לפי קובצי המחירים והמבצעים של הרשתות).</p>
       <p id="cartPickInfo" class="small"></p>
       <div id="cartStores" class="cart-stores"></div>
       <div class="row">

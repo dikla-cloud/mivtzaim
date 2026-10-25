@@ -329,3 +329,11 @@ button.linkish { display: block; margin: 10px auto 0; border: 0; background: non
 #emailForm label { margin-top: 4px; }
 #login form .primary { width: 100%; margin-top: 8px; }
 .email-banner { display: block; width: 100%; margin-top: 8px; text-align: start; border: 0; font-weight: 600; cursor: pointer; }
+
+/* כפתור רענון בראש המסך */
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border-radius: 12px; }
+.icon-btn svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.icon-btn.spin svg { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#storesDlg { width: min(560px, calc(100vw - 16px)); max-height: 90vh; border: 1px solid var(--border); border-radius: 16px; padding: 16px; background: var(--bg); color: var(--text); }
+#storesDlg::backdrop { background: rgb(0 0 0 / .45); }

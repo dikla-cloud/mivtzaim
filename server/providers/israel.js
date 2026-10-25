@@ -96,7 +96,7 @@ module.exports = {
   chains: CHAINS,
   findDeals,
   findWebDeals,
-  async scan({ list: rawList, location, radiusKm, enabledChains, errors, report }) {
+  async scan({ list: rawList, location, radiusKm, enabledChains, myStores, errors, report }) {
     const deals = [];
     // פריטים בערבית: קובצי הרשתות בעברית, ולכן מחפשים גם לפי התרגום לעברית
     const arabic = rawList.filter((e) => translate.sourceLang(e.text) === 'ar');
@@ -112,8 +112,12 @@ module.exports = {
       const r = { name: chain.name, nearby: 0, stores: [], deals: 0, error: null };
       report.chains.push(r);
       try {
-        const all = await geo.storesWithin(await chainStores(chain), location, radiusKm);
-        r.nearby = all.length;
+        const near = await geo.storesWithin(await chainStores(chain), location, radiusKm);
+        r.nearby = near.length;
+        // סניפים שהמשתמש בחר (אם בחר): רק הם נבדקים. אחרת – הקרובים מכל רשת
+        const picked = myStores?.length ? near.filter((s) => myStores.some((m) => m.chain === chain.id && String(m.storeId) === String(s.storeId))) : null;
+        if (picked && !picked.length) { r.skipped = true; continue; }
+        const all = picked || near;
         if (chain.web) {
           const store = all[0];
           if (!store) continue;
@@ -127,7 +131,7 @@ module.exports = {
           deals.push(...found);
           continue;
         }
-        for (const store of all.slice(0, MAX_STORES_PER_CHAIN)) {
+        for (const store of picked || all.slice(0, MAX_STORES_PER_CHAIN)) {
           const sr = { name: store.name, km: store.km, promos: 0, deals: 0, error: null };
           r.stores.push(sr);
           try {

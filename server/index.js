@@ -146,6 +146,7 @@ const state = (u) => ({
   list: u.list, location: u.location, radiusKm: u.radiusKm, deals: u.deals,
   lastScan: u.lastScan, lastErrors: u.lastErrors, lastSources: u.lastSources || [], lastReport: u.lastReport || null,
   lang: u.lang || null,
+  myStores: u.myStores || [],
   country: APP_COUNTRY,
   chains: scanner.ALL_CHAINS.map((c) => ({ id: c.id, name: c.name, on: !u.chains || u.chains.includes(c.id) })),
   vapidKey: push.publicKey,
@@ -466,8 +467,20 @@ app.get('/api/compare/stores', async (req, res) => {
   if (!(await inIsrael(u))) return res.status(400).json({ error: T(req, 'השוואת עגלה זמינה כרגע רק בישראל') });
   const errors = [];
   const stores = await compare.nearbyStores(u, errors);
-  res.json({ stores, selected: u.compareStores || [], max: compare.MAX_STORES, errors });
+  res.json({ stores, selected: u.compareStores || [], mine: u.myStores || [], max: compare.MAX_STORES, errors });
 });
+// „הסניפים שלי”: הסניפים שבהם נבדקים מבצעים (ריק = הסניפים הקרובים מכל רשת)
+app.put('/api/mystores', (req, res) => {
+  const u = req.user;
+  u.myStores = (Array.isArray(req.body?.stores) ? req.body.stores : [])
+    .filter((s) => s && typeof s.chain === 'string' && s.storeId != null)
+    .slice(0, compare.MAX_STORES)
+    .map((s) => ({ chain: s.chain, storeId: String(s.storeId).slice(0, 40), name: String(s.name || '').slice(0, 80), chainName: String(s.chainName || '').slice(0, 60) }));
+  db.save();
+  rescanSoon(u);
+  res.json(state(u));
+});
+
 app.post('/api/compare', async (req, res) => {
   const u = req.user;
   const stores = (Array.isArray(req.body?.stores) ? req.body.stores : [])

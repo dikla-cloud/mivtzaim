@@ -123,6 +123,7 @@ function render() {
   $('#deleteMeBox').hidden = S.me.admin;
   $('#statsCard').hidden = !S.me.admin;
   renderFamily();
+  renderMyStoresInfo();
 
   renderDeals();
   renderList();
@@ -235,12 +236,13 @@ function renderReport() {
     let line;
     if (c.error) line = t('✘ {name} – לא הצלחנו לבדוק: {err}', { name: c.name, err: c.error });
     else if (c.nearby === 0) line = t('– {name} – אין סניף ברדיוס {km} ק"מ', { name: c.name, km: R.radiusKm });
+    else if (c.skipped) line = t('– {name} – לא נבחר סניף לבדיקה', { name: c.name });
     else if (c.nearby == null) line = t('✔ {name} – {n} מבצעים מהרשימה', { name: c.name, n: c.deals });
     else {
       const st = c.stores.map((s) => (s.error ? t('{name} ({km} ק"מ, שגיאה)', s) : t('{name} ({km} ק"מ, {n} מבצעים בסניף)', { ...s, n: s.promos }))).join(' · ');
       line = t('✔ {name} – {nearby} סניפים ברדיוס, נבדקו: {stores} – {n} התאמות לרשימה', { name: c.name, nearby: c.nearby, stores: st, n: c.deals });
     }
-    chains.append(el('li', line, c.error ? 'warn' : c.nearby === 0 ? 'muted' : ''));
+    chains.append(el('li', line, c.error ? 'warn' : c.nearby === 0 || c.skipped ? 'muted' : ''));
   }
   body.append(chains);
 
@@ -867,25 +869,40 @@ document.querySelector('nav [data-tab=home]').addEventListener('click', refreshH
 // ---------- השוואת מחיר העגלה בין סניפים ----------
 let cartStores = [];
 let cartSel = [];
+let cartMax = 12;
 const storeKey = (s) => `${s.chain}|${s.storeId}`;
-function renderCartPick(max) {
-  $('#cartPickInfo').textContent = t('נבחרו {n} מתוך {max}', { n: cartSel.length, max });
-  $('#cartGo').disabled = !cartSel.length;
-  $('#cartStores').replaceChildren(...cartStores.map((s) => {
-    const on = cartSel.some((x) => storeKey(x) === storeKey(s));
+// רשימת סניפים עם תיבות סימון (משותף ל„הסניפים שלי” ולהשוואת העגלה)
+function storeList(box, stores, sel, max, onChange) {
+  box.replaceChildren(...stores.map((s) => {
+    const on = sel.some((x) => storeKey(x) === storeKey(s));
     const l = document.createElement('label');
     l.className = 'cart-store' + (on ? ' on' : '');
-    const cb = Object.assign(document.createElement('input'), { type: 'checkbox', checked: on, disabled: !on && cartSel.length >= max });
-    cb.addEventListener('change', () => {
-      cartSel = cb.checked ? [...cartSel, s] : cartSel.filter((x) => storeKey(x) !== storeKey(s));
-      renderCartPick(max);
-    });
-    const txt = Object.assign(document.createElement('span'), {});
+    const cb = Object.assign(document.createElement('input'), { type: 'checkbox', checked: on, disabled: !on && sel.length >= max });
+    cb.addEventListener('change', () => onChange(cb.checked ? [...sel, s] : sel.filter((x) => storeKey(x) !== storeKey(s))));
+    const txt = document.createElement('span');
     txt.append(Object.assign(document.createElement('b'), { textContent: `${s.chainName} · ${s.name}` }),
-      Object.assign(document.createElement('small'), { className: 'muted', textContent: ` ${s.km} ${t('ק"מ')}${s.address ? ` · ${s.address}` : ''}` }));
+      Object.assign(document.createElement('small'), { className: 'muted', textContent: ` ${s.km} ${t('ק"מ')}${s.address ? ` · ${s.address}` : ''}${s.web ? t(' · מבצעים בלבד') : ''}` }));
     l.append(cb, txt);
     return l;
   }));
+}
+function renderCartPick() {
+  $('#cartPickInfo').textContent = t('נבחרו {n} מתוך {max}', { n: cartSel.length, max: cartMax });
+  $('#cartGo').disabled = !cartSel.length;
+  storeList($('#cartStores'), cartStores, cartSel, cartMax, (sel) => { cartSel = sel; renderCartPick(); });
+}
+async function runCompare() {
+  const b = $('#cartGo');
+  b.disabled = true;
+  b.textContent = t('בודק מחירים בסניפים… (עד דקה)');
+  $('#cartPickInfo').textContent = t('בודק מחירים בסניפים… (עד דקה)');
+  try {
+    renderCart(await api('POST', '/api/compare', { stores: cartSel }));
+    track('cart_compare');
+  } catch (e) { alert(e.message); } finally {
+    b.disabled = !cartSel.length;
+    b.textContent = t('השוואה');
+  }
 }
 $('#cartBtn').addEventListener('click', async () => {
   $('#cartPick').hidden = false;
@@ -897,30 +914,61 @@ $('#cartBtn').addEventListener('click', async () => {
   $('#cartDlg').showModal();
   try {
     const r = await api('GET', '/api/compare/stores');
-    cartStores = r.stores;
-    // הבחירה הקודמת נשמרת, רק אם הסניפים עדיין באזור
-    cartSel = r.selected.map((x) => cartStores.find((s) => storeKey(s) === storeKey(x))).filter(Boolean);
+    cartStores = r.stores.filter((s) => !s.web); // להשוואה צריך מחירון מלא
+    cartMax = r.max;
+    const pickFrom = (list) => list.map((x) => cartStores.find((s) => storeKey(s) === storeKey(x))).filter(Boolean);
+    // ברירת מחדל: הסניפים שבחרת לבדיקת מבצעים; אחרת הבחירה הקודמת בהשוואה
+    const mine = pickFrom(r.mine);
+    cartSel = mine.length ? mine : pickFrom(r.selected);
     if (!cartStores.length) return ($('#cartPickInfo').textContent = t('לא נמצאו סניפים ברדיוס החיפוש. אפשר להגדיל את הרדיוס בהגדרות.'));
-    renderCartPick(r.max);
+    renderCartPick();
+    if (mine.length) runCompare(); // יש „סניפים שלי” – משווים מיד
   } catch (e) {
     $('#cartPickInfo').textContent = e.message;
     $('#cartPickInfo').className = 'note-warn';
   }
 });
+
+// ---------- „הסניפים שלי”: באילו סניפים לבדוק מבצעים ----------
+let myAll = [];
+let mySel = [];
+function renderMyStoresInfo() {
+  const n = (S.myStores || []).length;
+  $('#myStoresInfo').textContent = n
+    ? t('נבדקים מבצעים ב-{n} סניפים שבחרת: {names}', { n, names: S.myStores.map((s) => `${s.chainName || ''} ${s.name}`.trim()).join(' · ') })
+    : t('לא נבחרו סניפים – נבדקים 3 הסניפים הקרובים מכל רשת.');
+}
+function renderMyPick() {
+  $('#myStoresCount').textContent = t('נבחרו {n} מתוך {max}', { n: mySel.length, max: cartMax });
+  storeList($('#myStoresList'), myAll, mySel, cartMax, (sel) => { mySel = sel; renderMyPick(); });
+}
+$('#myStoresBtn').addEventListener('click', async () => {
+  $('#myStoresList').replaceChildren();
+  $('#myStoresCount').textContent = t('טוען את הסניפים באזור…');
+  $('#storesDlg').showModal();
+  try {
+    const r = await api('GET', '/api/compare/stores');
+    myAll = r.stores;
+    cartMax = r.max;
+    mySel = r.mine.map((x) => myAll.find((s) => storeKey(s) === storeKey(x))).filter(Boolean);
+    if (!myAll.length) return ($('#myStoresCount').textContent = t('לא נמצאו סניפים ברדיוס החיפוש. אפשר להגדיל את הרדיוס בהגדרות.'));
+    renderMyPick();
+  } catch (e) { $('#myStoresCount').textContent = e.message; }
+});
+$('#myStoresSave').addEventListener('click', async () => {
+  try {
+    S = await api('PUT', '/api/mystores', { stores: mySel });
+    $('#storesDlg').close();
+    render();
+    toast(t('נשמר ✔ בודק מבצעים בסניפים שבחרת…'));
+  } catch (e) { alert(e.message); }
+});
+$('#myStoresClear').addEventListener('click', () => { mySel = []; renderMyPick(); });
+$('#storesClose').addEventListener('click', () => $('#storesDlg').close());
+
 $('#cartClose').addEventListener('click', () => $('#cartDlg').close());
 $('#cartBack').addEventListener('click', () => { $('#cartResult').hidden = true; $('#cartPick').hidden = false; });
-$('#cartGo').addEventListener('click', async () => {
-  const b = $('#cartGo');
-  b.disabled = true;
-  b.textContent = t('בודק מחירים בסניפים… (עד דקה)');
-  try {
-    renderCart(await api('POST', '/api/compare', { stores: cartSel }));
-    track('cart_compare');
-  } catch (e) { alert(e.message); } finally {
-    b.disabled = !cartSel.length;
-    b.textContent = t('השוואה');
-  }
-});
+$('#cartGo').addEventListener('click', runCompare);
 function renderCart(r) {
   $('#cartPick').hidden = true;
   $('#cartResult').hidden = false;
@@ -1171,15 +1219,16 @@ $('#menuAbout').addEventListener('click', () => { $('#menuDlg').close(); $('#abo
 $('#aboutClose').addEventListener('click', () => $('#aboutDlg').close());
 $('#menuVersion').textContent = t('גרסה {v}', { v: APP_VERSION });
 // רענון: מוחקים את העותק השמור של האפליקציה בטלפון וטוענים מחדש מהשרת
-$('#menuRefresh').addEventListener('click', async () => {
-  $('#menuRefresh').textContent = t('🔄 מרענן…');
+async function refreshApp() {
   try {
     for (const k of (await caches?.keys?.()) || []) await caches.delete(k);
     const reg = await navigator.serviceWorker?.getRegistration();
     await reg?.update();
   } catch { /* */ }
   location.reload();
-});
+}
+$('#menuRefresh').addEventListener('click', () => { $('#menuRefresh').textContent = t('🔄 מרענן…'); refreshApp(); });
+$('#refreshBtn').addEventListener('click', () => { $('#refreshBtn').classList.add('spin'); refreshApp(); });
 
 // ---------- מסך פתיחה: לוגו והסבר קצר לשנייה וחצי ----------
 setTimeout(() => {

@@ -8,7 +8,7 @@ const { tokens, variantsOf, matchVariants } = require('./match');
 
 const TTL = 3 * 3600000; // קובצי סניף נשמרים בזיכרון 3 שעות
 const MAX_CACHED = 12;
-const MAX_STORES = 4;
+const MAX_STORES = 12;
 const cache = new Map(); // `${chain}|${store}` → { at, items, promoByCode }
 const pending = new Map();
 
@@ -80,20 +80,21 @@ function pick(text, data) {
 async function nearbyStores(user, errors = []) {
   if (!user.location) return [];
   const out = [];
-  for (const chain of comparableChains().filter((c) => !user.chains || user.chains.includes(c.id))) {
+  for (const chain of israel.chains.filter((c) => !user.chains || user.chains.includes(c.id))) {
     try {
       const near = await geo.storesWithin(await israel.chainStores(chain), user.location, user.radiusKm || 10);
-      for (const s of near) out.push({ chain: chain.id, chainName: chain.name, storeId: s.storeId, name: s.name, address: [s.address, s.city].filter(Boolean).join(', '), km: s.km });
+      // web: רשת בלי מחירון מלא (רק מבצעים) – אפשר לבחור אותה לבדיקת מבצעים, אבל לא להשוואת עגלה
+      for (const s of near) out.push({ chain: chain.id, chainName: chain.name, storeId: s.storeId, name: s.name, address: [s.address, s.city].filter(Boolean).join(', '), km: s.km, web: Boolean(chain.web) });
     } catch (e) {
       errors.push(`${chain.name}: ${e.message}`);
     }
   }
-  return out.sort((a, b) => a.km - b.km).slice(0, 60);
+  return out.sort((a, b) => a.km - b.km).slice(0, 80);
 }
 
 async function compare(items, stores) {
   const texts = [...new Set(items.map((t) => String(t).trim()).filter(Boolean))].slice(0, 100);
-  const chosen = stores.slice(0, MAX_STORES);
+  const chosen = stores.filter((s) => comparableChains().some((c) => c.id === s.chain)).slice(0, MAX_STORES);
   const results = await Promise.all(chosen.map(async (s) => {
     const chain = comparableChains().find((c) => c.id === s.chain);
     const base = { chain: s.chain, chainName: chain?.name || s.chain, storeId: String(s.storeId), name: s.name || '' };
