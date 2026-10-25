@@ -44,3 +44,9 @@ test('cart compare: a better name match wins over a product found in more stores
   assert.equal(commonCode('אבוקדו', [a, b]), null);
   assert.equal(pinKey('  Tahini   Raw | 123'), 'tahini raw');
 });
+
+test('price file names: Victory StoresFull and the chain code', () => {
+  const { parseName } = require('../server/chains/weblist');
+  assert.deepEqual(parseName('StoresFull7290696200003-000-202610250200.xml.gz'), { kind: 'stores', code: '7290696200003', store: 0, stamp: '20261025020000' });
+  assert.equal(parseName('PriceFull7290696200003-031-202610250200-001.xml.gz').store, 31);
+});

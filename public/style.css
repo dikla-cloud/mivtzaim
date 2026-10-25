@@ -356,7 +356,7 @@ details.fold[open] { padding-bottom: 14px; }
 #myStoresCount, #cartPickInfo, #myStoresLoading { font-weight: 700; }
 
 /* רשתות מתקפלות בבחירת סניפים */
-details.store-group { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+details.store-group { margin: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 details.store-group > summary { list-style: none; cursor: pointer; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 details.store-group > summary::-webkit-details-marker { display: none; }
 details.store-group > summary b { color: var(--accent); }

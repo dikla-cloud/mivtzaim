@@ -7,7 +7,7 @@ const translate = require('../translate');
 
 const CHAINS = process.env.DEMO === '1'
   ? [require('../chains/demo')]
-  : [require('../chains/shufersal'), ...require('../chains/cerberus').chains, ...require('../chains/weblist').chains, require('../chains/nizat')];
+  : [require('../chains/shufersal'), ...require('../chains/cerberus').chains, ...require('../chains/weblist').chains, ...require('../chains/laib').chains, require('../chains/nizat')];
 
 const STORES_TTL = 7 * 86400000;
 const MAX_STORES_PER_CHAIN = Number(process.env.MAX_STORES_PER_CHAIN || 3);

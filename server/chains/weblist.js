@@ -7,12 +7,13 @@ const BROWSER = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Apple
 
 // שם קובץ תקני: Stores/PriceFull/PromoFull + קוד רשת + סניף + חותמת זמן.
 // קרפור מוסיפה גם תת-רשת: Price7290055700007-001-002-20261016-140004.gz (רשת-תת רשת-סניף-תאריך-שעה)
-const NAME = /^(Stores|PriceFull|PromoFull|Price|Promo)(\d{13})-(\d{3})(?:-(\d{3}))?-(\d{8})-?(\d{4,6})/i;
+// ויקטורי: StoresFull7290696200003-000-202610250200.xml.gz
+const NAME = /^(StoresFull|Stores|PriceFull|PromoFull|Price|Promo)(\d{13})-(\d{3})(?:-(\d{3}))?-(\d{8})-?(\d{4,6})/i;
 
 function parseName(name) {
   const f = String(name).match(NAME);
   if (!f) return null;
-  return { kind: f[1].toLowerCase(), store: Number(f[4] ?? f[3]), stamp: f[5] + f[6].padEnd(6, '0') };
+  return { kind: f[1].toLowerCase().replace('storesfull', 'stores'), code: f[2], store: Number(f[4] ?? f[3]), stamp: f[5] + f[6].padEnd(6, '0') };
 }
 
 function fileLinks(html, base) {
@@ -82,6 +83,7 @@ const pages = (env, def) => (process.env[env] || def).split(',').map((x) => x.tr
 module.exports = {
   fileLinks,
   parseName,
+  BROWSER,
   chains: [
     chain('carrefour', 'קרפור (כולל יינות ביתן)', pages('CARREFOUR_PAGES', 'https://prices.carrefour.co.il/')),
   ],
