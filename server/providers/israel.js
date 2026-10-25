@@ -112,10 +112,13 @@ module.exports = {
       const r = { name: chain.name, nearby: 0, stores: [], deals: 0, error: null };
       report.chains.push(r);
       try {
-        const near = await geo.storesWithin(await chainStores(chain), location, radiusKm);
-        r.nearby = near.length;
-        // סניפים שהמשתמש בחר (אם בחר): רק הם נבדקים. אחרת – הקרובים מכל רשת
-        const picked = myStores?.length ? near.filter((s) => myStores.some((m) => m.chain === chain.id && String(m.storeId) === String(s.storeId))) : null;
+        const stores = await chainStores(chain);
+        const isMine = (s) => myStores.some((m) => m.chain === chain.id && String(m.storeId) === String(s.storeId));
+        // סניפים שהמשתמש בחר (אם בחר): רק הם נבדקים, כולל סניף אונליין. אחרת – הקרובים מכל רשת
+        const online = myStores?.length ? stores.filter((s) => geo.isOnline(s) && isMine(s)).map((s) => ({ ...s, km: null })) : [];
+        const near = await geo.storesWithin(stores, location, radiusKm);
+        r.nearby = near.length + online.length;
+        const picked = myStores?.length ? [...online, ...near.filter(isMine)] : null;
         if (picked && !picked.length) { r.skipped = true; continue; }
         const all = picked || near;
         if (chain.web) {

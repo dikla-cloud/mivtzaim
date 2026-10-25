@@ -36,6 +36,7 @@ module.exports = {
       { storeId: '1', name: 'סניף דיזנגוף', address: 'דיזנגוף 50', city: 'תל אביב', lat: 32.0779, lon: 34.7745 },
       { storeId: '2', name: 'סניף רמת גן', address: 'ביאליק 20', city: 'רמת גן', lat: 32.0823, lon: 34.8136 },
       { storeId: '3', name: 'סניף חיפה', address: 'הנביאים 10', city: 'חיפה', lat: 32.8156, lon: 34.9893 },
+      { storeId: '9', name: 'הדגמה ONLINE', address: 'WWW.DEMO.CO.IL', city: 'תל אביב' },
     ];
   },
   async storeFiles(storeId) {

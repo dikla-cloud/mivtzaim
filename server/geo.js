@@ -150,22 +150,38 @@ async function storePosition(s) {
   return null;
 }
 
-// מחזיר את הסניפים ברדיוס, עם מרחק. קודם מסנן לפי עיר (מעט בקשות), ורק אז מאתר כתובות מדויקות.
-async function storesWithin(stores, center, radiusKm) {
+// שלב 1 (מהיר): מועמדים לפי מרכז העיר שלהם, מהקרוב לרחוק. ערים מתחלפות לעתים רחוקות ונשמרות במטמון
+async function nearCandidates(stores, center, radiusKm) {
   const out = [];
   for (const s of stores) {
     if (isOnline(s)) continue;
-    if (s.lat == null) {
-      const name = await cityName(s.city);
-      const city = name && (await geocode(`${name}, ישראל`));
-      if (city && haversineKm(center, city) > radiusKm + 8) continue; // עיר רחוקה – לא צריך לאתר את הכתובת
-    }
-    const pos = await storePosition(s);
-    if (!pos) continue;
-    const km = haversineKm(center, pos);
-    if (km <= radiusKm) out.push({ ...s, lat: pos.lat, lon: pos.lon, geo: pos.how, km: Math.round(km * 10) / 10 });
+    if (s.lat != null) { out.push({ s, approx: haversineKm(center, s) }); continue; }
+    const name = await cityName(s.city);
+    const city = name && (await geocode(`${name}, ישראל`));
+    if (city && haversineKm(center, city) > radiusKm + 8) continue; // עיר רחוקה – לא צריך לאתר את הכתובת
+    out.push({ s, approx: city ? haversineKm(center, city) : radiusKm + 8 });
+  }
+  return out.sort((a, b) => a.approx - b.approx);
+}
+
+// שלב 2: מיקום מדויק של מועמד (לפי כתובת), ומרחק אמיתי. null אם מחוץ לרדיוס
+async function locate(s, center, radiusKm) {
+  const pos = await storePosition(s);
+  if (!pos) return null;
+  const km = haversineKm(center, pos);
+  return km <= radiusKm ? { ...s, lat: pos.lat, lon: pos.lon, geo: pos.how, km: Math.round(km * 10) / 10 } : null;
+}
+
+// מחזיר את הסניפים ברדיוס, עם מרחק. קודם הקרובים (לפי העיר), ורק אז מאתר כתובות מדויקות.
+async function storesWithin(stores, center, radiusKm, onStore) {
+  const out = [];
+  for (const { s } of await nearCandidates(stores, center, radiusKm)) {
+    const found = await locate(s, center, radiusKm);
+    if (!found) continue;
+    out.push(found);
+    onStore?.(found); // לרשימה שמתעדכנת בזמן האיתור
   }
   return out.sort((a, b) => a.km - b.km);
 }
 
-module.exports = { haversineKm, geocode, reverse, storesWithin, storePosition, inCity, cityName, cleanAddress };
+module.exports = { haversineKm, geocode, reverse, storesWithin, nearCandidates, locate, isOnline, storePosition, inCity, cityName, cleanAddress };

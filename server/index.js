@@ -466,8 +466,8 @@ app.get('/api/compare/stores', async (req, res) => {
   if (!u.location) return res.status(400).json({ error: T(req, 'לא הוגדר מיקום') });
   if (!(await inIsrael(u))) return res.status(400).json({ error: T(req, 'בחירת סניפים והשוואת עגלה זמינות כרגע רק בישראל. המיקום שלך עכשיו: {place}. אפשר לעדכן אותו בכפתור ״עדכון מיקום״.', { place: u.location.label || '' }) });
   const errors = [];
-  const stores = await compare.nearbyStores(u, errors);
-  res.json({ stores, selected: u.compareStores || [], mine: u.myStores || [], max: compare.MAX_STORES, errors });
+  const { stores, loading } = await compare.nearbyStores(u, errors, { wait: 8000 });
+  res.json({ stores, loading, selected: u.compareStores || [], mine: u.myStores || [], max: compare.MAX_STORES, errors });
 });
 // „הסניפים שלי”: הסניפים שבהם נבדקים מבצעים (ריק = הסניפים הקרובים מכל רשת)
 app.put('/api/mystores', (req, res) => {

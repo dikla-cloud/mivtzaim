@@ -141,6 +141,9 @@ const I18N = {
   "המחירים מגיעים מקובצי השקיפות שהרשתות מפרסמות לפי חוק, ובחו\"ל מעלוני המבצעים. כדאי תמיד לבדוק את המחיר בחנות. השירות חינמי ושומר על הפרטיות: המידע שלך לא נמכר.": ["Die Preise stammen aus den Flugblättern der Ketten (in Israel aus den gesetzlichen Preisdateien). Bitte im Geschäft prüfen. Die App ist kostenlos und schützt deine Privatsphäre: deine Daten werden nicht verkauft.", "Prices come from the price files chains publish by law in Israel, and from deal flyers abroad. Always check the price in the store. The app is free and respects your privacy: your data is not sold."],
   "רשימת קניות משותפת לכל הבית · התראות על מבצעים · השוואת מחיר העגלה": ["Gemeinsame Einkaufsliste · Angebots-Benachrichtigungen · Preisvergleich", "A shared shopping list · deal alerts · cart price comparison"],
   // ---------- השוואת עגלה ----------
+  "🛒 אונליין · משלוח עד הבית": ["🛒 Online · Lieferung nach Hause", "🛒 Online · home delivery"],
+  "אונליין": ["online", "online"],
+  "⏳ עוד מאתרים סניפים על המפה (בפעם הראשונה זה לוקח כמה דקות). הרשימה מתעדכנת לבד, ואפשר כבר לסמן.": ["⏳ Filialen werden noch auf der Karte gesucht (beim ersten Mal ein paar Minuten). Die Liste aktualisiert sich selbst – du kannst schon auswählen.", "⏳ Still locating stores on the map (a few minutes the first time). The list updates by itself, and you can already tick stores."],
   "טוען את הסניפים באזור… (בפעם הראשונה זה יכול לקחת עד דקה)": ["Lade Filialen in der Nähe… (beim ersten Mal bis zu einer Minute)", "Loading nearby stores… (the first time can take up to a minute)"],
   "רענון האפליקציה": ["App neu laden", "Refresh the app"],
   "🏪 הסניפים שלי": ["🏪 Meine Filialen", "🏪 My stores"],
@@ -372,6 +375,9 @@ const I18N = {
 
 // ערבית (מפתח: הנוסח העברי)
 const I18N_AR = {
+  "🛒 אונליין · משלוח עד הבית": "🛒 أونلاين · توصيل إلى البيت",
+  "אונליין": "أونلاين",
+  "⏳ עוד מאתרים סניפים על המפה (בפעם הראשונה זה לוקח כמה דקות). הרשימה מתעדכנת לבד, ואפשר כבר לסמן.": "⏳ ما زلنا نحدد الفروع على الخريطة (في المرة الأولى يستغرق ذلك بضع دقائق). القائمة تتحدث تلقائيًا، ويمكنك الاختيار الآن.",
   "טוען את הסניפים באזור… (בפעם הראשונה זה יכול לקחת עד דקה)": "جارٍ تحميل الفروع في المنطقة… (في المرة الأولى قد يستغرق ذلك حتى دقيقة)",
   "רענון האפליקציה": "تحديث التطبيق",
   "🏪 הסניפים שלי": "🏪 فروعي",

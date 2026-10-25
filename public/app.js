@@ -239,7 +239,10 @@ function renderReport() {
     else if (c.skipped) line = t('– {name} – לא נבחר סניף לבדיקה', { name: c.name });
     else if (c.nearby == null) line = t('✔ {name} – {n} מבצעים מהרשימה', { name: c.name, n: c.deals });
     else {
-      const st = c.stores.map((s) => (s.error ? t('{name} ({km} ק"מ, שגיאה)', s) : t('{name} ({km} ק"מ, {n} מבצעים בסניף)', { ...s, n: s.promos }))).join(' · ');
+      const st = c.stores.map((s) => {
+        const v = { ...s, km: s.km ?? t('אונליין'), n: s.promos };
+        return s.error ? t('{name} ({km} ק"מ, שגיאה)', v) : t('{name} ({km} ק"מ, {n} מבצעים בסניף)', v);
+      }).join(' · ');
       line = t('✔ {name} – {nearby} סניפים ברדיוס, נבדקו: {stores} – {n} התאמות לרשימה', { name: c.name, nearby: c.nearby, stores: st, n: c.deals });
     }
     chains.append(el('li', line, c.error ? 'warn' : c.nearby === 0 || c.skipped ? 'muted' : ''));
@@ -881,7 +884,7 @@ function storeList(box, stores, sel, max, onChange) {
     cb.addEventListener('change', () => onChange(cb.checked ? [...sel, s] : sel.filter((x) => storeKey(x) !== storeKey(s))));
     const txt = document.createElement('span');
     txt.append(Object.assign(document.createElement('b'), { textContent: `${s.chainName} · ${s.name}` }),
-      Object.assign(document.createElement('small'), { className: 'muted', textContent: ` ${s.km} ${t('ק"מ')}${s.address ? ` · ${s.address}` : ''}${s.web ? t(' · מבצעים בלבד') : ''}` }));
+      Object.assign(document.createElement('small'), { className: 'muted', textContent: s.km == null ? ` ${t('🛒 אונליין · משלוח עד הבית')}` : ` ${s.km} ${t('ק"מ')}${s.address ? ` · ${s.address}` : ''}${s.web ? t(' · מבצעים בלבד') : ''}` }));
     l.append(cb, txt);
     return l;
   }));
@@ -947,16 +950,29 @@ $('#myStoresBtn').addEventListener('click', async () => {
   $('#myStoresCount').className = 'small';
   $('#myStoresCount').textContent = t('טוען את הסניפים באזור… (בפעם הראשונה זה יכול לקחת עד דקה)');
   $('#storesDlg').showModal();
-  try {
-    const r = await api('GET', '/api/compare/stores');
-    myAll = r.stores;
-    cartMax = r.max;
-    mySel = r.mine.map((x) => myAll.find((s) => storeKey(s) === storeKey(x))).filter(Boolean);
-    if (!myAll.length) return ($('#myStoresCount').textContent = t('לא נמצאו סניפים ברדיוס החיפוש. אפשר להגדיל את הרדיוס בהגדרות.'));
-    renderMyPick();
-  } catch (e) {
-    $('#myStoresCount').textContent = e.message;
-    $('#myStoresCount').className = 'note-warn';
+  let first = true;
+  // בפעם הראשונה השרת עוד מאתר סניפים על המפה: מציגים את מה שכבר נמצא, ומבקשים שוב כל כמה שניות
+  while ($('#storesDlg').open) {
+    try {
+      const r = await api('GET', '/api/compare/stores');
+      myAll = r.stores;
+      cartMax = r.max;
+      if (first) mySel = r.mine.map((x) => myAll.find((s) => storeKey(s) === storeKey(x))).filter(Boolean);
+      else mySel = mySel.map((x) => myAll.find((s) => storeKey(s) === storeKey(x)) || x);
+      first = false;
+      if (myAll.length) renderMyPick();
+      $('#myStoresLoading').hidden = !r.loading;
+      if (!r.loading) {
+        if (!myAll.length) $('#myStoresCount').textContent = t('לא נמצאו סניפים ברדיוס החיפוש. אפשר להגדיל את הרדיוס בהגדרות.');
+        break;
+      }
+    } catch (e) {
+      $('#myStoresCount').textContent = e.message;
+      $('#myStoresCount').className = 'note-warn';
+      $('#myStoresLoading').hidden = true;
+      break;
+    }
+    await new Promise((res) => setTimeout(res, 4000));
   }
 });
 $('#myStoresSave').addEventListener('click', async () => {

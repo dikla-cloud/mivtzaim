@@ -77,19 +77,53 @@ function pick(text, data) {
 }
 
 // הסניפים באזור שאפשר להשוות ביניהם
-async function nearbyStores(user, errors = []) {
-  if (!user.location) return [];
-  const out = [];
-  for (const chain of israel.chains.filter((c) => !user.chains || user.chains.includes(c.id))) {
-    try {
-      const near = await geo.storesWithin(await israel.chainStores(chain), user.location, user.radiusKm || 10);
-      // web: רשת בלי מחירון מלא (רק מבצעים) – אפשר לבחור אותה לבדיקת מבצעים, אבל לא להשוואת עגלה
-      for (const s of near) out.push({ chain: chain.id, chainName: chain.name, storeId: s.storeId, name: s.name, address: [s.address, s.city].filter(Boolean).join(', '), km: s.km, web: Boolean(chain.web) });
-    } catch (e) {
-      errors.push(`${chain.name}: ${e.message}`);
+// הסניפים באזור. בפעם הראשונה האיתור על המפה לוקח כמה דקות (כתובת אחת בשנייה),
+// ולכן הוא רץ ברקע: מחזירים את מה שכבר נמצא, והאפליקציה מבקשת שוב עד שהכול מוכן.
+const storeJobs = new Map(); // מפתח: מיקום + רדיוס + רשתות → { list, errors, done, at }
+const JOB_TTL = 30 * 60000;
+function storesJob(user) {
+  const L = user.location;
+  const chains = israel.chains.filter((c) => !user.chains || user.chains.includes(c.id));
+  const key = `${L.lat.toFixed(3)},${L.lon.toFixed(3)}|${user.radiusKm || 10}|${chains.map((c) => c.id).join(',')}`;
+  const old = storeJobs.get(key);
+  if (old && (!old.done || Date.now() - old.at < JOB_TTL)) return old;
+  const job = { list: [], errors: [], done: false, at: Date.now() };
+  storeJobs.set(key, job);
+  job.promise = (async () => {
+    const entry = (chain, s, km) => ({
+      chain: chain.id, chainName: chain.name, storeId: s.storeId, name: s.name, address: [s.address, s.city].filter(Boolean).join(', '), km,
+      web: Boolean(chain.web), online: km == null,
+    });
+    // שלב 1: מכל הרשתות – סניפי אונליין (בלי מרחק) ומועמדים לפי העיר
+    const all = [];
+    for (const chain of chains) {
+      try {
+        const stores = await israel.chainStores(chain);
+        // סניף אונליין (למשל שופרסל ONLINE): משלוח עד הבית, בלי מיקום. רק לרשתות עם מחירון מלא
+        if (!chain.web) for (const s of stores.filter(geo.isOnline)) job.list.push(entry(chain, s, null));
+        for (const c of await geo.nearCandidates(stores, L, user.radiusKm || 10)) all.push({ chain, ...c });
+      } catch (e) {
+        job.errors.push(`${chain.name}: ${e.message}`);
+      }
     }
-  }
-  return out.sort((a, b) => a.km - b.km).slice(0, 80);
+    // שלב 2: איתור מדויק – מהקרוב לרחוק, בכל הרשתות יחד
+    all.sort((a, b) => a.approx - b.approx);
+    for (const { chain, s } of all) {
+      const found = await geo.locate(s, L, user.radiusKm || 10);
+      // web: רשת בלי מחירון מלא (רק מבצעים) – אפשר לבחור אותה לבדיקת מבצעים, אבל לא להשוואת עגלה
+      if (found) job.list.push(entry(chain, found, found.km));
+    }
+  })().finally(() => { job.done = true; job.at = Date.now(); });
+  return job;
+}
+
+// wait: כמה זמן לחכות לפני שמחזירים תוצאה חלקית
+async function nearbyStores(user, errors = [], { wait = Infinity } = {}) {
+  if (!user.location) return { stores: [], loading: false };
+  const job = storesJob(user);
+  if (!job.done) await Promise.race([job.promise, new Promise((r) => setTimeout(r, wait === Infinity ? 2 ** 31 - 1 : wait))]);
+  errors.push(...job.errors);
+  return { stores: [...job.list].sort((a, b) => (a.km ?? -1) - (b.km ?? -1)).slice(0, 90), loading: !job.done };
 }
 
 async function compare(items, stores) {
