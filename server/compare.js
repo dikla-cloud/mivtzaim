@@ -100,6 +100,9 @@ function pick(text, data) {
   return priced(best, data);
 }
 
+// מיון מועמדים: קודם התאמה טובה יותר, אחר כך כמה שיותר סניפים, ואז הזול בממוצע
+const byFit = (a, b) => a.tier - b.tier || b.n - a.n || a.sum / a.n - b.sum / b.n;
+
 // בחירת אותו מוצר בכל הסניפים: ברקוד שמשותף לכמה שיותר סניפים (ובתיקו – התאמה טובה יותר, ואז הזול בממוצע).
 // כך משווים „שוקולית 850 גרם” ל„שוקולית 850 גרם”, ולא לקופסה של 500 גרם ברשת אחרת.
 function commonCode(text, datas) {
@@ -113,8 +116,7 @@ function commonCode(text, datas) {
   }
   // קודם התאמה טובה יותר („חלב” ולא „חלבה”), אחר כך כמה שיותר סניפים, ואז הזול בממוצע
   const need = Math.min(2, datas.length);
-  const best = [...counts.values()].filter((e) => e.n >= need)
-    .sort((a, b) => a.tier - b.tier || b.n - a.n || a.sum / a.n - b.sum / b.n)[0];
+  const best = [...counts.values()].filter((e) => e.n >= need).sort(byFit)[0];
   return best ? best.code : null;
 }
 
@@ -168,11 +170,13 @@ async function nearbyStores(user, errors = [], { wait = Infinity } = {}) {
   return { stores: [...job.list].sort((a, b) => (a.km ?? -1) - (b.km ?? -1)).slice(0, 250), loading: !job.done };
 }
 
-// pins: מוצרים שהמשתמש קבע לפריט („תמיד להשוות את המוצר הזה”) – { [פריט]: ברקוד }
-async function compare(items, stores, pins = {}) {
-  const texts = [...new Set(items.map((t) => String(t).trim()).filter(Boolean))].slice(0, 100);
+const uniqTexts = (items) => [...new Set(items.map((t) => String(t).trim()).filter(Boolean))].slice(0, 100);
+const hasBarcode = (text) => String(text).split('|').some((a) => /^\d{7,14}$/.test(a.trim()));
+
+// קובצי המחירים של הסניפים שנבחרו (מהזיכרון, או הורדה)
+async function loadStores(stores) {
   const chosen = stores.filter((s) => comparableChains().some((c) => c.id === s.chain)).slice(0, MAX_STORES);
-  const loaded = await Promise.all(chosen.map(async (s) => {
+  return Promise.all(chosen.map(async (s) => {
     const chain = comparableChains().find((c) => c.id === s.chain);
     const base = { chain: s.chain, chainName: chain?.name || s.chain, storeId: String(s.storeId), name: s.name || '' };
     try {
@@ -181,17 +185,60 @@ async function compare(items, stores, pins = {}) {
       return { base, error: e.message };
     }
   }));
-  const good = loaded.filter((x) => x.data);
-  const datas = good.map((x) => x.data);
+}
+
+// „למה התכוונת?” – לכל פריט בלי ברקוד ובלי בחירה קודמת: המוצרים האפשריים בסניפים שנבחרו.
+// all: גם פריטים שכבר נבחר להם מוצר (כדי לשנות את הבחירה)
+async function options(items, stores, pins = {}, { all = false, limit = 5 } = {}) {
+  const datas = (await loadStores(stores)).filter((x) => x.data).map((x) => x.data);
+  const out = [];
+  for (const text of uniqTexts(items)) {
+    const pin = pins[pinKey(text)];
+    if (hasBarcode(text) || (pin && !all)) continue;
+    const counts = new Map();
+    for (const d of datas) {
+      for (const c of candidates(text, d).values()) {
+        const promo = d.promoByCode.get(c.code);
+        const price = promo && promo.price < c.price ? promo.price : c.price;
+        const e = counts.get(c.code) || { code: c.code, name: c.name, n: 0, tier: c.tier, sum: 0, min: price, max: price };
+        e.n += 1; e.sum += price; e.tier = Math.min(e.tier, c.tier);
+        e.min = Math.min(e.min, price); e.max = Math.max(e.max, price);
+        counts.set(c.code, e);
+      }
+    }
+    const list = [...counts.values()].sort(byFit);
+    // פריט שיש לו רק מוצר אחד אפשרי – אין מה לשאול
+    if (list.length < 2 && !all) continue;
+    out.push({
+      text: text.split('|')[0],
+      pin: pin || null,
+      auto: commonCode(text, datas),
+      stores: datas.length,
+      options: list.slice(0, limit).map(({ code, name, n, min, max }) => ({ code, name, n, min: round(min), max: round(max) })),
+    });
+  }
+  return { items: out, stores: datas.length };
+}
+
+// pins: מה שהמשתמש בחר לפריט – { [פריט]: ברקוד | 'any' (לא משנה המותג – הכי זול בכל סניף) | 'auto' (בחירה אוטומטית, לא לשאול שוב) }
+async function compare(items, stores, pins = {}) {
+  const texts = uniqTexts(items);
+  const loaded = await loadStores(stores);
+  const datas = loaded.filter((x) => x.data).map((x) => x.data);
   // לכל פריט: הברקוד שמשווים (שנקבע ידנית, או המשותף לכמה שיותר סניפים)
   const codes = Object.fromEntries(texts.map((t) => {
     const pinned = pins[pinKey(t)];
-    return [t, pinned ? { code: pinned, pinned: true } : { code: commonCode(t, datas), pinned: false }];
+    if (pinned === 'any') return [t, { code: null, pinned: false, any: true }];
+    return [t, /^\d+$/.test(pinned || '') ? { code: pinned, pinned: true } : { code: commonCode(t, datas), pinned: false }];
   }));
   const results = loaded.map(({ base, data, error }) => {
     if (error) return { ...base, error };
     const lines = texts.map((text) => {
-      const { code, pinned } = codes[text];
+      const { code, pinned, any } = codes[text];
+      if (any) { // „לא משנה המותג”: הזול שמתאים בכל סניף
+        const p = pick(text, data);
+        return p ? { text, ...p, any: true } : { text, missing: true };
+      }
       const exact = code && data.byCode.get(code);
       if (exact) return { text, ...priced(exact, data, { pinned }) };
       // המוצר עצמו לא נמכר כאן – מוצר דומה (הזול מבין המתאימים), מסומן ≈
@@ -214,4 +261,4 @@ const pinKey = (t) => String(t).split('|')[0].trim().replace(/\s+/g, ' ').toLowe
 
 const round = (n) => Math.round(n * 100) / 100;
 
-module.exports = { compare, nearbyStores, pick, candidates, commonCode, pinKey, MAX_STORES };
+module.exports = { compare, options, nearbyStores, pick, candidates, commonCode, pinKey, MAX_STORES };

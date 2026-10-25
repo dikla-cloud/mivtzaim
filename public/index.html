@@ -374,12 +374,21 @@
         <button id="cartGo" class="primary" disabled>השוואה</button>
       </div>
     </div>
+    <div id="cartResolve" hidden>
+      <p class="small"><b>למה התכוונת?</b> כדי שההשוואה תהיה מדויקת, בחרו לכל פריט את המוצר המדויק – וכך יושווה אותו מוצר (אותו ברקוד) בכל הסניפים. הבחירה נשמרת לפעם הבאה.</p>
+      <div id="cartResolveList" class="resolve-list"></div>
+      <label class="small resolve-quiet"><input type="checkbox" id="cartResolveQuiet" checked> לא לשאול שוב על פריטים שהשארתי ב״בחירה אוטומטית״</label>
+      <div class="row">
+        <button id="cartResolveGo" class="primary">השוואה</button>
+        <button id="cartResolveSkip">דלג</button>
+      </div>
+    </div>
     <div id="cartResult" hidden>
       <p id="cartSummary" class="small"></p>
       <div id="cartCards" class="cart-cards"></div>
       <p id="cartShipNote" class="note-warn small" hidden>🛒 בסניפי אונליין ההשוואה כוללת רק את מחירי המוצרים, בלי דמי משלוח (ובלי מינימום הזמנה).</p>
       <p class="muted small">👆 לחיצה על מוצר בטבלה – להשוות תמיד את המוצר הזה (אותו ברקוד בכל הסניפים).</p>
-      <p id="cartLegend" class="muted small" hidden>≈ המוצר לא נמכר בסניף הזה, מוצג מוצר דומה · 📌 מוצר שבחרתם</p>
+      <p id="cartLegend" class="muted small" hidden>≈ המוצר לא נמכר בסניף הזה, מוצג מוצר דומה · 📌 מוצר שבחרתם · 🔀 הכי זול מכל מותג</p>
       <div class="top-scroll-bar" hidden>
         <button id="cartScrollRight" class="icon-btn" type="button" aria-label="ימינה">▶</button>
         <div id="cartTopScroll" class="top-scroll"><div></div></div>
@@ -387,7 +396,7 @@
       </div>
       <div class="tablewrap"><table id="cartTable" class="stats cart-table"></table></div>
       <p class="muted small">לכל פריט נבחר אותו מוצר (אותו ברקוד) בכל הסניפים – זה שנמכר בכמה שיותר מהם, ואם יש עליו מבצע ליחידה – מחיר המבצע (🏷️). לתוצאה מדויקת יותר כתבו ברשימה שם מפורט (למשל ״חלב 3% 1 ליטר״) או ברקוד. כדאי לבדוק את המחירים בחנות.</p>
-      <div class="row"><button id="cartBack">שינוי סניפים</button></div>
+      <div class="row"><button id="cartBack">שינוי סניפים</button><button id="cartRechoose">שינוי בחירת מוצרים</button></div>
     </div>
   </dialog>
 

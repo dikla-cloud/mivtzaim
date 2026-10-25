@@ -77,7 +77,7 @@ body:not(.logged-out) #login { display: none; }
 #login h1 { margin-bottom: 4px; }
 label { display: block; margin: 8px 0; }
 [hidden] { display: none !important; }
-label > input:not([type=checkbox]):not([type=range]):not([type=file]) { display: block; width: 100%; margin-top: 4px; }
+label > input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]) { display: block; width: 100%; margin-top: 4px; }
 form > button { margin-top: 8px; }
 .error { color: #b91c1c; }
 @media (prefers-color-scheme: dark) { .error { color: #fca5a5; } }
@@ -375,3 +375,14 @@ details.store-group > .cart-store { margin: 0 8px 6px; }
 .top-scroll::-webkit-scrollbar { height: 10px; }
 .top-scroll::-webkit-scrollbar-track { background: var(--accent-soft); border-radius: 5px; }
 .top-scroll::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 5px; }
+.resolve-list { display: flex; flex-direction: column; gap: 10px; max-height: 55vh; overflow-y: auto; }
+.resolve-item { margin: 0; padding: 6px 10px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); display: flex; flex-direction: column; gap: 4px; }
+.resolve-item legend { font-weight: 700; padding: 0 4px; }
+.resolve-opt { margin: 0; display: flex; gap: 8px; align-items: flex-start; padding: 6px 4px; border-radius: 8px; cursor: pointer; }
+.resolve-opt:has(input:checked) { background: var(--accent-soft); }
+.resolve-opt input, .resolve-quiet input { width: auto; flex: 0 0 auto; margin: 4px 0 0; padding: 0; accent-color: var(--accent); }
+.resolve-opt > span { flex: 1; min-width: 0; }
+.resolve-opt b { font-weight: 600; }
+.resolve-opt small { display: block; }
+.resolve-quiet { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
+.resolve-quiet[hidden] { display: none; }

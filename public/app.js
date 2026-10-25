@@ -919,12 +919,18 @@ function renderCartPick() {
   $('#cartGo').disabled = !cartSel.length;
   storeList($('#cartStores'), cartStores, cartSel, cartMax, (sel) => { cartSel = sel; renderCartPick(); });
 }
-async function runCompare() {
+// resolve: קודם „למה התכוונת?” לפריטים שאפשר לפרש בכמה דרכים. all: לשנות גם בחירות קודמות
+async function runCompare({ resolve = true, all = false } = {}) {
   const b = $('#cartGo');
   b.disabled = true;
   b.textContent = t('בודק מחירים בסניפים… (עד דקה)');
   $('#cartPickInfo').textContent = t('בודק מחירים בסניפים… (עד דקה)');
   try {
+    if (resolve) {
+      const o = await api('POST', '/api/compare/options', { stores: cartSel, all });
+      if (o.items.length) return renderResolve(o, all);
+    }
+    $('#cartResolve').hidden = true;
     renderCart(await api('POST', '/api/compare', { stores: cartSel }));
     track('cart_compare');
   } catch (e) { alert(e.message); } finally {
@@ -932,9 +938,64 @@ async function runCompare() {
     b.textContent = t('השוואה');
   }
 }
+
+// מסך „למה התכוונת?”: לכל פריט – המוצרים האפשריים, „לא משנה המותג” ו„בחירה אוטומטית”
+function renderResolve(o, all) {
+  $('#cartPick').hidden = true;
+  $('#cartResult').hidden = true;
+  $('#cartResolve').hidden = false;
+  $('#cartResolveQuiet').parentElement.hidden = all;
+  const groups = o.items.map((it, gi) => {
+    const box = document.createElement('fieldset');
+    box.className = 'resolve-item';
+    box.dataset.text = it.text;
+    box.append(Object.assign(document.createElement('legend'), { textContent: `${foodIcon(it.text)} ${it.text}` }));
+    const cur = it.pin && it.pin !== 'auto' ? it.pin : 'auto';
+    const opt = (value, label, sub) => {
+      const l = document.createElement('label');
+      l.className = 'resolve-opt';
+      const r = Object.assign(document.createElement('input'), { type: 'radio', name: `rs${gi}`, value, checked: value === cur });
+      const txt = document.createElement('span');
+      txt.append(Object.assign(document.createElement('b'), { textContent: label }));
+      if (sub) txt.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: sub }));
+      l.append(r, txt);
+      return l;
+    };
+    for (const p of it.options) {
+      const price = p.min === p.max ? money(p.min) : `${money(p.min)}–${money(p.max)}`;
+      box.append(opt(p.code, p.name, `${price} · ${t('נמכר ב-{n} מתוך {total} סניפים', { n: p.n, total: it.stores })}`));
+    }
+    const autoName = it.options.find((p) => p.code === it.auto)?.name;
+    box.append(opt('auto', t('בחירה אוטומטית'), autoName ? t('כרגע: {name}', { name: autoName }) : t('המוצר שנמכר בכמה שיותר סניפים')));
+    box.append(opt('any', t('לא משנה המותג – הכי זול בכל סניף'), t('משווים את המוצר הזול ביותר שמתאים, גם אם הוא שונה בין הסניפים')));
+    return box;
+  });
+  $('#cartResolveList').replaceChildren(...groups);
+}
+$('#cartResolveGo').addEventListener('click', async () => {
+  const quiet = !$('#cartResolveQuiet').parentElement.hidden && $('#cartResolveQuiet').checked;
+  const pins = [...$('#cartResolveList').querySelectorAll('.resolve-item')].map((box) => {
+    const v = box.querySelector('input:checked')?.value || 'auto';
+    // „בחירה אוטומטית” נשמרת רק אם ביקשו לא לשאול שוב (אחרת – בלי בחירה, ונשאל בפעם הבאה)
+    return { text: box.dataset.text, code: v === 'auto' && !quiet ? '' : v };
+  });
+  const b = $('#cartResolveGo');
+  b.disabled = true;
+  b.textContent = t('בודק מחירים בסניפים… (עד דקה)');
+  try {
+    await api('PUT', '/api/pins', { pins });
+    await runCompare({ resolve: false });
+  } catch (e) { alert(e.message); } finally {
+    b.disabled = false;
+    b.textContent = t('השוואה');
+  }
+});
+$('#cartResolveSkip').addEventListener('click', () => runCompare({ resolve: false }));
+$('#cartRechoose').addEventListener('click', () => runCompare({ all: true }));
 $('#cartBtn').addEventListener('click', async () => {
   $('#cartPick').hidden = false;
   $('#cartResult').hidden = true;
+  $('#cartResolve').hidden = true;
   $('#cartStores').replaceChildren();
   $('#cartPickInfo').className = 'small';
   $('#cartPickInfo').textContent = t('טוען את הסניפים באזור…');
@@ -950,7 +1011,7 @@ $('#cartBtn').addEventListener('click', async () => {
     cartSel = mine.length ? mine : pickFrom(r.selected);
     if (!cartStores.length) return ($('#cartPickInfo').textContent = t('לא נמצאו סניפים ברדיוס החיפוש. אפשר להגדיל את הרדיוס בהגדרות.'));
     renderCartPick();
-    if (mine.length) runCompare(); // יש „סניפים שלי” – משווים מיד
+    if (mine.length) runCompare(); // יש „סניפים שלי” – משווים מיד (אחרי „למה התכוונת?” אם צריך)
   } catch (e) {
     $('#cartPickInfo').textContent = e.message;
     $('#cartPickInfo').className = 'note-warn';
@@ -1013,7 +1074,7 @@ $('#storesClose').addEventListener('click', () => $('#storesDlg').close());
 
 $('#cartClose').addEventListener('click', () => $('#cartDlg').close());
 $('#cartBack').addEventListener('click', () => { $('#cartResult').hidden = true; $('#cartPick').hidden = false; });
-$('#cartGo').addEventListener('click', runCompare);
+$('#cartGo').addEventListener('click', () => runCompare());
 // סניף אונליין: מהבחירה (בלי מרחק) או לפי השם
 const isOnlineStore = (s) => cartStores.some((x) => storeKey(x) === storeKey(s) && x.km == null) || /online|אונליין|אינטרנט/i.test(s.name || '');
 function renderCart(r) {
@@ -1080,7 +1141,7 @@ function renderCart(r) {
       if (cheapest) cell.className = 'cheapest';
       cell.append(Object.assign(document.createElement('b'), { textContent: `${cheapest ? '✓ ' : ''}${l.promo ? '🏷️ ' : ''}${money(l.price)}`, className: cheapest ? 'cheap' : '' }));
       // ≈ – המוצר שמשווים לא נמכר בסניף הזה, מוצג מוצר דומה; 📌 – מוצר שנבחר ידנית
-      cell.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: `${l.similar ? '≈ ' : l.pinned ? '📌 ' : ''}${l.name}` }));
+      cell.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: `${l.similar ? '≈ ' : l.pinned ? '📌 ' : l.any ? '🔀 ' : ''}${l.name}` }));
       cell.title = l.similar ? t('≈ המוצר שמשווים לא נמכר כאן – מוצג מוצר דומה: {name}', { name: l.name }) : l.name;
       cell.classList.add('pickable');
       cell.addEventListener('click', () => pinProduct(item, l));
@@ -1088,7 +1149,7 @@ function renderCart(r) {
     })]);
   });
   $('#cartTable').replaceChildren(head, ...rows);
-  $('#cartLegend').hidden = !r.stores.some((s) => s.lines?.some((l) => l.similar || l.pinned));
+  $('#cartLegend').hidden = !r.stores.some((s) => s.lines?.some((l) => l.similar || l.pinned || l.any));
   syncTopScroll();
 }
 
@@ -1101,7 +1162,7 @@ async function pinProduct(item, l) {
   if (!confirm(q)) return;
   try {
     await api('PUT', '/api/pins', { text: item, code: unpin ? '' : l.code });
-    runCompare();
+    runCompare({ resolve: false });
   } catch (e) { alert(e.message); }
 }
 
@@ -1283,7 +1344,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.10.25c';
+const APP_VERSION = '2026.10.25d';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });

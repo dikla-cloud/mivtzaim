@@ -6,6 +6,7 @@ const d = (n) => new Date(Date.now() + n * day).toISOString().slice(0, 10);
 const prices = (n) => `<?xml version="1.0" encoding="utf-8"?>
 <root><ChainId>7290000000000</ChainId><Items>
 <Item><ItemCode>7290004131074</ItemCode><ItemName>חלב טרי 3% בקרטון 1 ליטר תנובה</ItemName><ItemPrice>${((7.12) * (0.94 + 0.04 * n)).toFixed(2)}</ItemPrice></Item>
+<Item><ItemCode>7290004131081</ItemCode><ItemName>חלב טרי 1% בקרטון 1 ליטר תנובה</ItemName><ItemPrice>${((6.80) * (0.94 + 0.04 * n)).toFixed(2)}</ItemPrice></Item>
 <Item><ItemCode>7290000066318</ItemCode><ItemName>קוטג' 5% תנובה 250 גרם</ItemName><ItemPrice>${((6.90) * (0.94 + 0.04 * n)).toFixed(2)}</ItemPrice></Item>
 <Item><ItemCode>7290011194246</ItemCode><ItemName>במבה אסם 80 גרם</ItemName><ItemPrice>${((5.20) * (0.94 + 0.04 * n)).toFixed(2)}</ItemPrice></Item>
 <Item><ItemCode>7290000072753</ItemCode><ItemName>שמן קנולה 1 ליטר</ItemName><ItemPrice>${((12.90) * (0.94 + 0.04 * n)).toFixed(2)}</ItemPrice></Item>

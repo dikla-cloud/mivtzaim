@@ -482,32 +482,51 @@ app.put('/api/mystores', (req, res) => {
 });
 
 // „תמיד להשוות את המוצר הזה”: ברקוד קבוע לפריט ב„חסר בבית” (משותף לבני הבית). code ריק = ביטול
+// גם כמה בבת אחת: { pins: [{ text, code }] }. code: ברקוד / 'any' / 'auto' / ריק = ביטול
 app.put('/api/pins', (req, res) => {
   const h = db.householdOf(req.user);
-  const key = compare.pinKey(req.body?.text || '');
-  const code = String(req.body?.code || '').trim();
-  if (!key) return res.status(400).json({ error: T(req, 'שגיאה') });
+  const list = Array.isArray(req.body?.pins) ? req.body.pins.slice(0, 100) : [req.body || {}];
   h.pins ||= {};
-  if (/^\d{4,14}$/.test(code)) h.pins[key] = code; else delete h.pins[key];
+  for (const p of list) {
+    const key = compare.pinKey(p?.text || '');
+    const code = String(p?.code || '').trim();
+    if (!key) return res.status(400).json({ error: T(req, 'שגיאה') });
+    if (/^\d{4,14}$/.test(code) || code === 'any' || code === 'auto') h.pins[key] = code; else delete h.pins[key];
+  }
   db.save();
   res.json({ pins: h.pins });
 });
 
-app.post('/api/compare', async (req, res) => {
-  const u = req.user;
+// הסניפים ופריטי „חסר בבית” לבקשת השוואה
+async function compareInput(req, res) {
   const stores = (Array.isArray(req.body?.stores) ? req.body.stores : [])
     .filter((s) => s && typeof s.chain === 'string' && s.storeId != null)
     .slice(0, compare.MAX_STORES)
     .map((s) => ({ chain: s.chain, storeId: String(s.storeId).slice(0, 20), name: String(s.name || '').slice(0, 80) }));
-  if (!stores.length) return res.status(400).json({ error: T(req, 'בחרו לפחות סניף אחד') });
-  let items = db.householdOf(u).home.filter((x) => !x.done).map((x) => x.text);
-  if (!items.length) return res.status(400).json({ error: T(req, 'רשימת ״חסר בבית״ ריקה') });
+  if (!stores.length) return res.status(400).json({ error: T(req, 'בחרו לפחות סניף אחד') }), null;
+  let items = db.householdOf(req.user).home.filter((x) => !x.done).map((x) => x.text);
+  if (!items.length) return res.status(400).json({ error: T(req, 'רשימת ״חסר בבית״ ריקה') }), null;
   // פריטים בערבית: קובצי המחירים בעברית, ולכן מוסיפים את התרגום לעברית לחיפוש
   const arabic = items.filter((t) => translate.sourceLang(t) === 'ar');
   if (arabic.length) {
     const tr = await translate(arabic, 'he', 'IL');
     items = items.map((t) => (tr[t] ? `${t}|${tr[t].term}` : t));
   }
+  return { stores, items };
+}
+
+// „למה התכוונת?” לפני ההשוואה. all: גם פריטים שכבר נבחר להם מוצר
+app.post('/api/compare/options', async (req, res) => {
+  const input = await compareInput(req, res);
+  if (!input) return;
+  res.json(await compare.options(input.items, input.stores, db.householdOf(req.user).pins || {}, { all: Boolean(req.body?.all) }));
+});
+
+app.post('/api/compare', async (req, res) => {
+  const u = req.user;
+  const input = await compareInput(req, res);
+  if (!input) return;
+  const { stores, items } = input;
   u.compareStores = stores;
   metrics.count('compare');
   const result = await compare.compare(items, stores, db.householdOf(u).pins || {});

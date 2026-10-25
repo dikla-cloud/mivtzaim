@@ -50,3 +50,31 @@ test('price file names: Victory StoresFull and the chain code', () => {
   assert.deepEqual(parseName('StoresFull7290696200003-000-202610250200.xml.gz'), { kind: 'stores', code: '7290696200003', store: 0, stamp: '20261025020000' });
   assert.equal(parseName('PriceFull7290696200003-031-202610250200-001.xml.gz').store, 31);
 });
+
+test('cart compare: "what did you mean?" options and pinned choices (barcode / any brand)', async () => {
+  const israel = require('../server/providers/israel');
+  const { options, compare } = require('../server/compare');
+  const xmlItems = (its) => Buffer.from(`<Root><Items>${its.map(([c, n, p]) => `<Item><ItemCode>${c}</ItemCode><ItemName>${n}</ItemName><ItemPrice>${p}</ItemPrice></Item>`).join('')}</Items></Root>`);
+  const files = {
+    1: [['1001', 'טחינה גולמית הר ברכה 500 גרם', 14], ['1002', 'סלט טחינה מוכן 400 גרם', 9]],
+    2: [['1001', 'טחינה גולמית הר ברכה 500 גרם', 15], ['1002', 'סלט טחינה מוכן 400 גרם', 10], ['1003', 'טחינה גולמית פרטי 500 גרם', 11]],
+  };
+  const fake = { id: 'faketest', name: 'בדיקה', stores: async () => [], storeFiles: async (id) => ({ prices: xmlItems(files[id]), promos: Buffer.from('<Root/>') }) };
+  israel.chains.push(fake);
+  try {
+    const stores = [{ chain: 'faketest', storeId: '1' }, { chain: 'faketest', storeId: '2' }];
+    const o = await options(['טחינה', 'אבוקדו'], stores, {});
+    assert.equal(o.items.length, 1);
+    assert.equal(o.items[0].text, 'טחינה');
+    assert.deepEqual(o.items[0].options.map((x) => [x.code, x.n]), [['1002', 2], ['1001', 2], ['1003', 1]]);
+    // כבר נבחר מוצר – לא שואלים שוב (אלא אם מבקשים לשנות)
+    assert.equal((await options(['טחינה'], stores, { 'טחינה': 'auto' })).items.length, 0);
+    assert.equal((await options(['טחינה'], stores, { 'טחינה': '1001' }, { all: true })).items[0].pin, '1001');
+    const pinned = await compare(['טחינה'], stores, { 'טחינה': '1001' });
+    assert.deepEqual(pinned.stores.map((s) => s.lines[0].price), [14, 15]);
+    const any = await compare(['טחינה'], stores, { 'טחינה': 'any' });
+    assert.deepEqual(any.stores.map((s) => [s.lines[0].code, s.lines[0].any]), [['1002', true], ['1002', true]]);
+  } finally {
+    israel.chains.splice(israel.chains.indexOf(fake), 1);
+  }
+});
