@@ -58,7 +58,7 @@ function parseStores(html) {
   const seen = new Set();
   return found.map((o) => {
     const street = decode(o.address.streetAddress || '').replace(/^.*:\s*/, ''); // ״עברנו לכתובת החדשה: החרט 7…״
-    const city = decode(o.address.addressLocality || '');
+    const city = decode(o.address.addressLocality || '').split(/\s+[-–]\s+/)[0]; // „תל אביב - טופ דן” ← „תל אביב”
     return {
       storeId: decode(o.name).replace(/^ניצת הדובדבן\s*-\s*/, '') || city,
       name: decode(o.name),

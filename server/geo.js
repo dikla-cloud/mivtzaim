@@ -128,11 +128,14 @@ function cleanAddress(a) {
   x = x.split(',')[0].replace(/\s+פינת.*$/, '').replace(/^(רח['׳.]|רחוב)\s*/, '').trim();
   const m = x.match(/^(\d+[א-ת]?)\s+(\D.*)$/);
   if (m) x = `${m[2]} ${m[1]}`;
+  // מה שאחרי מספר הבית הוא תוספת („פנחס רוזן 72 צפון תל אביב” ← „פנחס רוזן 72”)
+  const n = x.match(/^(\D*?\s\d+[א-ת]?)(?:\s|$)/);
+  if (n) x = n[1];
   return x;
 }
 
 // ״סניף״ אינטרנטי (שופרסל ONLINE וכד׳) – אין לו מיקום אמיתי
-const isOnline = (s) => /www\.|online|אונליין|אינטרנט/i.test(`${s.name} ${s.address}`);
+const isOnline = (s) => /www\.|\.co\.il|on[\s-]?line|אונליין|און[\s-]?ליין|אינטרנט|משלוחים|דיגיטל|e-?commerce/i.test(`${s.name} ${s.address}`);
 
 // מיקום סניף. מחזיר גם איך נקבע (לבדיקה): city / address / none
 async function storePosition(s) {

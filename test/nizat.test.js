@@ -80,3 +80,10 @@ test('geo: store addresses cleaned before lookup', () => {
   assert.equal(cleanAddress('צה"ל 71, מרכ'), 'צה"ל 71');
   assert.equal(cleanAddress('רח.המלאכה 2'), 'המלאכה 2');
 });
+
+test('geo: extra words after the house number are dropped', () => {
+  const { cleanAddress } = require('../server/geo');
+  assert.equal(cleanAddress('פנחס רוזן 72 צפון תל אביב'), 'פנחס רוזן 72');
+  assert.equal(cleanAddress('הרב מסעוד אשר פינטו 20'), 'הרב מסעוד אשר פינטו 20');
+  assert.equal(cleanAddress('34 יצחק רבין'), 'יצחק רבין 34');
+});
