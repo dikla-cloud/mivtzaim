@@ -216,14 +216,17 @@ app.post('/api/home', (req, res) => {
   const texts = [].concat(req.body?.items ?? req.body?.text ?? []).map((t) => String(t).trim()).filter(Boolean);
   const list = home(req);
   const duplicates = []; // פריטים שכבר ברשימה – מוחזרים כדי שהאפליקציה תודיע עליהם
+  const added = [];
   for (const text of texts.slice(0, 200)) {
-    const existing = list.find((x) => !x.done && sameItem(x.text, text));
+    const existing = [...list, ...added].find((x) => !x.done && sameItem(x.text, text));
     if (existing) {
       duplicates.push({ text: existing.text, by: existing.by, at: existing.at });
       continue;
     }
-    list.push({ id: crypto.randomUUID(), text, done: false, by: req.user.name, at: new Date().toISOString() });
+    added.push({ id: crypto.randomUUID(), text, done: false, by: req.user.name, at: new Date().toISOString() });
   }
+  // פריט חדש נכנס לראש הרשימה – כדי שרואים מיד שהוא נוסף
+  list.unshift(...added);
   metrics.count('home_add', texts.length - duplicates.length);
   db.save();
   res.json({ ...homeState(req), duplicates });
