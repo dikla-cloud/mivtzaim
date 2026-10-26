@@ -62,6 +62,9 @@ function parsePrices(src) {
       name: first(it, 'itemname', 'itemnm', 'manufactureritemdescription'),
       price: Number(first(it, 'itemprice')) || null,
       manufacturer: first(it, 'manufacturername'),
+      unit: first(it, 'unitqty', 'unitofmeasure'),
+      qty: first(it, 'quantity'),
+      weighted: first(it, 'bisweighted', 'blsweighted') === '1',
     });
   }
   return map;
