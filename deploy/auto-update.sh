@@ -5,18 +5,19 @@
 set -euo pipefail
 APP_DIR=/opt/mivtzaim
 cd "$APP_DIR"
-# השירות רץ כ-root, והתיקייה שייכת למשתמש אחר: בלי זה git מסרב לעבוד („dubious ownership”)
-export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0="$APP_DIR"
+# השירות רץ כ-root, והתיקייה שייכת למשתמש אחר. git של root מסרב לעבוד בה („dubious ownership”),
+# ולכן מריצים את git בשם בעל התיקייה
+OWNER="$(stat -c %U "$APP_DIR/package.json")"
+git() { sudo -H -u "$OWNER" /usr/bin/git -C "$APP_DIR" "$@"; }
 git fetch --quiet origin main
 OLD="$(git rev-parse HEAD)"
 NEW="$(git rev-parse origin/main)"
 [ "$OLD" = "$NEW" ] && exit 0
 
 echo "עדכון: $(git log -1 --format=%s "$NEW")"
-OWNER="$(stat -c %U "$APP_DIR/package.json")"
 deploy() {
-  git reset --hard --quiet "$1"
   chown -R "$OWNER" "$APP_DIR"
+  git reset --hard --quiet "$1"
   # חבילות – רק אם השתנו
   if ! git diff --quiet "$2" "$1" -- package.json package-lock.json 2>/dev/null; then
     sudo -u "$OWNER" npm install --omit=dev --no-audit --no-fund --prefix "$APP_DIR"
