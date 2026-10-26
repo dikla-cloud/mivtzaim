@@ -347,7 +347,7 @@ details.fold[open] > summary::after { transform: rotate(180deg); }
 details.fold > :not(summary) { margin-inline: 16px; }
 details.fold[open] { padding-bottom: 14px; }
 #tab-settings > .card { margin-bottom: 8px; }
-.settings-version { text-align: center; margin: 0 0 8px; }
+.settings-version { text-align: start; margin: -6px 0 12px; }
 .online-note { color: var(--warn); font-weight: 600; margin-top: 2px; }
 .cart-table .cheapest { display: block; background: var(--accent-soft); border-radius: 8px; padding: 4px 6px; margin: -4px -6px; }
 .cart-table .best-cell { display: block; color: var(--accent); }
