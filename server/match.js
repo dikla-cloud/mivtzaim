@@ -16,7 +16,7 @@ const tokens = (s) => normalize(s).split(' ').filter(Boolean);
 // פריט ברשימה מתאים אם כל המילים שלו מופיעות בשם המוצר (כתחילית מילה, גם אחרי ה/ו/ב/ל/מ/ש)
 // אפשר לכתוב כמה חלופות מופרדות ב-| (למשל "חלב 3% | Milch")
 function matches(query, itemName, itemCode) {
-  return String(query).split('|').some((q) => matchOne(q, itemName, itemCode));
+  return String(query).split('|').some((q) => spellings(q).some((v) => matchOne(v, itemName, itemCode)));
 }
 
 function matchOne(query, itemName, itemCode) {
@@ -42,19 +42,27 @@ const SPELLING = [
   ['קישוא', 'קישואים', 'זוקיני'],
   ['חציל', 'חצילים'],
   ['פלפל', 'גמבה'],
+  // קיצורים בשמות המוצרים בקובצי הרשתות
+  ['ללא גלוטן', 'ללג', 'ל.ג', 'נטול גלוטן'],
+  ['ללא סוכר', 'ללס', 'ל.ס'],
+  ['ללא לקטוז', 'ללל', 'נטול לקטוז'],
 ].map((g) => g.map(normalize));
+
+// מה שנכתב, ועוד כתיב אחר של אותו מוצר (״ללא גלוטן״ = ״ללג״)
+function spellings(alt) {
+  const n = normalize(alt);
+  const out = [n];
+  for (const g of SPELLING) {
+    const hit = g.find((w) => ` ${n} `.includes(` ${w} `));
+    if (hit) for (const w of g) if (w !== hit) out.push(` ${n} `.replace(` ${hit} `, ` ${w} `).trim());
+  }
+  return [...new Set(out)];
+}
 
 // חלופות לחיפוש: מה שנכתב (כולל חלופות עם |) ועוד כתיב אחר של אותו מוצר
 function alternatives(text) {
   const out = [];
-  for (const alt of String(text).split('|').map((x) => x.trim()).filter((x) => x && !/^\d+$/.test(x))) {
-    const n = normalize(alt);
-    out.push(n);
-    for (const g of SPELLING) {
-      const hit = g.find((w) => ` ${n} `.includes(` ${w} `));
-      if (hit) for (const w of g) if (w !== hit) out.push(` ${n} `.replace(` ${hit} `, ` ${w} `).trim());
-    }
-  }
+  for (const alt of String(text).split('|').map((x) => x.trim()).filter((x) => x && !/^\d+$/.test(x))) out.push(...spellings(alt));
   return [...new Set(out)];
 }
 

@@ -161,3 +161,13 @@ test('cart compare: coupon placeholder items are not real products', async () =>
     israel.chains.splice(israel.chains.indexOf(fake), 1);
   }
 });
+
+test('abbreviations: ללג = ללא גלוטן (deals and cart)', () => {
+  const { matches } = require('../server/match');
+  const { candidates } = require('../server/compare');
+  assert.ok(matches('לחם ללא גלוטן', 'לחם ללג אחיד 500 גר'));
+  assert.ok(matches('פסטה ללג', 'פסטה ללא גלוטן 400 גרם'));
+  assert.ok(matches('עוגיות ללא גלוטן', 'עוגיות ל.ג שוקולד'));
+  const its = [item('41', 'לחם ללג אחיד', 20), item('42', 'לחם אחיד פרוס', 8)];
+  assert.deepEqual([...candidates('לחם ללא גלוטן', { items: its }).keys()], ['41']);
+});
