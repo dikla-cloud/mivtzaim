@@ -10,8 +10,24 @@ const parser = new XMLParser({
   transformTagName: (t) => t.toLowerCase(),
 });
 
+// קובץ ZIP (״PK״): הקובץ הראשון שבתוכו. בלי ספרייה – כותרת הקובץ המקומית ואחריה הנתונים (deflate או בלי דחיסה)
+function unzipFirst(buf) {
+  if (buf.readUInt32LE(0) !== 0x04034b50) return null;
+  const method = buf.readUInt16LE(8);
+  let size = buf.readUInt32LE(18);
+  const start = 30 + buf.readUInt16LE(26) + buf.readUInt16LE(28);
+  // גודל 0 = הגודל רשום רק בסוף (data descriptor) – לוקחים עד סוף הנתונים ומשאירים לזרם הדחוס לעצור לבד
+  if (!size) size = buf.length - start;
+  const data = buf.subarray(start, start + size);
+  if (method === 0) return data;
+  if (method === 8) return zlib.inflateRawSync(data, { finishFlush: zlib.constants.Z_SYNC_FLUSH });
+  throw new Error(`ZIP בשיטת דחיסה לא נתמכת (${method})`);
+}
+
 function decode(buf) {
   if (buf[0] === 0x1f && buf[1] === 0x8b) buf = zlib.gunzipSync(buf);
+  else if (buf[0] === 0x50 && buf[1] === 0x4b) buf = unzipFirst(buf) || buf; // ZIP
+  else if (buf[0] === 0x78 && [0x01, 0x5e, 0x9c, 0xda].includes(buf[1])) buf = zlib.inflateSync(buf); // zlib
   // חלק מהרשתות שומרות ב-UTF-16
   if (buf[0] === 0xff && buf[1] === 0xfe) return buf.toString('utf16le').replace(/^﻿/, '');
   return buf.toString('utf8').replace(/^﻿/, '');

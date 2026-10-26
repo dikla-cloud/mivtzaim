@@ -59,7 +59,10 @@ const MAX_LINES = 15;
     // קובץ שלא נקרא ממנו אף מוצר – מציגים את תחילתו, כדי לראות את המבנה שלו
     if (!prices.size) {
       const text = xml.decode(raw);
-      console.log(`  גודל הקובץ: ${raw.length} בתים. תחילת הקובץ:\n${text.slice(0, 1500)}`);
+      const bytes = [...raw.subarray(0, 16)].map((b) => b.toString(16).padStart(2, '0')).join(' ');
+      // רק תווים קריאים, כדי שאפשר יהיה להעתיק מהמסוף
+      const readable = text.slice(0, 1500).replace(/[^\x20-\x7E\u0590-\u05FF\n]/g, '?');
+      console.log(`  גודל הקובץ: ${raw.length} בתים. הבתים הראשונים: ${bytes}\n  תחילת הקובץ:\n${readable}`);
       continue;
     }
     for (const w of words) {
