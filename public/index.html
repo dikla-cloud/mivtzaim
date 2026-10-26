@@ -190,7 +190,22 @@
         <p id="cartSummary" class="small"></p>
         <div id="cartCards" class="cart-cards"></div>
         <p class="muted small">👆 לחיצה על מוצר בטבלה – להשוות תמיד את המוצר הזה (אותו ברקוד בכל הסניפים).</p>
-        <p id="cartLegend" class="muted small" hidden>* מחיר משוער (המוצר לא נמכר בסניף) · ≈ מוצר דומה · 📌 מוצר שבחרתם · 🔀 הכי זול מכל מותג · 🏷️ מבצע</p>
+        <details class="legend" open>
+          <summary>מקרא</summary>
+          <ul class="legend-list">
+            <li><b>🏆</b> הסניף שבו כל העגלה הכי זולה</li>
+            <li><b>✓</b> הסניף שבו הפריט הכי זול</li>
+            <li><b>🏷️</b> מחיר מבצע</li>
+            <li><b>🎫</b> מבצע לחברי מועדון</li>
+            <li><b>💡</b> יש מבצע כמות – כדאי להגדיל כמות</li>
+            <li><b>*</b> מחיר משוער – המוצר לא נמכר בסניף</li>
+            <li><b>≈</b> המוצר לא נמכר בסניף – יש רק מוצר דומה</li>
+            <li><b>📌</b> מוצר שבחרתם להשוואה</li>
+            <li><b>🔀</b> הכי זול מכל מותג</li>
+            <li><b>🚚</b> דמי משלוח (אונליין)</li>
+            <li><b>—</b> לא נמצא באף סניף</li>
+          </ul>
+        </details>
         <div class="top-scroll-bar" hidden>
           <button id="cartScrollRight" class="icon-btn" type="button" aria-label="ימינה">▶</button>
           <div id="cartTopScroll" class="top-scroll"><div></div></div>
@@ -258,7 +273,7 @@
         </details>
       </div>
       <div class="card" id="statsCard" hidden>
-        <h3>📊 נתוני שימוש</h3>
+        <h3>📊 נתוני שימוש למנהלים</h3>
         <p class="muted small">מספרים מצטברים בלבד. לא נשמר מי לחץ על מה, מה כתוב ברשימות או איפה כל אחד נמצא. רק את/ה (המנהל) רואה את המסך הזה.</p>
         <div id="kpis" class="kpis"></div>
         <h4>משתמשים פעילים בכל יום (30 ימים)</h4>
@@ -271,9 +286,20 @@
         </div>
       </div>
       <div class="card" id="familyCard" hidden>
-        <h3>בני הבית</h3>
+        <h3>👥 בני הבית ומשתמשים</h3>
+        <h4>🏠 בני הבית שלי</h4>
         <p class="muted small">כל מי שנמצא במשק הבית שלך רואה ומעדכן את אותה רשימת ״חסר בבית״. הרשימה לחיפוש מבצעים, המיקום וההתראות נשארים אישיים לכל אחד.</p>
-        <ul id="family"></ul>
+        <ul id="family" class="userlist"></ul>
+        <div id="invitedBox" hidden>
+          <h4>✉️ משתמשים שהזמנתי (משק בית אחר)</h4>
+          <p class="muted small">יש להם רשימות משלהם. מטעמי פרטיות לא רואים כאן את הרשימות, המיקום או המייל שלהם – רק אם כבר נכנסו לאפליקציה.</p>
+          <ul id="invited" class="userlist"></ul>
+        </div>
+        <details id="othersBox" class="others-box" hidden>
+          <summary id="othersSum"></summary>
+          <p class="muted small">משתמשים שהוזמנו על ידי משתמשים אחרים. רואים רק את השם ואת תאריך ההצטרפות.</p>
+          <ul id="others" class="userlist"></ul>
+        </details>
         <div id="limitsBox" hidden>
           <h4>הגבלות הזמנה</h4>
           <label class="toggle"><input type="checkbox" id="membersCanInvite"> גם משתמשים רגילים יכולים להזמין אנשים נוספים</label>
@@ -309,13 +335,18 @@
         </div>
       </div>
       <div class="card il-only">
-        <h3>🏪 הסניפים שלי</h3>
+        <h3>רשתות בישראל</h3>
+        <p class="muted small">בחו"ל נתמכות כרגע אוסטריה וגרמניה (כל הרשתות הגדולות, לפי עלוני המבצעים) ואוסטרליה (Coles,‏ Woolworths,‏ ALDI ועוד).</p>
+        <div id="chains"></div>
+      </div>
+      <div class="card il-only">
+        <h3>🏪 סניפים לבדיקה והשוואה</h3>
         <p id="myStoresInfo" class="muted small"></p>
         <div class="row"><button id="myStoresBtn" class="primary">בחירת סניפים לבדיקת מבצעים</button></div>
         <p class="muted small">אפשר לבחור עד 12 סניפים מכל הרשתות באזור. השוואת מחיר העגלה תיעשה בסניפים האלה.</p>
       </div>
       <div class="card">
-        <h3>מיקום</h3>
+        <h3>מיקום ורדיוס חיפוש</h3>
         <p id="loc" class="muted"></p>
         <div class="row"><button id="gps" class="primary">📍 עדכון לפי המיקום הנוכחי</button></div>
         <p class="muted small">המיקום מתעדכן כשלוחצים על ״עדכון מיקום״ (גם בראש המסך). מגיעים למקום חדש? לוחצים פעם אחת.</p>
@@ -334,11 +365,6 @@
           <button id="enablePush" class="primary">הפעלת התראות במכשיר הזה</button>
           <button id="testPush">שליחת התראת בדיקה</button>
         </div>
-      </div>
-      <div class="card il-only">
-        <h3>רשתות בישראל</h3>
-        <p class="muted small">בחו"ל נתמכות כרגע אוסטריה וגרמניה (כל הרשתות הגדולות, לפי עלוני המבצעים) ואוסטרליה (Coles,‏ Woolworths,‏ ALDI ועוד).</p>
-        <div id="chains"></div>
       </div>
       <div class="card">
         <h3>התקנה בטלפון</h3>
@@ -402,7 +428,7 @@
 
   <dialog id="storesDlg">
     <div class="sheet-head">
-      <h3>🏪 הסניפים שלי</h3>
+      <h3>🏪 סניפים לבדיקה והשוואה</h3>
       <button type="button" id="storesClose" class="sheet-x" aria-label="סגירה">✕</button>
     </div>
     <p class="muted small">סמנו את הסניפים שבהם תרצו לבדוק מבצעים. בלי בחירה – נבדקים 3 הסניפים הקרובים מכל רשת.</p>

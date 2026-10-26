@@ -69,6 +69,12 @@ function get() {
       for (const u of Object.values(db.users)) if (Array.isArray(u.chains) && !u.chains.includes('victory')) u.chains.push('victory');
       db.chainsVictory = true;
     }
+    // מי הזמין כל משתמש: למשתמשים מלפני השינוי – המנהל
+    if (!db.invitedByV1) {
+      const admin = Object.values(db.users).find((u) => u.admin);
+      if (admin) for (const u of Object.values(db.users)) if (!u.admin && !u.invitedBy) u.invitedBy = admin.name;
+      db.invitedByV1 = true;
+    }
     if (!db.chainsHashuk) {
       for (const u of Object.values(db.users)) if (Array.isArray(u.chains) && !u.chains.includes('hashuk')) u.chains.push('hashuk');
       db.chainsHashuk = true;

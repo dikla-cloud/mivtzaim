@@ -133,13 +133,27 @@ app.use('/api', (req, res, next) => {
 
 const adminOnly = (req, res, next) => (req.user.admin ? next() : res.status(403).json({ error: T(req, 'רק למנהל החשבון') }));
 
-const userInfo = (x) => ({ name: x.name, admin: x.admin, household: x.household, lastScan: x.lastScan, location: x.location?.label || null });
+// פרטיות: על בני משק הבית שלי – שם, ואם כבר נכנסו (ולמנהל גם המייל, כדי להשלים מייל חסר).
+// על משתמשים אחרים (רק המנהל רואה אותם) – רק שם, מתי הצטרפו, אם נכנסו ואם יש להם מייל. בלי מיקום ובלי כתובת המייל.
+function userInfo(x, u) {
+  const mine = x.household === u.household;
+  return {
+    name: x.name,
+    admin: x.admin,
+    household: x.household,
+    active: Boolean(x.location || x.lastScan),
+    joinedAt: x.joinedAt || null,
+    invitedByMe: x.invitedBy === u.name,
+    hasEmail: Boolean(x.email),
+    ...(mine && u.admin ? { email: x.email || '' } : {}),
+  };
+}
 
 const state = (u) => ({
   me: { name: u.name, admin: u.admin, household: db.householdOf(u).id, email: u.email || '' },
   emailLogin: mail.configured(),
-  // המנהל רואה את כל המשתמשים (גם את המייל, כדי להשלים מיילים חסרים); כל אחד אחר – את בני משק הבית שלו
-  users: db.users().filter((x) => u.admin || x.household === u.household).map((x) => ({ ...userInfo(x), ...(u.admin ? { email: x.email || '' } : {}) })),
+  // המנהל רואה את כל המשתמשים (בפרטים מצומצמים – ראו userInfo); כל אחד אחר – את בני משק הבית שלו
+  users: db.users().filter((x) => u.admin || x.household === u.household).map((x) => userInfo(x, u)),
   home: db.householdOf(u).home,
   limits: { ...db.get().limits, count: db.users().length },
   needTerms: u.termsVersion !== TERMS_VERSION,
@@ -193,6 +207,8 @@ app.post('/api/users', (req, res) => {
     ...(password ? { pass: auth.hashPassword(password) } : {}),
     household: req.user.admin && newHousehold ? null : db.householdOf(req.user).id,
     ...(email ? { email: email.trim() } : {}),
+    invitedBy: req.user.name,
+    joinedAt: new Date().toISOString(),
   });
   metrics.count('signup');
   db.save();

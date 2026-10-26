@@ -311,32 +311,53 @@ function renderFamily() {
   $('#shareHousehold').disabled = !S.me.admin;
   if (!S.me.admin) { $('#shareHousehold').checked = true; $('#newHousehold').checked = false; }
   $('#appUrl').textContent = location.origin;
-  $('#family').replaceChildren(...S.users.map((u) => {
+  // שלוש קבוצות: בני הבית שלי · משתמשים שהזמנתי (משק בית אחר) · (למנהל) כל השאר – בפרטים מצומצמים
+  const mineHh = S.users.filter((u) => u.household === S.me.household);
+  const invited = S.users.filter((u) => u.household !== S.me.household && u.invitedByMe);
+  const others = S.users.filter((u) => u.household !== S.me.household && !u.invitedByMe);
+  $('#family').replaceChildren(...mineHh.map((u) => userRow(u, 'home')));
+  $('#invitedBox').hidden = !invited.length;
+  $('#invited').replaceChildren(...invited.map((u) => userRow(u, 'invited')));
+  $('#othersBox').hidden = !others.length;
+  $('#othersSum').textContent = t('👥 משתמשים אחרים באפליקציה ({n})', { n: others.length });
+  $('#others').replaceChildren(...others.map((u) => userRow(u, 'other')));
+}
+
+// kind: home (בן בית) · invited (הזמנתי, משק בית אחר) · other (משתמש אחר – למנהל, רק שם ותאריך)
+function userRow(u, kind) {
+  {
     const li = document.createElement('li');
     const who = Object.assign(document.createElement('span'), { className: 'who' });
     who.append(Object.assign(document.createElement('b'), { textContent: u.name }));
-    who.append(Object.assign(document.createElement('span'), {
-      className: 'muted small',
-      textContent: ` ${t(u.household === S.me.household ? '· 🏠 משק הבית שלך' : '· משק בית אחר')}${u.admin ? t(' · מנהל') : ''}${u.location ? ` · 📍 ${u.location}` : t(' · עוד לא נכנס')}${S.me.admin ? ` · ${u.email ? `📧 ${u.email}` : t('📧 אין מייל')}` : ''}`,
-    }));
+    const joined = u.joinedAt ? t('הצטרף/ה ב-{date}', { date: new Date(u.joinedAt).toLocaleDateString(LOCALE) }) : '';
+    const bits = [
+      u.admin ? t('מנהל') : '',
+      kind === 'other' ? joined : u.active ? t('✔ נכנס/ה לאפליקציה') : t('עוד לא נכנס/ה'),
+      kind === 'home' && S.me.admin ? (u.email ? `📧 ${u.email}` : t('📧 אין מייל')) : '',
+      kind === 'invited' ? (u.hasEmail ? t('📧 יש מייל') : t('📧 אין מייל')) : '',
+      kind === 'invited' ? joined : '',
+    ].filter(Boolean);
+    who.append(Object.assign(document.createElement('span'), { className: 'muted small', textContent: ` · ${bits.join(' · ')}` }));
     li.append(who);
-    if (!S.me.admin) return li; // ניהול סיסמאות ומחיקה – למנהל בלבד
-    const emailBtn = Object.assign(document.createElement('button'), { textContent: t('📧 מייל') });
-    emailBtn.addEventListener('click', async () => {
-      const e = prompt(t('המייל של {name} (איתו הוא נכנס לאפליקציה):', { name: u.name }), u.email || '');
-      if (!e) return;
-      try { S = await api('PUT', `/api/users/${encodeURIComponent(u.name)}/email`, { email: e.trim() }); render(); } catch (ex) { alert(ex.message); }
-    });
-    const reset = Object.assign(document.createElement('button'), { textContent: t('סיסמה חדשה') });
-    reset.addEventListener('click', async () => {
-      const p = prompt(t('סיסמה חדשה עבור {name} (לפחות 6 תווים):', { name: u.name }));
-      if (!p) return;
-      try { S = await api('PUT', `/api/users/${encodeURIComponent(u.name)}/password`, { password: p }); render(); toast(t('הסיסמה של {name} עודכנה', { name: u.name })); } catch (e) { alert(e.message); }
-    });
+    if (!S.me.admin || u.name === S.me.name && kind !== 'home') return li; // ניהול – למנהל בלבד
     const acts = Object.assign(document.createElement('span'), { className: 'acts' });
-    acts.append(S.emailLogin ? emailBtn : reset);
-    if (u.name !== S.me.name) {
-      const mine = u.household === S.me.household;
+    if (kind !== 'other') {
+      const emailBtn = Object.assign(document.createElement('button'), { textContent: t('📧 מייל') });
+      emailBtn.addEventListener('click', async () => {
+        const e = prompt(t('המייל של {name} (איתו הוא נכנס לאפליקציה):', { name: u.name }), u.email || '');
+        if (!e) return;
+        try { S = await api('PUT', `/api/users/${encodeURIComponent(u.name)}/email`, { email: e.trim() }); render(); } catch (ex) { alert(ex.message); }
+      });
+      const reset = Object.assign(document.createElement('button'), { textContent: t('סיסמה חדשה') });
+      reset.addEventListener('click', async () => {
+        const p = prompt(t('סיסמה חדשה עבור {name} (לפחות 6 תווים):', { name: u.name }));
+        if (!p) return;
+        try { S = await api('PUT', `/api/users/${encodeURIComponent(u.name)}/password`, { password: p }); render(); toast(t('הסיסמה של {name} עודכנה', { name: u.name })); } catch (e) { alert(e.message); }
+      });
+      acts.append(S.emailLogin ? emailBtn : reset);
+    }
+    if (u.name !== S.me.name && kind !== 'other') {
+      const mine = kind === 'home';
       const hh = Object.assign(document.createElement('button'), { textContent: t(mine ? 'הפרדה ממשק הבית שלי' : 'צירוף למשק הבית שלי') });
       hh.addEventListener('click', async () => {
         const q = t(mine
@@ -347,7 +368,6 @@ function renderFamily() {
       });
       acts.append(hh);
     }
-    li.append(acts);
     if (u.name !== S.me.name) {
       const del = Object.assign(document.createElement('button'), { textContent: t('מחיקה') });
       del.addEventListener('click', async () => {
@@ -356,8 +376,9 @@ function renderFamily() {
       });
       acts.append(del);
     }
+    li.append(acts);
     return li;
-  }));
+  }
 }
 
 $('#membersCanInvite').addEventListener('change', async (e) => { S = await api('PUT', '/api/limits', { membersCanInvite: e.target.checked }); render(); });
@@ -990,8 +1011,8 @@ function renderCartPick() {
   storeList($('#cartStores'), cartStores, cartSel, cartMax, (sel) => { cartSel = sel; renderCartPick(); renderClubs(); }, { rowExtra: shippingField });
 }
 // אונליין: שדה „דמי משלוח” ליד הסניף (נשמר לכל משתמש)
-function shippingField(s, on) {
-  if (s.km != null || !on) return null;
+function shippingField(s, on, after = null) {
+  if (!on || (s.km != null && !after)) return null;
   const wrap = document.createElement('label');
   wrap.className = 'ship-field small';
   const key = storeKey(s);
@@ -1000,6 +1021,7 @@ function shippingField(s, on) {
     try {
       S = await api('PUT', '/api/settings', { shipping: { [key]: Number(inp.value) || 0 } });
       toast(Number(inp.value) > 0 ? t('דמי המשלוח נשמרו ✔') : t('דמי המשלוח נמחקו'));
+      if (after) after();
     } catch (e) { toast(e.message); }
   });
   wrap.append(t('🚚 דמי משלוח שלי (₪):'), inp);
@@ -1034,7 +1056,10 @@ function renderCartItems() {
   const items = cartOpen();
   $('#cartItemsEmpty').hidden = items.length > 0;
   $('#cartGo').disabled = !cartSel.length || !items.length;
-  $('#cartItems').replaceChildren(...items.map((it) => {
+  const head = document.createElement('li');
+  head.className = 'cart-item ci-head';
+  head.append(Object.assign(document.createElement('span'), { textContent: t('פריט') }), Object.assign(document.createElement('span'), { textContent: t('כמות') }));
+  $('#cartItems').replaceChildren(...(items.length ? [head] : []), ...items.map((it) => {
     const li = document.createElement('li');
     li.className = 'cart-item';
     const name = document.createElement('div');
@@ -1053,18 +1078,17 @@ function renderCartItems() {
       try { Object.assign(S, await api('PATCH', `/api/home/${it.id}`, body)); } catch (e) { toast(e.message); }
       renderCartItems();
     };
-    if (byKg) {
-      const kg = Object.assign(document.createElement('input'), { type: 'number', min: 0.05, max: 50, step: 0.05, inputMode: 'decimal', value: it.kg ?? 0.5, ariaLabel: t('ק"ג') });
-      kg.addEventListener('change', () => save({ kg: Number(kg.value) || null, qty: null }));
-      amount.append(kg, Object.assign(document.createElement('span'), { textContent: t('ק"ג') }));
-    } else {
-      const qty = it.qty || 1;
-      const minus = Object.assign(document.createElement('button'), { type: 'button', className: 'step', textContent: '−', disabled: qty <= 1, ariaLabel: t('פחות') });
-      const plus = Object.assign(document.createElement('button'), { type: 'button', className: 'step', textContent: '+', disabled: qty >= 99, ariaLabel: t('עוד') });
-      minus.addEventListener('click', () => save({ qty: qty - 1 }));
-      plus.addEventListener('click', () => save({ qty: qty + 1 }));
-      amount.append(minus, Object.assign(document.createElement('b'), { className: 'qty', textContent: `×${qty}` }), plus);
-    }
+    // − ו-+: יחידה אחת, או חצי ק"ג במוצר לפי משקל
+    const cur = byKg ? it.kg : it.qty || 1;
+    const step = byKg ? 0.5 : 1;
+    const min = byKg ? 0.5 : 1;
+    const max = byKg ? 50 : 99;
+    const setTo = (v) => save(byKg ? { kg: v, qty: null } : { qty: v });
+    const minus = Object.assign(document.createElement('button'), { type: 'button', className: 'step', textContent: '−', disabled: cur <= min, ariaLabel: t('פחות') });
+    const plus = Object.assign(document.createElement('button'), { type: 'button', className: 'step', textContent: '+', disabled: cur >= max, ariaLabel: t('עוד') });
+    minus.addEventListener('click', () => setTo(Math.max(min, Math.round((cur - step) * 2) / 2)));
+    plus.addEventListener('click', () => setTo(Math.min(max, Math.round((cur + step) * 2) / 2)));
+    amount.append(minus, Object.assign(document.createElement('b'), { className: 'qty', textContent: byKg ? t('{kg} ק"ג', { kg: cur }) : String(cur) }), plus);
     const unit = Object.assign(document.createElement('button'), { type: 'button', className: 'linkish small', textContent: byKg ? t('לפי יחידות') : t('⚖️ לפי משקל') });
     unit.addEventListener('click', () => {
       if (byKg) save({ kg: null });
@@ -1294,7 +1318,12 @@ function renderCart(r) {
     if (s.estimated) parts.push(t('{n} במחיר משוער *', { n: s.estimated }));
     c.append(Object.assign(document.createElement('div'), { className: 'muted small', textContent: parts.join(' · ') }));
     if (s.shipping) c.append(Object.assign(document.createElement('div'), { className: 'small', textContent: t('🚚 כולל משלוח {fee} (מוצרים: {items})', { fee: money(s.shipping), items: money(s.itemsTotal) }) }));
-    else if (isOnlineStore(s)) c.append(Object.assign(document.createElement('div'), { className: 'online-note small', textContent: t('🛒 לא כולל דמי משלוח – אפשר להזין אותם ליד הסניף ב״סניפים להשוואה״') }));
+    else if (isOnlineStore(s)) c.append(Object.assign(document.createElement('div'), { className: 'online-note small', textContent: t('🛒 לא כולל דמי משלוח') }));
+    // אונליין: הוספה/שינוי של דמי המשלוח ישירות מכאן – וההשוואה מתעדכנת
+    if (isOnlineStore(s) || s.shipping) {
+      const f = shippingField(s, true, () => runCompare({ resolve: false }));
+      if (f) c.append(f);
+    }
     if (best && ok.length > 1) c.prepend(Object.assign(document.createElement('span'), { className: 'badge best-badge', textContent: t('🏆 הכי זול') }));
     return c;
   });
@@ -1361,7 +1390,6 @@ function renderCart(r) {
     })]);
   });
   $('#cartTable').replaceChildren(head, ...rows);
-  $('#cartLegend').hidden = !ok.some((s) => s.lines.some((l) => l.similar || l.pinned || l.any || l.estimated));
   syncTopScroll();
   renderCartItems();
   $('#cartResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1558,7 +1586,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.10.26b';
+const APP_VERSION = '2026.10.26c';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });

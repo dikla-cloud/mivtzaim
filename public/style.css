@@ -81,11 +81,11 @@ label > input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type
 form > button { margin-top: 8px; }
 .error { color: #b91c1c; }
 @media (prefers-color-scheme: dark) { .error { color: #fca5a5; } }
-#family { list-style: none; padding: 0; margin: 8px 0; }
-#family li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-#family li .who { flex: 1; min-width: 0; }
-#family li .acts { display: flex; gap: 6px; }
-#family li button { padding: 6px 10px; font-size: .9rem; }
+.userlist { list-style: none; padding: 0; margin: 8px 0; }
+.userlist li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.userlist li .who { flex: 1; min-width: 0; }
+.userlist li .acts { display: flex; gap: 6px; }
+.userlist li button { padding: 6px 10px; font-size: .9rem; }
 
 .food { font-size: 1.5rem; line-height: 1; width: 2rem; text-align: center; flex: none; }
 .hero { text-align: center; margin: 0 0 8px; }
@@ -135,7 +135,7 @@ form > button { margin-top: 8px; }
 .onsale { color: var(--warn); font-weight: 600; }
 .mini { flex: none; border: 0; background: none; padding: 6px; font-size: 1rem; color: var(--muted); }
 nav button { font-size: .95rem; line-height: 1.25; }
-#family li .acts { flex-wrap: wrap; }
+.userlist li .acts { flex-wrap: wrap; }
 
 .voice-row { margin-top: 0; }
 .voice-row button { padding: 8px 12px; }
@@ -419,3 +419,16 @@ nav button.tab-home:not([aria-selected="true"]) { box-shadow: 0 0 0 1px #e3a0085
 .cart-item button.linkish { margin: 0; display: inline; }
 .resolve-item button.linkish { margin: 4px 0 0; }
 dialog:focus, dialog:focus-visible { outline: none; }
+#familyCard h4 { margin: 14px 0 2px; font-size: 1rem; }
+.userlist { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.userlist li:last-child { border-bottom: 0; }
+.userlist:empty { display: none; }
+.others-box { margin-top: 14px; }
+.others-box summary { cursor: pointer; font-weight: 600; color: var(--text); }
+.ci-head { font-size: .8rem; font-weight: 700; color: var(--muted); padding: 0 0 4px; }
+.ci-head span:last-child { min-width: 150px; text-align: center; }
+.cart-card .ship-field { margin: 8px 0 0; }
+.legend { margin: 8px 0; font-size: .85rem; }
+.legend summary { cursor: pointer; font-weight: 700; color: var(--text); }
+.legend-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2px 12px; color: var(--muted); }
+.legend-list b { display: inline-block; min-width: 1.6em; text-align: center; color: var(--text); }
