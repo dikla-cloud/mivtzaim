@@ -71,7 +71,7 @@ details { margin-top: 16px; font-size: .9rem; color: var(--muted); }
   background: var(--text); color: var(--bg); padding: 12px 16px; border-radius: 12px; z-index: 5; box-shadow: 0 4px 16px rgb(0 0 0 / .2);
 }
 
-body.logged-out header, body.logged-out nav, body.logged-out main { display: none; }
+body.logged-out header, body.logged-out #stickyTop, body.logged-out main { display: none; }
 body:not(.logged-out) #login { display: none; }
 #login { max-width: 420px; margin: 0 auto; padding: calc(32px + env(safe-area-inset-top)) 16px; }
 #login h1 { margin-bottom: 4px; }
@@ -386,3 +386,36 @@ details.store-group > .cart-store { margin: 0 8px 6px; }
 .resolve-opt small { display: block; }
 .resolve-quiet { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
 .resolve-quiet[hidden] { display: none; }
+
+/* תמיד רואים את הסרגל העליון והלשוניות – וברור באיזה מסך נמצאים */
+#stickyTop { position: sticky; top: 0; z-index: 5; background: var(--bg); padding-top: calc(10px + env(safe-area-inset-top)); box-shadow: 0 2px 6px rgb(0 0 0 / .08); }
+#stickyTop > .topbar { max-width: 720px; margin: auto; padding: 0 16px; }
+#stickyTop > nav { position: static; margin-top: 8px; }
+header { padding: 8px 16px 4px; }
+nav button { font-size: .88rem; padding: 8px 4px; }
+.page-title { margin: 0 0 8px; font-size: 1.25rem; }
+/* „חסר בבית” – מסגרת כורכום בולטת */
+nav button.tab-home, nav button.tab-home[aria-selected="true"], nav button.tab-home:hover { border: 3px solid #e3a008; }
+nav button.tab-home:not([aria-selected="true"]) { box-shadow: 0 0 0 1px #e3a00855, 0 2px 6px #e3a00840; }
+
+/* מסך השוואת עגלות */
+.cart-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.cart-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.cart-item:last-child { border-bottom: 0; }
+.ci-name { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; flex: 1 1 180px; }
+.ci-pick { font-size: .85rem; text-align: start; padding: 2px 0; }
+.ci-amount { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ci-amount .step { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 1.1rem; line-height: 1; }
+.ci-amount .qty { min-width: 2.2em; text-align: center; }
+.ci-amount input { width: 80px; padding: 6px 8px; }
+.ship-field { display: flex; align-items: center; gap: 8px; margin: -2px 8px 8px; padding: 6px 12px; background: var(--accent-soft); border-radius: 10px; }
+.ship-field input { width: 90px; padding: 6px 8px; margin: 0; }
+.clubs { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.clubs .toggle { margin: 4px 0; }
+.cart-table .estimated b { font-style: italic; color: var(--muted); }
+.cart-table .deal-note { display: block; color: var(--warn); font-size: .72rem; white-space: normal; max-width: 160px; }
+.loading-note { font-weight: 700; }
+#prodDlg .resolve-list { max-height: 60vh; }
+.cart-item button.linkish { margin: 0; display: inline; }
+.resolve-item button.linkish { margin: 4px 0 0; }
+dialog:focus, dialog:focus-visible { outline: none; }

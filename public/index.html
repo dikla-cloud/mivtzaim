@@ -53,7 +53,7 @@
     </div>
   </section>
 
-  <header>
+  <div id="stickyTop">
     <div class="topbar">
       <div class="brand">
         <button type="button" id="menuBtn" aria-label="תפריט" title="תפריט" aria-haspopup="dialog">
@@ -71,6 +71,14 @@
       </button>
       </div>
     </div>
+    <nav role="tablist">
+      <button role="tab" data-tab="home" class="tab-home">חסר בבית <span id="homeCount" class="count" hidden></span></button>
+      <button role="tab" data-tab="cart" class="il-only">השוואת עגלות</button>
+      <button role="tab" data-tab="list">רשימה לחיפוש מבצעים</button>
+      <button role="tab" data-tab="deals" aria-selected="true">מבצעים</button>
+    </nav>
+  </div>
+  <header>
     <div class="statusrow">
       <p id="status" class="muted"></p>
       <button type="button" id="locBtn" title="עדכון המיקום לפי המקום שבו את/ה נמצא/ת עכשיו">📍 עדכון מיקום</button>
@@ -79,11 +87,6 @@
     <button type="button" id="emailBanner" class="note-warn email-banner" hidden>📧 הוסיפו מייל לחשבון – הכניסה לאפליקציה היא עם קוד שנשלח למייל. לחצו כאן</button>
   </header>
 
-  <nav role="tablist">
-    <button role="tab" data-tab="home">חסר בבית <span id="homeCount" class="count" hidden></span></button>
-    <button role="tab" data-tab="list">רשימה לחיפוש מבצעים</button>
-    <button role="tab" data-tab="deals" aria-selected="true">מבצעים</button>
-  </nav>
 
   <main>
     <section id="tab-deals">
@@ -142,10 +145,60 @@
         <button id="clearDone">🧹 ניקוי פריטים שנקנו</button>
       </div>
       <div class="row il-only">
-        <button id="cartBtn" class="primary">🧮 השוואת מחיר העגלה</button>
+        <button id="cartBtn">🧮 כמה תעלה הרשימה? להשוואת עגלות ‹</button>
       </div>
-      <p id="cartAbroad" class="note-warn small il-only" hidden>השוואת מחיר העגלה עובדת כרגע רק בישראל: רק שם הרשתות מפרסמות מחירון מלא לכל סניף. בחו"ל יש רק עלוני מבצעים, ולכן אי אפשר לחשב את מחיר כל העגלה.</p>
       <p class="muted small">בסופר: לוחצים על פריט כשהוא נכנס לעגלה. ״ניקוי פריטים שנקנו״ משאיר ברשימה רק את מה שעוד לא נקנה. הרשימה לחיפוש מבצעים לא משתנה.</p>
+    </section>
+
+    <section id="tab-cart" hidden>
+      <h2 class="page-title">🧮 השוואת עגלות</h2>
+      <p class="muted small">כמה תעלה רשימת ״חסר בבית״ בכל סניף, לפי קובצי המחירים והמבצעים של הרשתות. בוחרים סניפים, בודקים כמויות ומוצרים – ומשווים.</p>
+      <p id="cartAbroad" class="note-warn small" hidden>השוואת מחיר העגלה עובדת כרגע רק בישראל: רק שם הרשתות מפרסמות מחירון מלא לכל סניף. בחו"ל יש רק עלוני מבצעים, ולכן אי אפשר לחשב את מחיר כל העגלה.</p>
+      <details id="cartStoresBox" class="card fold">
+        <summary>🏪 סניפים להשוואה <small id="cartStoresSum" class="muted"></small></summary>
+        <div id="cartPick">
+          <p id="cartPickInfo" class="small"></p>
+          <p id="cartStoresLoading" class="small loading-note" hidden>⏳ עוד מאתרים סניפים באזור… הרשימה מתעדכנת לבד</p>
+          <div id="cartStores" class="cart-stores"></div>
+          <p class="muted small">🚚 באונליין: אחרי שמסמנים סניף אונליין מופיע שדה לדמי המשלוח שלכם, והם מתווספים לסכום.</p>
+        </div>
+      </details>
+      <details id="cartClubsBox" class="card fold">
+        <summary>🎫 מועדוני לקוחות <small id="cartClubsSum" class="muted"></small></summary>
+        <p class="muted small">סמנו את הרשתות שאתם חברי מועדון שלהן – מבצעי מועדון יחושבו רק בהן. כל עוד לא סימנתם כלום, מבצעי המועדון נחשבים בכל הרשתות.</p>
+        <div id="cartClubs" class="clubs"></div>
+        <p id="cartClubsEmpty" class="muted small" hidden>בחרו קודם סניפים להשוואה.</p>
+        <button type="button" id="cartClubsReset" class="linkish small" hidden>ביטול הסימון – לחשב את כל מבצעי המועדון</button>
+      </details>
+      <div class="card">
+        <h3>🛒 העגלה</h3>
+        <p class="muted small">הפריטים מ״חסר בבית״. אפשר לשנות כמות, ולמוצר במשקל (ירקות, מעדנייה) – כמה ק"ג. ״בחירת מוצר״ – כדי להשוות בדיוק אותו מוצר בכל הסניפים (גם בחיפוש לפי תחילת מילה או בצילום ברקוד).</p>
+        <ul id="cartItems" class="cart-items"></ul>
+        <p id="cartItemsEmpty" class="muted" hidden>רשימת ״חסר בבית״ ריקה – מוסיפים פריטים שם, והם מופיעים כאן.</p>
+      </div>
+      <div class="row"><button id="cartGo" class="primary" disabled>🧮 השוואה</button></div>
+      <div id="cartResolve" hidden>
+        <p class="small"><b>למה התכוונת?</b> כדי שההשוואה תהיה מדויקת, בחרו לכל פריט את המוצר המדויק – וכך יושווה אותו מוצר (אותו ברקוד) בכל הסניפים. הבחירה נשמרת לפעם הבאה.</p>
+        <div id="cartResolveList" class="resolve-list"></div>
+        <label class="small resolve-quiet"><input type="checkbox" id="cartResolveQuiet" checked> לא לשאול שוב על פריטים שהשארתי ב״בחירה אוטומטית״</label>
+        <div class="row">
+          <button id="cartResolveGo" class="primary">השוואה</button>
+          <button id="cartResolveSkip">דלג</button>
+        </div>
+      </div>
+      <div id="cartResult" hidden>
+        <p id="cartSummary" class="small"></p>
+        <div id="cartCards" class="cart-cards"></div>
+        <p class="muted small">👆 לחיצה על מוצר בטבלה – להשוות תמיד את המוצר הזה (אותו ברקוד בכל הסניפים).</p>
+        <p id="cartLegend" class="muted small" hidden>* מחיר משוער (המוצר לא נמכר בסניף) · ≈ מוצר דומה · 📌 מוצר שבחרתם · 🔀 הכי זול מכל מותג · 🏷️ מבצע</p>
+        <div class="top-scroll-bar" hidden>
+          <button id="cartScrollRight" class="icon-btn" type="button" aria-label="ימינה">▶</button>
+          <div id="cartTopScroll" class="top-scroll"><div></div></div>
+          <button id="cartScrollLeft" class="icon-btn" type="button" aria-label="שמאלה">◀</button>
+        </div>
+        <div class="tablewrap"><table id="cartTable" class="stats cart-table"></table></div>
+        <p class="muted small">לכל פריט מושווה אותו מוצר (אותו ברקוד) בכל הסניפים, לפי הכמות שבעגלה ועם המבצעים שבתוקף – כולל מבצעי כמות, ומבצעי מועדון רק ברשתות שסימנתם. המחירים מקובצי הרשתות; כדאי לבדוק בחנות.</p>
+      </div>
     </section>
 
     <section id="tab-list" hidden>
@@ -178,6 +231,7 @@
     </section>
 
     <section id="tab-settings" hidden>
+      <h2 class="page-title">⚙️ הגדרות</h2>
       <p id="settingsVersion" class="settings-version muted small"></p>
       <div class="card">
         <h3>החשבון שלי</h3>
@@ -361,43 +415,26 @@
     </div>
   </dialog>
 
-  <dialog id="cartDlg">
+
+  <dialog id="prodDlg">
     <div class="sheet-head">
-      <h3>🧮 השוואת מחיר העגלה</h3>
-      <button type="button" id="cartClose" class="sheet-x" aria-label="סגירה">✕</button>
+      <h3 id="prodTitle"></h3>
+      <button type="button" id="prodClose" class="sheet-x" aria-label="סגירה">✕</button>
     </div>
-    <div id="cartPick">
-      <p class="muted small">בחרו סניפים, ונחשב כמה תעלה היום רשימת ״חסר בבית״ בכל אחד מהם (לפי קובצי המחירים והמבצעים של הרשתות).</p>
-      <p id="cartPickInfo" class="small"></p>
-      <div id="cartStores" class="cart-stores"></div>
-      <div class="row">
-        <button id="cartGo" class="primary" disabled>השוואה</button>
-      </div>
-    </div>
-    <div id="cartResolve" hidden>
-      <p class="small"><b>למה התכוונת?</b> כדי שההשוואה תהיה מדויקת, בחרו לכל פריט את המוצר המדויק – וכך יושווה אותו מוצר (אותו ברקוד) בכל הסניפים. הבחירה נשמרת לפעם הבאה.</p>
-      <div id="cartResolveList" class="resolve-list"></div>
-      <label class="small resolve-quiet"><input type="checkbox" id="cartResolveQuiet" checked> לא לשאול שוב על פריטים שהשארתי ב״בחירה אוטומטית״</label>
-      <div class="row">
-        <button id="cartResolveGo" class="primary">השוואה</button>
-        <button id="cartResolveSkip">דלג</button>
-      </div>
-    </div>
-    <div id="cartResult" hidden>
-      <p id="cartSummary" class="small"></p>
-      <div id="cartCards" class="cart-cards"></div>
-      <p id="cartShipNote" class="note-warn small" hidden>🛒 בסניפי אונליין ההשוואה כוללת רק את מחירי המוצרים, בלי דמי משלוח (ובלי מינימום הזמנה).</p>
-      <p class="muted small">👆 לחיצה על מוצר בטבלה – להשוות תמיד את המוצר הזה (אותו ברקוד בכל הסניפים).</p>
-      <p id="cartLegend" class="muted small" hidden>≈ המוצר לא נמכר בסניף הזה, מוצג מוצר דומה · 📌 מוצר שבחרתם · 🔀 הכי זול מכל מותג</p>
-      <div class="top-scroll-bar" hidden>
-        <button id="cartScrollRight" class="icon-btn" type="button" aria-label="ימינה">▶</button>
-        <div id="cartTopScroll" class="top-scroll"><div></div></div>
-        <button id="cartScrollLeft" class="icon-btn" type="button" aria-label="שמאלה">◀</button>
-      </div>
-      <div class="tablewrap"><table id="cartTable" class="stats cart-table"></table></div>
-      <p class="muted small">לכל פריט נבחר אותו מוצר (אותו ברקוד) בכל הסניפים – זה שנמכר בכמה שיותר מהם, ואם יש עליו מבצע ליחידה – מחיר המבצע (🏷️). לתוצאה מדויקת יותר כתבו ברשימה שם מפורט (למשל ״חלב 3% 1 ליטר״) או ברקוד. כדאי לבדוק את המחירים בחנות.</p>
-      <div class="row"><button id="cartBack">שינוי סניפים</button><button id="cartRechoose">שינוי בחירת מוצרים</button></div>
-    </div>
+    <p class="muted small">בחרו את המוצר המדויק – הוא יושווה בכל הסניפים (אותו ברקוד). אפשר לחפש לפי תחילת מילה (״פטרוז״) או ברקוד, או לצלם את הברקוד.</p>
+    <form id="prodSearch" class="row">
+      <input id="prodQ" placeholder="חיפוש: תחילת מילה או ברקוד" autocomplete="off">
+      <span class="photo-wrap">
+        <button type="button" class="mic photo-btn" aria-haspopup="true" aria-expanded="false" title="צילום ברקוד" aria-label="צילום ברקוד">📷</button>
+        <span class="photo-menu" hidden>
+          <label>📸 צילום עכשיו<input type="file" id="prodPhotoCam" accept="image/*" capture="environment" hidden></label>
+          <label>🖼️ מהגלריה או מהמחשב<input type="file" id="prodPhoto" accept="image/*" hidden></label>
+        </span>
+      </span>
+      <button class="primary">חיפוש</button>
+    </form>
+    <p id="prodInfo" class="small muted"></p>
+    <div id="prodList" class="resolve-list"></div>
   </dialog>
 
   <dialog id="dealSheet">

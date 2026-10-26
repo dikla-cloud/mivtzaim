@@ -70,11 +70,69 @@ test('cart compare: "what did you mean?" options and pinned choices (barcode / a
     // כבר נבחר מוצר – לא שואלים שוב (אלא אם מבקשים לשנות)
     assert.equal((await options(['טחינה'], stores, { 'טחינה': 'auto' })).items.length, 0);
     assert.equal((await options(['טחינה'], stores, { 'טחינה': '1001' }, { all: true })).items[0].pin, '1001');
-    const pinned = await compare(['טחינה'], stores, { 'טחינה': '1001' });
+    const pinned = await compare(['טחינה'], stores, { pins: { 'טחינה': '1001' } });
     assert.deepEqual(pinned.stores.map((s) => s.lines[0].price), [14, 15]);
-    const any = await compare(['טחינה'], stores, { 'טחינה': 'any' });
+    const any = await compare(['טחינה'], stores, { pins: { 'טחינה': 'any' } });
     assert.deepEqual(any.stores.map((s) => [s.lines[0].code, s.lines[0].any]), [['1002', true], ['1002', true]]);
   } finally {
     israel.chains.splice(israel.chains.indexOf(fake), 1);
   }
+});
+
+test('cart cost: quantity, multi-buy deals, club deals and weighted products', () => {
+  const { lineCost } = require('../server/compare');
+  const it = { code: '5', price: 8 };
+  const d = (...ps) => ({ promos: new Map([['5', ps]]) });
+  // „3 ב-20”: שלוש יחידות ב-20, הרביעית במחיר רגיל
+  const multi = d({ price: 20, minQty: 3, description: '3 ב-20', clubOnly: false });
+  assert.equal(lineCost(it, multi, { qty: 4 }).cost, 28);
+  // פחות מהכמות במבצע – מחיר רגיל, עם רמז למבצע
+  const two = lineCost(it, multi, { qty: 2 });
+  assert.deepEqual([two.cost, Boolean(two.hint)], [16, true]);
+  // מחיר ליחידה בקובץ (6.5 לכל אחת מ-2)
+  assert.equal(lineCost(it, d({ price: 6.5, minQty: 2, description: 'מבצע זוגות' }), { qty: 2 }).cost, 13);
+  // מבצע מועדון – רק למי שחבר
+  const club = d({ price: 6, minQty: 1, clubOnly: true });
+  assert.equal(lineCost(it, club, { qty: 2, club: true }).cost, 12);
+  assert.equal(lineCost(it, club, { qty: 2, club: false }).cost, 16);
+  // מוצר במשקל: מחיר לק"ג × משקל (ברירת מחדל חצי ק"ג)
+  const kgItem = { code: '6', price: 60, weighted: true };
+  assert.equal(lineCost(kgItem, { promos: new Map() }, {}).cost, 30);
+  assert.equal(lineCost(kgItem, { promos: new Map() }, { kg: 0.3 }).cost, 18);
+});
+
+test('cart compare: whole cart in every store, missing items estimated, shipping added', async () => {
+  const israel = require('../server/providers/israel');
+  const { compare } = require('../server/compare');
+  const xmlItems = (its) => Buffer.from(`<Root><Items>${its.map(([c, n, p]) => `<Item><ItemCode>${c}</ItemCode><ItemName>${n}</ItemName><ItemPrice>${p}</ItemPrice></Item>`).join('')}</Items></Root>`);
+  const files = {
+    a: [['2001', 'במבה אסם 80 גרם', 5], ['2002', 'פטרוזיליה צרור', 4]],
+    b: [['2001', 'במבה אסם 80 גרם', 6]],
+    c: [['2001', 'במבה אסם 80 גרם', 7], ['2002', 'פטרוזיליה צרור', 6]],
+  };
+  const fake = { id: 'faketest2', name: 'בדיקה', stores: async () => [], storeFiles: async (id) => ({ prices: xmlItems(files[id]), promos: Buffer.from('<Root/>') }) };
+  israel.chains.push(fake);
+  try {
+    const stores = ['a', 'b', 'c'].map((id) => ({ chain: 'faketest2', storeId: id }));
+    const r = await compare([{ text: 'במבה', qty: 2 }, 'פטרוזיליה', 'אבוקדו'], stores, { shipping: { 'faketest2|c': 25 } });
+    const [a, b, c] = r.stores;
+    assert.deepEqual(r.notFound, ['אבוקדו']);
+    assert.equal(r.counted, 2);
+    // ב-b אין פטרוזיליה: מחיר משוער = החציון של 4 ו-6
+    assert.deepEqual([b.lines[1].estimated, b.lines[1].estCost, b.estimated], [true, 5, 1]);
+    assert.deepEqual([a.total, b.total, c.itemsTotal, c.shipping, c.total], [14, 17, 20, 25, 45]);
+    assert.equal(r.cheapest, 'faketest2|a');
+  } finally {
+    israel.chains.splice(israel.chains.indexOf(fake), 1);
+  }
+});
+
+test('cart compare: other spellings and singular/plural are found', () => {
+  const { candidates } = require('../server/compare');
+  const its = [item('31', 'כוסבר צרור', 3), item('32', 'מלפפון 1 ק"ג', 5), item('33', 'פטרוזיליה ארוזה', 4)];
+  const d = { items: its, byCode: new Map(), promoByCode: new Map() };
+  assert.deepEqual([...candidates('כוסברה', d).keys()], ['31']);
+  assert.deepEqual([...candidates('כסברה', d).keys()], ['31']);
+  assert.deepEqual([...candidates('מלפפונים', d).keys()], ['32']);
+  assert.deepEqual([...candidates('פטרוז', d).keys()], ['33']);
 });

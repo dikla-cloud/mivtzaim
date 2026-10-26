@@ -147,6 +147,12 @@ const state = (u) => ({
   lastScan: u.lastScan, lastErrors: u.lastErrors, lastSources: u.lastSources || [], lastReport: u.lastReport || null,
   lang: u.lang || null,
   myStores: u.myStores || [],
+  // מוצרים שנבחרו להשוואה לכל פריט ב„חסר בבית” (משותף לבני הבית), ושמותיהם לתצוגה
+  pins: db.householdOf(u).pins || {},
+  pinNames: db.householdOf(u).pinNames || {},
+  // השוואת עגלה: רשתות שאני חבר/ה במועדון שלהן (null = לא נקבע – כל מבצעי המועדון נחשבים), ודמי משלוח שהזנתי
+  clubs: u.clubs ?? null,
+  shipping: u.shipping || {},
   country: APP_COUNTRY,
   chains: scanner.ALL_CHAINS.map((c) => ({ id: c.id, name: c.name, on: !u.chains || u.chains.includes(c.id) })),
   vapidKey: push.publicKey,
@@ -232,6 +238,15 @@ app.patch('/api/home/:id', (req, res) => {
     item.doneBy = req.body.done ? req.user.name : undefined;
   }
   if (typeof req.body?.text === 'string' && req.body.text.trim()) item.text = req.body.text.trim();
+  // כמות להשוואת העגלה: יחידות, או ק"ג למוצר במשקל (null = ברירת מחדל)
+  if ('qty' in (req.body || {})) {
+    const q = Math.round(Number(req.body.qty));
+    if (q > 1 && q <= 99) item.qty = q; else delete item.qty;
+  }
+  if ('kg' in (req.body || {})) {
+    const kg = Number(req.body.kg);
+    if (kg > 0 && kg <= 50) item.kg = Math.round(kg * 1000) / 1000; else delete item.kg;
+  }
   db.save();
   res.json(homeState(req));
 });
@@ -408,7 +423,7 @@ app.put('/api/list', (req, res) => {
 
 app.put('/api/settings', async (req, res) => {
   const u = req.user;
-  const { lat, lon, label, address, radiusKm, chains, lang } = req.body;
+  const { lat, lon, label, address, radiusKm, chains, lang, clubs, shipping } = req.body;
   if (i18n.LANGS.includes(lang)) u.lang = lang;
   if (address) {
     const hit = await geo.geocode(address, { il: false });
@@ -424,6 +439,15 @@ app.put('/api/settings', async (req, res) => {
   }
   if (Number.isFinite(radiusKm)) u.radiusKm = Math.min(Math.max(radiusKm, 1), 50);
   if (Array.isArray(chains)) u.chains = chains;
+  if (clubs === null || Array.isArray(clubs)) u.clubs = clubs && clubs.map(String).slice(0, 50);
+  // דמי משלוח: { 'רשת|סניף': ₪ } – רק מה שנשלח מתעדכן; 0 או ריק = מחיקה
+  if (shipping && typeof shipping === 'object') {
+    u.shipping ||= {};
+    for (const [k, v] of Object.entries(shipping).slice(0, 50)) {
+      const fee = Number(v);
+      if (fee > 0 && fee < 1000) u.shipping[String(k).slice(0, 60)] = Math.round(fee * 100) / 100; else delete u.shipping[k];
+    }
+  }
   db.save();
   res.json(state(u));
 });
@@ -487,14 +511,17 @@ app.put('/api/pins', (req, res) => {
   const h = db.householdOf(req.user);
   const list = Array.isArray(req.body?.pins) ? req.body.pins.slice(0, 100) : [req.body || {}];
   h.pins ||= {};
+  h.pinNames ||= {};
   for (const p of list) {
     const key = compare.pinKey(p?.text || '');
     const code = String(p?.code || '').trim();
     if (!key) return res.status(400).json({ error: T(req, 'שגיאה') });
     if (/^\d{4,14}$/.test(code) || code === 'any' || code === 'auto') h.pins[key] = code; else delete h.pins[key];
+    const name = String(p?.name || '').trim().slice(0, 100);
+    if (/^\d/.test(code) && name) h.pinNames[key] = name; else delete h.pinNames[key];
   }
   db.save();
-  res.json({ pins: h.pins });
+  res.json({ pins: h.pins, pinNames: h.pinNames });
 });
 
 // הסניפים ופריטי „חסר בבית” לבקשת השוואה
@@ -504,13 +531,13 @@ async function compareInput(req, res) {
     .slice(0, compare.MAX_STORES)
     .map((s) => ({ chain: s.chain, storeId: String(s.storeId).slice(0, 20), name: String(s.name || '').slice(0, 80) }));
   if (!stores.length) return res.status(400).json({ error: T(req, 'בחרו לפחות סניף אחד') }), null;
-  let items = db.householdOf(req.user).home.filter((x) => !x.done).map((x) => x.text);
+  let items = db.householdOf(req.user).home.filter((x) => !x.done).map((x) => ({ text: x.text, qty: x.qty, kg: x.kg }));
   if (!items.length) return res.status(400).json({ error: T(req, 'רשימת ״חסר בבית״ ריקה') }), null;
   // פריטים בערבית: קובצי המחירים בעברית, ולכן מוסיפים את התרגום לעברית לחיפוש
-  const arabic = items.filter((t) => translate.sourceLang(t) === 'ar');
+  const arabic = items.map((x) => x.text).filter((t) => translate.sourceLang(t) === 'ar');
   if (arabic.length) {
     const tr = await translate(arabic, 'he', 'IL');
-    items = items.map((t) => (tr[t] ? `${t}|${tr[t].term}` : t));
+    items = items.map((x) => (tr[x.text] ? { ...x, text: `${x.text}|${tr[x.text].term}` } : x));
   }
   return { stores, items };
 }
@@ -519,7 +546,18 @@ async function compareInput(req, res) {
 app.post('/api/compare/options', async (req, res) => {
   const input = await compareInput(req, res);
   if (!input) return;
-  res.json(await compare.options(input.items, input.stores, db.householdOf(req.user).pins || {}, { all: Boolean(req.body?.all) }));
+  // text: רק פריט אחד (מסך „בחירת מוצר”)
+  const only = typeof req.body?.text === 'string' ? input.items.filter((x) => x.text.split('|')[0] === req.body.text) : input.items;
+  res.json(await compare.options(only.length ? only : [{ text: String(req.body.text) }], input.stores, db.householdOf(req.user).pins || {}, { all: Boolean(req.body?.all) }));
+});
+
+// חיפוש מוצר להשוואה (תחילת מילה או ברקוד) בסניפים שנבחרו
+app.post('/api/compare/search', async (req, res) => {
+  const stores = (Array.isArray(req.body?.stores) ? req.body.stores : [])
+    .filter((s) => s && typeof s.chain === 'string' && s.storeId != null).slice(0, compare.MAX_STORES)
+    .map((s) => ({ chain: s.chain, storeId: String(s.storeId).slice(0, 20) }));
+  if (!stores.length) return res.status(400).json({ error: T(req, 'בחרו לפחות סניף אחד') });
+  res.json(await compare.search(String(req.body?.q || '').slice(0, 60), stores));
 });
 
 app.post('/api/compare', async (req, res) => {
@@ -529,10 +567,11 @@ app.post('/api/compare', async (req, res) => {
   const { stores, items } = input;
   u.compareStores = stores;
   metrics.count('compare');
-  const result = await compare.compare(items, stores, db.householdOf(u).pins || {});
+  const result = await compare.compare(items, stores, { pins: db.householdOf(u).pins || {}, clubs: u.clubs ?? null, shipping: u.shipping || {} });
   // מציגים את הפריט כפי שנכתב (בלי התרגום שנוסף לחיפוש)
   for (const st of result.stores) for (const l of st.lines || []) l.text = l.text.split('|')[0];
   result.items = result.items.map((t) => t.split('|')[0]);
+  for (const c of result.cart) c.text = c.text.split('|')[0];
   db.save();
   res.json(result);
 });
