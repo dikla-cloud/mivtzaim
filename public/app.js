@@ -124,6 +124,15 @@ $('#codeForm').addEventListener('submit', async (e) => {
   } catch (ex) { loginErr(ex.message); }
 });
 $('#codeResend').addEventListener('click', sendLoginCode);
+// מי שעוד אין לו מייל בחשבון נכנס בשם וסיסמה (עד שהמנהל יוסיף לו מייל)
+$('#usePassword').addEventListener('click', () => {
+  loginErr('');
+  $('#codeForm').hidden = true;
+  $('#loginForm').hidden = false;
+  $('#loginEmailWrap').hidden = true;
+  $('#loginHint').textContent = t('כניסה עם השם והסיסמה שקיבלת ממי שהוסיף אותך.');
+  $('#loginName').focus();
+});
 $('#codeChange').addEventListener('click', () => { $('#codeStep1').hidden = false; $('#codeStep2').hidden = true; loginErr(''); $('#codeEmail').focus(); });
 
 const fmtDate = (s) => new Date(s).toLocaleDateString(LOCALE, { weekday: 'short', day: 'numeric', month: 'numeric' });
@@ -638,8 +647,8 @@ function renderHome() {
     for (const id of deptOrder()) {
       const group = open.filter((x) => deptOfItem(x.text) === id);
       if (!group.length) continue;
-      const d = DEPT_BY_ID[id];
-      rows.push(Object.assign(document.createElement('li'), { className: 'dept-head', textContent: `${d.icon} ${t(d.name)}` }), ...group.map(homeRow));
+      const d = deptById(id);
+      rows.push(Object.assign(document.createElement('li'), { className: 'dept-head', textContent: `${d.icon} ${deptName(d)}` }), ...group.map(homeRow));
     }
     const done = items.filter((x) => x.done);
     if (done.length) rows.push(Object.assign(document.createElement('li'), { className: 'dept-head done-head', textContent: t('✔ נקנו') }), ...done.map(homeRow));
@@ -650,8 +659,26 @@ function renderHome() {
 
 // תצוגת ״חסר בבית״: לפי מחלקות (ברירת מחדל) או לפי סדר ההוספה – נשמר במכשיר
 const homeView = () => store.get('homeView') || 'dept';
-const deptOrder = () => (S.deptOrder?.length ? S.deptOrder : DEPTS.map((d) => d.id));
-const deptOfItem = (text) => S.deptOf?.[deptKey(text)] || autoDept(text);
+// סדר שנשמר לפני שנוספה מחלקה חדשה – המחלקה החדשה נכנסת אחרי זו שלפניה בברירת המחדל
+// כל המחלקות: הקבועות ואלה שבני הבית הוסיפו (לפני ״אחר״)
+const allDepts = () => [...DEPTS.filter((d) => d.id !== 'other'), ...(S.customDepts || []), DEPT_BY_ID.other];
+const deptById = (id) => allDepts().find((d) => d.id === id) || DEPT_BY_ID.other;
+const deptName = (d) => (DEPT_BY_ID[d.id] ? t(d.name) : d.name); // שם שבני הבית כתבו – כמו שהוא
+function deptOrder() {
+  const def = allDepts().map((d) => d.id);
+  if (!S.deptOrder?.length) return def;
+  const out = S.deptOrder.filter((id) => def.includes(id));
+  for (const id of def) {
+    if (out.includes(id)) continue;
+    const prev = def[def.indexOf(id) - 1];
+    out.splice(prev ? out.indexOf(prev) + 1 : 0, 0, id);
+  }
+  return out;
+}
+const deptOfItem = (text) => {
+  const v = S.deptOf?.[deptKey(text)];
+  return v && allDepts().some((d) => d.id === v) ? v : autoDept(text);
+};
 let freshIds = new Set(); // פריטים שנוספו זה עתה – מודגשים לכמה שניות
 let homeWatched = new Set(); // פריטים שכבר ברשימה לחיפוש מבצעים (בלי כפתור ⭐)
 $('#viewDept').addEventListener('click', () => { store.set('homeView', 'dept'); renderHome(); });
@@ -724,11 +751,16 @@ function openDeptPicker(text) {
   $('#deptTitle').textContent = t('לאיזו מחלקה שייך ״{item}״?', { item: text });
   const cur = deptOfItem(text);
   const manual = Boolean(S.deptOf?.[deptKey(text)]);
-  $('#deptList').replaceChildren(...DEPTS.map((d) => {
-    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'dept-opt' + (d.id === cur ? ' on' : ''), textContent: `${d.icon} ${t(d.name)}${d.id === cur ? ' ✓' : ''}` });
+  const add = Object.assign(document.createElement('button'), { type: 'button', className: 'dept-opt dept-new', textContent: t('➕ מחלקה חדשה') });
+  add.addEventListener('click', async () => {
+    const d = await newDept();
+    if (d) setDept(text, d.id);
+  });
+  $('#deptList').replaceChildren(...deptOrder().map(deptById).map((d) => {
+    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'dept-opt' + (d.id === cur ? ' on' : ''), textContent: `${d.icon} ${deptName(d)}${d.id === cur ? ' ✓' : ''}` });
     b.addEventListener('click', () => setDept(text, d.id === autoDept(text) ? '' : d.id));
     return b;
-  }));
+  }), add);
   $('#deptAuto').hidden = !manual;
   $('#deptDlg').showModal();
 }
@@ -744,25 +776,55 @@ $('#deptClose').addEventListener('click', () => $('#deptDlg').close());
 
 // סדר המחלקות: חיצים למעלה/למטה, ושמירה לכל בני הבית
 let orderDraft = [];
+// מחלקה חדשה (שם ואייקון) – משותפת לבני הבית
+async function newDept(name = prompt(t('שם המחלקה החדשה (למשל: לשבת, פארם של סבתא):')), icon = '') {
+  if (!name || !name.trim()) return null;
+  try {
+    const before = new Set((S.customDepts || []).map((d) => d.id));
+    Object.assign(S, await api('POST', '/api/home/depts', { name: name.trim(), icon }));
+    renderHome();
+    return S.customDepts.find((d) => !before.has(d.id)) || null;
+  } catch (e) { alert(e.message); return null; }
+}
 function renderOrder() {
+  orderDraft = orderDraft.filter((id) => allDepts().some((d) => d.id === id));
+  for (const d of allDepts()) if (!orderDraft.includes(d.id)) orderDraft.push(d.id);
   $('#orderList').replaceChildren(...orderDraft.map((id, i) => {
-    const d = DEPT_BY_ID[id];
+    const d = deptById(id);
     const li = document.createElement('li');
-    li.append(Object.assign(document.createElement('span'), { textContent: `${i + 1}. ${d.icon} ${t(d.name)}` }));
+    li.append(Object.assign(document.createElement('span'), { textContent: `${i + 1}. ${d.icon} ${deptName(d)}` }));
     const move = (dir) => { const j = i + dir; [orderDraft[i], orderDraft[j]] = [orderDraft[j], orderDraft[i]]; renderOrder(); };
     const up = Object.assign(document.createElement('button'), { type: 'button', textContent: '⬆️', disabled: i === 0, ariaLabel: t('למעלה') });
     const down = Object.assign(document.createElement('button'), { type: 'button', textContent: '⬇️', disabled: i === orderDraft.length - 1, ariaLabel: t('למטה') });
     up.addEventListener('click', () => move(-1));
     down.addEventListener('click', () => move(1));
     li.append(up, down);
+    // מחלקה שבני הבית הוסיפו – אפשר גם למחוק
+    if (!DEPT_BY_ID[id]) {
+      const del = Object.assign(document.createElement('button'), { type: 'button', textContent: '🗑️', ariaLabel: t('מחיקה') });
+      del.addEventListener('click', async () => {
+        if (!confirm(t('למחוק את המחלקה ״{name}״? הפריטים שבה יחזרו למחלקה האוטומטית.', { name: d.name }))) return;
+        try { Object.assign(S, await api('POST', '/api/home/depts', { remove: id })); renderOrder(); renderHome(); } catch (e) { alert(e.message); }
+      });
+      li.append(del);
+    }
     return li;
   }));
 }
+$('#deptAddForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const d = await newDept($('#deptAddName').value, $('#deptAddIcon').value);
+  if (!d) return;
+  $('#deptAddName').value = '';
+  $('#deptAddIcon').value = '';
+  orderDraft.splice(Math.max(orderDraft.indexOf('other'), 0), 0, d.id);
+  renderOrder();
+});
 $('#deptOrderBtn').addEventListener('click', () => { orderDraft = [...deptOrder()]; renderOrder(); $('#orderDlg').showModal(); });
 $('#orderSave').addEventListener('click', async () => {
   try { Object.assign(S, await api('PUT', '/api/home/dept-order', { order: orderDraft })); $('#orderDlg').close(); renderHome(); toast(t('סדר המחלקות נשמר ✔')); } catch (e) { alert(e.message); }
 });
-$('#orderReset').addEventListener('click', () => { orderDraft = DEPTS.map((d) => d.id); renderOrder(); });
+$('#orderReset').addEventListener('click', () => { orderDraft = allDepts().map((d) => d.id); renderOrder(); });
 $('#orderClose').addEventListener('click', () => $('#orderDlg').close());
 
 // פריט שכבר ברשימה: אזהרה כבר בזמן ההקלדה, והודעה אחרי ההוספה
@@ -816,6 +878,9 @@ $('#homeAdd').addEventListener('submit', async (e) => {
 
 // ---------- בדיקות בשרת (למנהל) ----------
 function renderDiagChains() {
+  $('#mailState').textContent = S.emailLogin
+    ? t('✔ השרת מוגדר לשלוח מיילים – הכניסה לאפליקציה היא עם קוד למייל.')
+    : t('השרת עוד לא שולח מיילים, ולכן הכניסה היא בשם וסיסמה.');
   const sel = $('#diagChain');
   if (sel.options.length > 1 || !S?.chains) return;
   for (const c of S.chains) sel.append(new Option(c.name, c.id));
@@ -849,6 +914,13 @@ async function runDiag(body, needChain, btn) {
     document.querySelectorAll('#diagBox button').forEach((b) => { b.disabled = false; });
   }
 }
+$('#testMail').addEventListener('click', async () => {
+  $('#mailState').textContent = t('שולח…');
+  try {
+    const r = await api('POST', '/api/admin/test-mail');
+    $('#mailState').textContent = t('✔ נשלח מייל ל-{to}. אם הוא הגיע – הכניסה עם קוד למייל עובדת.', { to: r.to });
+  } catch (e) { $('#mailState').textContent = `✘ ${e.message}`; }
+});
 $('#diagChains').addEventListener('click', () => runDiag({ kind: 'chains' }, false, $('#diagChains')));
 $('#diagStores').addEventListener('click', () => runDiag({ kind: 'stores', filter: $('#diagFilter').value }, true, $('#diagStores')));
 $('#diagProduct').addEventListener('click', () => {
@@ -1813,7 +1885,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.10.26l';
+const APP_VERSION = '2026.10.26m';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });

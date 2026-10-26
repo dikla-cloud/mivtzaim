@@ -49,6 +49,7 @@
           <button type="button" id="codeResend" class="linkish">שליחת קוד חדש</button>
           <button type="button" id="codeChange" class="linkish">שינוי המייל</button>
         </div>
+        <button type="button" id="usePassword" class="linkish">אין לי מייל בחשבון – כניסה עם שם וסיסמה</button>
       </form>
       <!-- כניסה בשם וסיסמה: בכניסה הראשונה (יצירת המנהל), או כשהשרת עוד לא שולח מיילים -->
       <form id="loginForm" hidden>
@@ -305,6 +306,10 @@
         <details id="diagBox" class="ugroup il-only">
           <summary>🛠️ בדיקות בשרת</summary>
           <p class="muted small">בודקים מהשרת את החיבור לרשתות, את הסניפים ואת המוצרים בקובצי המחירים – בלי להתחבר לשרת. הבדיקות רק קוראות ולא משנות כלום. את התוצאה אפשר להעתיק ולשלוח.</p>
+          <h4>📧 שליחת מיילים</h4>
+          <p id="mailState" class="small"></p>
+          <div class="row"><button type="button" id="testMail">שליחת מייל בדיקה אליי</button></div>
+          <h4>🔌 חיבור לרשתות</h4>
           <label>רשת<select id="diagChain"><option value="">כל הרשתות</option></select></label>
           <div class="row"><button type="button" id="diagChains" class="primary">🔌 בדיקת חיבור לרשתות</button></div>
           <h4>🏪 סניפים של רשת</h4>
@@ -510,8 +515,13 @@
       <h3>סדר המחלקות</h3>
       <button type="button" id="orderClose" class="sheet-x" aria-label="סגירה">✕</button>
     </div>
-    <p class="muted small">סדרו את המחלקות לפי מסלול ההליכה בסופר שלכם. הסדר משותף לכל בני הבית.</p>
+    <p class="muted small">סדרו את המחלקות לפי מסלול ההליכה בסופר שלכם, והוסיפו מחלקות משלכם. משותף לכל בני הבית.</p>
     <ol id="orderList" class="order-list"></ol>
+    <form id="deptAddForm" class="row dept-add">
+      <input id="deptAddIcon" class="dept-icon-in" maxlength="4" placeholder="🏷️" aria-label="אייקון (לא חובה)" title="אייקון (לא חובה)">
+      <input id="deptAddName" maxlength="30" placeholder="מחלקה חדשה, למשל: לשבת" aria-label="שם המחלקה" required>
+      <button>➕ הוספה</button>
+    </form>
     <div class="row">
       <button type="button" id="orderSave" class="primary">שמירה</button>
       <button type="button" id="orderReset">סדר ברירת המחדל</button>

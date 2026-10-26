@@ -162,7 +162,20 @@ test('departments: manual department and department order are shared by the hous
   assert.equal(r.deptOf.hummus, undefined);
   r = (await call('PUT', '/api/home/dept-order', { order: ['bread', 'produce', 'nope'] }, token)).json;
   assert.deepEqual(r.deptOrder.slice(0, 3), ['bread', 'produce', 'dairy']);
-  assert.equal(r.deptOrder.length, 15);
+  assert.equal(r.deptOrder.length, 16);
   r = (await call('PUT', '/api/home/dept-order', { order: null }, token)).json;
   assert.equal(r.deptOrder, null);
+});
+
+test('departments: a household can add and remove its own departments', async () => {
+  const token = (await call('POST', '/api/login', { name: 'דיקלה', password: 'initial123' })).json.token;
+  let r = (await call('POST', '/api/home/depts', { name: 'לשבת', icon: '🕯️' }, token)).json;
+  const d = r.customDepts.find((x) => x.name === 'לשבת');
+  assert.equal(d.icon, '🕯️');
+  r = (await call('PUT', '/api/home/dept', { text: 'נרות', dept: d.id }, token)).json;
+  assert.equal(r.deptOf['נרות'], d.id);
+  assert.equal((await call('POST', '/api/home/depts', { name: '  ' }, token)).status, 400);
+  r = (await call('POST', '/api/home/depts', { remove: d.id }, token)).json;
+  assert.equal(r.customDepts.some((x) => x.id === d.id), false);
+  assert.equal(r.deptOf['נרות'], undefined); // הפריט חזר לשיוך האוטומטי
 });

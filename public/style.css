@@ -466,3 +466,7 @@ details.ugroup > p { margin-top: 0; }
 #prodDlg::backdrop, #deptDlg::backdrop, #orderDlg::backdrop { background: rgb(0 0 0 / .45); }
 #deptDlg .dept-list { grid-template-columns: 1fr 1fr; }
 #deptDlg .dept-opt { padding: 10px 8px; font-size: .92rem; }
+.dept-add { flex-wrap: nowrap; margin-top: 10px; }
+.dept-add #deptAddName { flex: 1; min-width: 0; }
+.dept-icon-in { width: 3.4em; text-align: center; padding: 10px 4px; }
+.dept-new { border-style: dashed; color: var(--accent); font-weight: 700; }

@@ -91,6 +91,13 @@ const T = {
   "קישור ההזמנה לא בתוקף. בקשו קישור חדש ממי שהזמין אתכם.": { de: "Der Einladungslink ist ungültig. Bitten Sie um einen neuen Link.", en: "This invite link is no longer valid. Ask for a new link." },
   "כבר יש משתמש בשם הזה. נסו שם אחר (למשל עם האות הראשונה של שם המשפחה).": { de: "Diesen Namen gibt es schon. Versuchen Sie einen anderen (z. B. mit dem ersten Buchstaben des Nachnamens).", en: "This name is taken. Try another one (e.g. add the first letter of your last name)." },
   "האפליקציה מלאה כרגע. בקשו ממי שהזמין אתכם לפנות למנהל.": { de: "Die App ist gerade voll. Bitten Sie die einladende Person, sich an den Admin zu wenden.", en: "The app is full right now. Ask the person who invited you to contact the admin." },
+  "כתבו שם למחלקה": { de: "Bitte einen Namen eingeben", en: "Please type a name" },
+  "אפשר להוסיף עד 20 מחלקות": { de: "Höchstens 20 eigene Abteilungen", en: "Up to 20 departments can be added" },
+  "שליחת מייל עוד לא הוגדרה בשרת (הקובץ /etc/mivtzaim/mail.env).": { de: "E-Mail-Versand ist auf dem Server noch nicht eingerichtet (/etc/mivtzaim/mail.env).", en: "Email is not set up on the server yet (/etc/mivtzaim/mail.env)." },
+  "אין מייל בחשבון שלך. הוסיפו אותו ב״החשבון שלי״.": { de: "Ihr Konto hat keine E-Mail. Fügen Sie sie unter „Mein Konto“ hinzu.", en: "Your account has no email. Add it under “My account”." },
+  "הקניות שלי – מייל בדיקה": { de: "Meine Einkäufe – Test-E-Mail", en: "My Shopping – test email" },
+  "שליחת המיילים מהשרת עובדת ✔": { de: "Der E-Mail-Versand vom Server funktioniert ✔", en: "Sending email from the server works ✔" },
+  "שליחת המייל נכשלה": { de: "Senden fehlgeschlagen", en: "Sending failed" },
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -163,6 +170,13 @@ const T_AR = {
   "קישור ההזמנה לא בתוקף. בקשו קישור חדש ממי שהזמין אתכם.": "رابط الدعوة غير صالح. اطلب رابطًا جديدًا ممن دعاك.",
   "כבר יש משתמש בשם הזה. נסו שם אחר (למשל עם האות הראשונה של שם המשפחה).": "هذا الاسم مستخدم. جرّب اسمًا آخر (مثلًا مع الحرف الأول من اسم العائلة).",
   "האפליקציה מלאה כרגע. בקשו ממי שהזמין אתכם לפנות למנהל.": "التطبيق ممتلئ حاليًا. اطلب ممن دعاك التواصل مع المدير.",
+  "כתבו שם למחלקה": "اكتب اسمًا للقسم",
+  "אפשר להוסיף עד 20 מחלקות": "يمكن إضافة 20 قسمًا على الأكثر",
+  "שליחת מייל עוד לא הוגדרה בשרת (הקובץ /etc/mivtzaim/mail.env).": "إرسال البريد غير مُعد في الخادم بعد (/etc/mivtzaim/mail.env).",
+  "אין מייל בחשבון שלך. הוסיפו אותו ב״החשבון שלי״.": "لا يوجد بريد في حسابك. أضفه في «حسابي».",
+  "הקניות שלי – מייל בדיקה": "مشترياتي – بريد اختبار",
+  "שליחת המיילים מהשרת עובדת ✔": "إرسال البريد من الخادم يعمل ✔",
+  "שליחת המייל נכשלה": "فشل الإرسال",
 };
 
 const pick = (lang) => (LANGS.includes(lang) ? lang : DEFAULT_LANG);

@@ -191,6 +191,17 @@ app.post('/api/admin/diag', adminOnly, (req, res) => {
     .finally(() => { job.done = true; });
   res.json({ id });
 });
+// מייל בדיקה למנהל: לוודא שהגדרות המייל בשרת עובדות, לפני שסומכים עליהן בכניסה
+app.post('/api/admin/test-mail', adminOnly, async (req, res) => {
+  if (!mail.configured()) return res.status(400).json({ error: T(req, 'שליחת מייל עוד לא הוגדרה בשרת (הקובץ /etc/mivtzaim/mail.env).') });
+  if (!req.user.email) return res.status(400).json({ error: T(req, 'אין מייל בחשבון שלך. הוסיפו אותו ב״החשבון שלי״.') });
+  try {
+    await mail.send({ to: req.user.email, subject: T(req, 'הקניות שלי – מייל בדיקה'), text: T(req, 'שליחת המיילים מהשרת עובדת ✔') });
+    res.json({ ok: true, to: mask(req.user.email) });
+  } catch (e) {
+    res.status(500).json({ error: `${T(req, 'שליחת המייל נכשלה')}: ${e.message}` });
+  }
+});
 app.get('/api/admin/diag/:id', adminOnly, (req, res) => {
   const job = diagJobs.get(req.params.id);
   if (!job) return res.status(404).json({ error: T(req, 'שגיאה') });
@@ -221,6 +232,7 @@ const state = (u) => ({
   home: db.householdOf(u).home,
   deptOf: db.householdOf(u).deptOf || {},
   deptOrder: db.householdOf(u).deptOrder || null,
+  customDepts: db.householdOf(u).customDepts || [],
   limits: { ...db.get().limits, count: db.users().length },
   needTerms: u.termsVersion !== TERMS_VERSION,
   list: u.list, location: u.location, radiusKm: u.radiusKm, deals: u.deals,
@@ -309,10 +321,12 @@ app.delete('/api/invites/:token', (req, res) => {
 // כל פעולה היא על פריט בודד, כדי שכמה טלפונים יוכלו לעדכן באותו זמן בלי לדרוס זה את זה
 const home = (req) => db.householdOf(req.user).home;
 // מחלקות בסופר: שיוך ידני של פריט למחלקה, וסדר המחלקות – משותפים לבני הבית (השיוך האוטומטי נעשה באפליקציה)
-const DEPT_IDS = ['produce', 'dairy', 'deli', 'bread', 'meat', 'frozen', 'dry', 'pantry', 'snacks', 'drinks', 'cleaning', 'care', 'baby', 'pets', 'other'];
+const DEPT_IDS = ['produce', 'dairy', 'fridge', 'deli', 'bread', 'meat', 'frozen', 'dry', 'pantry', 'snacks', 'drinks', 'cleaning', 'care', 'baby', 'pets', 'other'];
+// מחלקות שבני הבית הוסיפו בעצמם: [{ id: 'c…', name, icon }]
+const deptIds = (h) => [...DEPT_IDS, ...(h.customDepts || []).map((d) => d.id)];
 const homeState = (req) => {
   const h = db.householdOf(req.user);
-  return { home: h.home, deptOf: h.deptOf || {}, deptOrder: h.deptOrder || null };
+  return { home: h.home, deptOf: h.deptOf || {}, deptOrder: h.deptOrder || null, customDepts: h.customDepts || [] };
 };
 
 app.get('/api/home', (req, res) => res.json(homeState(req)));
@@ -323,16 +337,39 @@ app.put('/api/home/dept', (req, res) => {
   const key = compare.pinKey(req.body?.text || '');
   if (!key) return res.status(400).json({ error: T(req, 'שגיאה') });
   h.deptOf ||= {};
-  if (DEPT_IDS.includes(req.body?.dept)) h.deptOf[key] = req.body.dept; else delete h.deptOf[key];
+  if (deptIds(h).includes(req.body?.dept)) h.deptOf[key] = req.body.dept; else delete h.deptOf[key];
   db.save();
   res.json(homeState(req));
 });
 // סדר המחלקות (null = ברירת המחדל)
 app.put('/api/home/dept-order', (req, res) => {
   const h = db.householdOf(req.user);
-  const order = Array.isArray(req.body?.order) ? [...new Set(req.body.order.filter((d) => DEPT_IDS.includes(d)))] : null;
-  if (order && order.length) h.deptOrder = [...order, ...DEPT_IDS.filter((d) => !order.includes(d))];
+  const ids = deptIds(h);
+  const order = Array.isArray(req.body?.order) ? [...new Set(req.body.order.filter((d) => ids.includes(d)))] : null;
+  if (order && order.length) h.deptOrder = [...order, ...ids.filter((d) => !order.includes(d))];
   else delete h.deptOrder;
+  db.save();
+  res.json(homeState(req));
+});
+// הוספת מחלקה משלנו { name, icon }, או מחיקה { remove: id } (הפריטים שבה חוזרים לשיוך האוטומטי)
+app.post('/api/home/depts', (req, res) => {
+  const h = db.householdOf(req.user);
+  h.customDepts ||= [];
+  if (req.body?.remove) {
+    const id = String(req.body.remove);
+    h.customDepts = h.customDepts.filter((d) => d.id !== id);
+    for (const [k, v] of Object.entries(h.deptOf || {})) if (v === id) delete h.deptOf[k];
+    if (h.deptOrder) h.deptOrder = h.deptOrder.filter((d) => d !== id);
+  } else {
+    const name = String(req.body?.name || '').trim().slice(0, 30);
+    if (!name) return res.status(400).json({ error: T(req, 'כתבו שם למחלקה') });
+    if (h.customDepts.length >= 20) return res.status(400).json({ error: T(req, 'אפשר להוסיף עד 20 מחלקות') });
+    const icon = [...String(req.body?.icon || '').trim()].slice(0, 2).join('') || '🏷️';
+    const d = { id: `c${crypto.randomBytes(4).toString('hex')}`, name, icon };
+    h.customDepts.push(d);
+    // מחלקה חדשה נכנסת לסוף הסדר (לפני ״אחר״)
+    if (h.deptOrder) h.deptOrder.splice(Math.max(h.deptOrder.indexOf('other'), 0) || h.deptOrder.length, 0, d.id);
+  }
   db.save();
   res.json(homeState(req));
 });
