@@ -401,7 +401,9 @@ function userRow(u, kind) {
         if (!p) return;
         try { S = await api('PUT', `/api/users/${encodeURIComponent(u.name)}/password`, { password: p }); render(); toast(t('הסיסמה של {name} עודכנה', { name: u.name })); } catch (e) { alert(e.message); }
       });
-      acts.append(S.emailLogin ? emailBtn : reset);
+      // מייל – תמיד (כדי להכין את המעבר לכניסה עם קוד); סיסמה – רק כשהכניסה בשם וסיסמה
+      acts.append(emailBtn);
+      if (!S.emailLogin) acts.append(reset);
     }
     if (u.name !== S.me.name && kind !== 'other') {
       const mine = kind === 'home';
@@ -1895,7 +1897,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.10.26n';
+const APP_VERSION = '2026.10.26o';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });
