@@ -440,3 +440,6 @@ details.ugroup > summary::after { content: '▾'; color: var(--accent); transiti
 details.ugroup[open] > summary::after { transform: rotate(180deg); }
 details.ugroup[open] { padding-bottom: 12px; }
 details.ugroup > p { margin-top: 0; }
+.diag-out { font-family: inherit; white-space: pre-wrap; word-break: break-word; max-height: 60vh; overflow: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: .8rem; line-height: 1.5; user-select: text; -webkit-user-select: text; }
+#diagBox select { display: block; width: 100%; margin-top: 4px; }
+#diagBox h4 { margin: 14px 0 0; }

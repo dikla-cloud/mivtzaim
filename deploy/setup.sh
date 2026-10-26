@@ -2,6 +2,7 @@
 # התקנה בשרת Ubuntu חדש (למשל Oracle Cloud Always Free), בפקודה אחת:
 #   curl -fsSL https://raw.githubusercontent.com/<github-user>/mivtzaim/main/deploy/setup.sh | bash -s -- <github-user> <domain> <password> [email]
 # אפשר להריץ שוב בכל זמן כדי לעדכן לגרסה האחרונה מ-GitHub (כל ההתקנות בשרת מתעדכנות יחד).
+# ההתקנה מפעילה גם עדכון אוטומטי: השרת בודק כל 10 דקות אם יש גרסה חדשה (deploy/auto-update.sh).
 #
 # התקנה נוספת על אותו שרת (כתובת, משתמשים ושפה משלה), למשל לאוסטריה:
 #   ... | bash -s -- <github-user> <domain2> <password2> <email> mivtzaim-wien de AT 3001
@@ -86,8 +87,13 @@ WantedBy=multi-user.target
 EOF
 sudo systemctl daemon-reload
 sudo systemctl enable --now "$INSTANCE"
-# הקוד משותף לכל ההתקנות בשרת – מפעילים מחדש את כולן
-for unit in /etc/systemd/system/mivtzaim*.service; do sudo systemctl restart "$(basename "$unit")"; done
+# עדכון אוטומטי מ-GitHub כל 10 דקות (אפשר לבטל: sudo systemctl disable --now mivtzaim-update.timer)
+sudo bash "$APP_DIR/deploy/enable-auto-update.sh"
+# הקוד משותף לכל ההתקנות בשרת – מפעילים מחדש את כולן (חוץ משירות העדכון עצמו)
+for unit in /etc/systemd/system/mivtzaim*.service; do
+  [ "$(basename "$unit")" = "mivtzaim-update.service" ] && continue
+  sudo systemctl restart "$(basename "$unit")"
+done
 
 echo "==> הגדרת HTTPS לכתובת $DOMAIN"
 # כל התקנה מקבלת קובץ משלה, והקובץ הראשי מצרף את כולם

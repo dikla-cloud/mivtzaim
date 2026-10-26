@@ -139,7 +139,7 @@ $('#gear').addEventListener('click', () => showTab($('#gear').getAttribute('aria
 function showTab(t) {
   document.querySelectorAll('nav button').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === t));
   $('#gear').setAttribute('aria-pressed', t === 'settings');
-  if (t === 'settings' && S?.me.admin) loadStats();
+  if (t === 'settings' && S?.me.admin) { loadStats(); renderDiagChains(); }
   if (t === 'settings' && S) loadInvites();
   document.querySelectorAll('main > section').forEach((s) => (s.hidden = s.id !== `tab-${t}`));
   if (t === 'cart' && S) initCart();
@@ -720,6 +720,48 @@ $('#homeAdd').addEventListener('submit', async (e) => {
     }
   }
 });
+
+// ---------- בדיקות בשרת (למנהל) ----------
+function renderDiagChains() {
+  const sel = $('#diagChain');
+  if (sel.options.length > 1 || !S?.chains) return;
+  for (const c of S.chains) sel.append(new Option(c.name, c.id));
+}
+let diagRun = 0;
+async function runDiag(body, needChain) {
+  if (needChain && !$('#diagChain').value) return alert(t('בחרו רשת'));
+  const run = ++diagRun;
+  const out = $('#diagOut');
+  out.hidden = false;
+  out.textContent = '';
+  $('#diagCopy').hidden = true;
+  $('#diagStatus').hidden = false;
+  $('#diagStatus').textContent = t('⏳ בודק בשרת… (בדיקת כל הרשתות יכולה לקחת כמה דקות)');
+  document.querySelectorAll('#diagBox button').forEach((b) => { b.disabled = true; });
+  try {
+    const { id } = await api('POST', '/api/admin/diag', { ...body, chain: $('#diagChain').value });
+    for (;;) {
+      const r = await api('GET', `/api/admin/diag/${id}`);
+      if (run !== diagRun) return;
+      out.textContent = r.lines.join('\n');
+      if (r.done) break;
+      await new Promise((res) => setTimeout(res, 2000));
+    }
+    $('#diagStatus').textContent = t('✔ הבדיקה הסתיימה');
+    $('#diagCopy').hidden = !out.textContent;
+  } catch (e) {
+    $('#diagStatus').textContent = e.message;
+  } finally {
+    document.querySelectorAll('#diagBox button').forEach((b) => { b.disabled = false; });
+  }
+}
+$('#diagChains').addEventListener('click', () => runDiag({ kind: 'chains' }));
+$('#diagStores').addEventListener('click', () => runDiag({ kind: 'stores', filter: $('#diagFilter').value }, true));
+$('#diagProduct').addEventListener('click', () => {
+  if (!$('#diagWords').value.trim()) return alert(t('כתבו מה לחפש'));
+  runDiag({ kind: 'product', words: $('#diagWords').value, store: $('#diagStore').value.trim() }, Boolean($('#diagStore').value.trim()));
+});
+$('#diagCopy').addEventListener('click', () => copyText($('#diagOut').textContent, $('#diagCopy')));
 
 // ---------- קישורי הזמנה ----------
 const inviteUrl = (tok) => `${location.origin}/?invite=${tok}`;
@@ -1677,7 +1719,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.10.26e';
+const APP_VERSION = '2026.10.26f';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });

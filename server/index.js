@@ -169,6 +169,34 @@ app.use('/api', (req, res, next) => {
 
 const adminOnly = (req, res, next) => (req.user.admin ? next() : res.status(403).json({ error: T(req, 'רק למנהל החשבון') }));
 
+// ---------- מסך בדיקות למנהל ----------
+// הבדיקה רצה ברקע (חלק מהבדיקות לוקחות דקות), והאפליקציה מבקשת כל כמה שניות את השורות שנכתבו עד עכשיו
+const diagnostics = require('./diagnostics');
+const diagJobs = new Map(); // id → { lines, done, at }
+app.post('/api/admin/diag', adminOnly, (req, res) => {
+  const { kind, chain, filter, words, store } = req.body || {};
+  const str = (v, n = 60) => (v == null ? '' : String(v).trim().slice(0, n));
+  const run = {
+    chains: (log) => diagnostics.checkChains(log, str(chain) || undefined),
+    stores: (log) => diagnostics.listStores(log, str(chain), str(filter) || undefined),
+    product: (log) => diagnostics.findProduct(log, str(words, 120), str(chain) || undefined, str(store, 20) || undefined),
+  }[kind];
+  if (!run) return res.status(400).json({ error: T(req, 'שגיאה') });
+  for (const [k, j] of diagJobs) if (Date.now() - j.at > 30 * 60000) diagJobs.delete(k);
+  const id = crypto.randomBytes(6).toString('hex');
+  const job = { lines: [], done: false, at: Date.now() };
+  diagJobs.set(id, job);
+  run((line) => job.lines.push(String(line)))
+    .catch((e) => job.lines.push(`שגיאה: ${e.message}`))
+    .finally(() => { job.done = true; });
+  res.json({ id });
+});
+app.get('/api/admin/diag/:id', adminOnly, (req, res) => {
+  const job = diagJobs.get(req.params.id);
+  if (!job) return res.status(404).json({ error: T(req, 'שגיאה') });
+  res.json({ lines: job.lines, done: job.done });
+});
+
 // פרטיות: על בני משק הבית שלי – שם, ואם כבר נכנסו (ולמנהל גם המייל, כדי להשלים מייל חסר).
 // על משתמשים אחרים (רק המנהל רואה אותם) – רק שם, מתי הצטרפו, אם נכנסו ואם יש להם מייל. בלי מיקום ובלי כתובת המייל.
 function userInfo(x, u) {
