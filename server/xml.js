@@ -41,9 +41,10 @@ const first = (obj, ...keys) => {
 };
 
 function parseStores(src) {
-  const doc = parse(src);
-  const chainId = findAll(doc, 'root')[0]?.chainid || '';
-  return findAll(doc, 'store').map((s) => ({
+  const text = typeof src === 'string' ? src : decode(src);
+  let chainId = '';
+  try { chainId = findAll(parser.parse(text), 'root')[0]?.chainid || ''; } catch { chainId = (text.match(/<chainid>\s*(\d+)/i) || [])[1] || ''; }
+  return nodes(text, 'store').map((s) => ({
     storeId: String(Number(first(s, 'storeid')) || first(s, 'storeid')),
     name: first(s, 'storename'),
     address: first(s, 'address'),
@@ -52,10 +53,33 @@ function parseStores(src) {
   })).filter((s) => s.storeId);
 }
 
+// קריאה סלחנית, כשהקובץ לא XML תקין (למשל תגית שלא נסגרת – כך בסניף האונליין של רמי לוי):
+// לוקחים כל בלוק <tag>…</tag> ובתוכו את השדות הפשוטים <שדה>ערך</שדה>. לכל שדה – כל הערכים שלו
+const ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+const unescape = (v) => v.replace(/&(amp|lt|gt|quot|apos);/g, (_, e) => ENT[e]).replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n))).trim();
+function blocks(text, tag) {
+  const out = [];
+  for (const m of text.matchAll(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, 'gi'))) {
+    const all = {};
+    for (const f of m[1].matchAll(/<([A-Za-z_][\w.-]*)\b[^>]*>([^<]*)<\/\1\s*>/gi)) (all[f[1].toLowerCase()] ||= []).push(unescape(f[2]));
+    const one = Object.fromEntries(Object.entries(all).map(([k, v]) => [k, v[0]]));
+    out.push({ one, all });
+  }
+  return out;
+}
+// הצמתים בשם tag: מהעץ, ואם הקובץ שבור – בקריאה הסלחנית (רק השדות הפשוטים)
+function nodes(src, tag) {
+  const text = typeof src === 'string' ? src : decode(src);
+  try {
+    return findAll(parser.parse(text), tag);
+  } catch {
+    return blocks(text, tag).map((b) => ({ ...b.one, __all: b.all }));
+  }
+}
+
 function parsePrices(src) {
-  const doc = parse(src);
   const map = new Map();
-  for (const it of findAll(doc, 'item')) {
+  for (const it of nodes(src, 'item')) {
     const code = first(it, 'itemcode');
     if (!code) continue;
     map.set(code, {
@@ -79,9 +103,8 @@ function toDate(d, h) {
 }
 
 function parsePromos(src) {
-  const doc = parse(src);
-  return findAll(doc, 'promotion').map((p) => {
-    const items = findAll(p, 'item').map((i) => first(i, 'itemcode')).filter(Boolean);
+  return nodes(src, 'promotion').map((p) => {
+    const items = p.__all ? p.__all.itemcode || [] : findAll(p, 'item').map((i) => first(i, 'itemcode')).filter(Boolean);
     return {
       promoId: first(p, 'promotionid'),
       description: first(p, 'promotiondescription'),
@@ -90,7 +113,7 @@ function parsePromos(src) {
       price: Number(first(p, 'discountedprice')) || null,
       minQty: Number(first(p, 'minqty')) || null,
       // ClubId: 0 = כלל הלקוחות, 1 = חברי מועדון, 2 = כרטיס אשראי, 3 = אחר
-      clubOnly: [].concat(p.clubs?.clubid ?? p.clubid ?? '0').every((c) => String(c).trim() !== '0'),
+      clubOnly: [].concat(p.__all?.clubid ?? p.clubs?.clubid ?? p.clubid ?? '0').every((c) => String(c).trim() !== '0'),
       items,
     };
   }).filter((p) => p.items.length);

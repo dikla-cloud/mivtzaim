@@ -83,7 +83,7 @@ form > button { margin-top: 8px; }
 @media (prefers-color-scheme: dark) { .error { color: #fca5a5; } }
 .userlist { list-style: none; padding: 0; margin: 8px 0; }
 .userlist li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
-.userlist li .who { flex: 1; min-width: 0; }
+.userlist li .who { flex: 1 1 200px; min-width: 0; }
 .userlist li .acts { display: flex; gap: 6px; }
 .userlist li button { padding: 6px 10px; font-size: .9rem; }
 

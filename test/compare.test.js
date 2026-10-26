@@ -136,3 +136,14 @@ test('cart compare: other spellings and singular/plural are found', () => {
   assert.deepEqual([...candidates('מלפפונים', d).keys()], ['32']);
   assert.deepEqual([...candidates('פטרוז', d).keys()], ['33']);
 });
+
+test('price files: a broken XML file (unclosed tags) is still read', () => {
+  const xml = require('../server/xml');
+  const open = '<Extra>'.repeat(120); // תגיות שלא נסגרות – יותר מדי קינון לקורא הרגיל
+  const prices = `<Root><Items>${open}<Item><ItemCode>111</ItemCode><ItemName>חלב טרי 3% &amp; טעים</ItemName><ItemPrice>7.10</ItemPrice><bIsWeighted>0</bIsWeighted></Item><Item><ItemCode>222</ItemCode><ItemName>עגבניות</ItemName><ItemPrice>9.90</ItemPrice><bIsWeighted>1</bIsWeighted></Item></Items></Root>`;
+  const m = xml.parsePrices(prices);
+  assert.deepEqual([m.get('111').name, m.get('111').price, m.get('222').weighted], ['חלב טרי 3% & טעים', 7.1, true]);
+  const promos = `<Root>${open}<Promotions><Promotion><PromotionId>5</PromotionId><PromotionDescription>2 ב-10</PromotionDescription><DiscountedPrice>10</DiscountedPrice><MinQty>2</MinQty><Clubs><ClubId>0</ClubId></Clubs><PromotionItems><Item><ItemCode>111</ItemCode></Item><Item><ItemCode>333</ItemCode></Item></PromotionItems></Promotion></Promotions></Root>`;
+  const [p] = xml.parsePromos(promos);
+  assert.deepEqual([p.items, p.minQty, p.clubOnly], [['111', '333'], 2, false]);
+});

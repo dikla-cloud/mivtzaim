@@ -7,7 +7,7 @@ const db = require('./db');
 
 const KEEP_DAYS = 400;
 // אירועים שהאפליקציה רשאית לדווח (כל דבר אחר נדחה)
-const CLIENT_EVENTS = new Set(['deal_click', 'deal_sheet', 'share_link', 'copy_link', 'dictation', 'photo', 'cart_compare']);
+const CLIENT_EVENTS = new Set(['deal_click', 'deal_sheet', 'share_link', 'copy_link', 'dictation', 'photo', 'cart_compare', 'invite_link']);
 
 const today = () => new Date().toISOString().slice(0, 10);
 

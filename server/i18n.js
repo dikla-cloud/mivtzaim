@@ -88,6 +88,9 @@ const T = {
   ' עד {date}': { de: ' bis {date}', en: ' until {date}' },
   'ועוד {n}…': { de: 'und {n} weitere…', en: 'and {n} more…' },
   '{n} מבצעים חדשים מהרשימה שלך': { de: '{n} neue Angebote von deiner Liste', en: '{n} new deals from your list' },
+  "קישור ההזמנה לא בתוקף. בקשו קישור חדש ממי שהזמין אתכם.": { de: "Der Einladungslink ist ungültig. Bitten Sie um einen neuen Link.", en: "This invite link is no longer valid. Ask for a new link." },
+  "כבר יש משתמש בשם הזה. נסו שם אחר (למשל עם האות הראשונה של שם המשפחה).": { de: "Diesen Namen gibt es schon. Versuchen Sie einen anderen (z. B. mit dem ersten Buchstaben des Nachnamens).", en: "This name is taken. Try another one (e.g. add the first letter of your last name)." },
+  "האפליקציה מלאה כרגע. בקשו ממי שהזמין אתכם לפנות למנהל.": { de: "Die App ist gerade voll. Bitten Sie die einladende Person, sich an den Admin zu wenden.", en: "The app is full right now. Ask the person who invited you to contact the admin." },
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -157,6 +160,9 @@ const T_AR = {
   " עד {date}": " حتى {date}",
   "ועוד {n}…": "و{n} أخرى…",
   "{n} מבצעים חדשים מהרשימה שלך": "{n} عروض جديدة من قائمتك",
+  "קישור ההזמנה לא בתוקף. בקשו קישור חדש ממי שהזמין אתכם.": "رابط الدعوة غير صالح. اطلب رابطًا جديدًا ممن دعاك.",
+  "כבר יש משתמש בשם הזה. נסו שם אחר (למשל עם האות הראשונה של שם המשפחה).": "هذا الاسم مستخدم. جرّب اسمًا آخر (مثلًا مع الحرف الأول من اسم العائلة).",
+  "האפליקציה מלאה כרגע. בקשו ממי שהזמין אתכם לפנות למנהל.": "التطبيق ممتلئ حاليًا. اطلب ممن دعاك التواصل مع المدير.",
 };
 
 const pick = (lang) => (LANGS.includes(lang) ? lang : DEFAULT_LANG);

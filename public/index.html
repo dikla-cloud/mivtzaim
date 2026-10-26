@@ -27,6 +27,15 @@
         <select id="loginLang" class="lang-mini" aria-label="שפה"></select>
       </div>
       <p id="loginHint" class="muted">כניסה לחשבון שלך</p>
+      <!-- הצטרפות דרך קישור הזמנה -->
+      <form id="joinForm" hidden>
+        <p id="joinHint" class="small"></p>
+        <label>השם שלך<input id="joinName" autocomplete="name" required minlength="2" maxlength="30"></label>
+        <label>המייל שלך<input id="joinEmail" type="email" autocomplete="email" inputmode="email" required></label>
+        <label id="joinPassWrap">בחרו סיסמה (לפחות 6 תווים)<input id="joinPass" type="password" autocomplete="new-password" minlength="6"></label>
+        <button class="primary">הצטרפות</button>
+        <button type="button" id="joinHave" class="linkish">כבר יש לי חשבון – כניסה</button>
+      </form>
       <!-- כניסה עם קוד למייל (כשהשרת יודע לשלוח מייל) -->
       <form id="codeForm" hidden>
         <div id="codeStep1">
@@ -83,7 +92,6 @@
       <p id="status" class="muted"></p>
       <button type="button" id="locBtn" title="עדכון המיקום לפי המקום שבו את/ה נמצא/ת עכשיו">📍 עדכון מיקום</button>
     </div>
-    <p id="sources" class="muted small"></p>
     <button type="button" id="emailBanner" class="note-warn email-banner" hidden>📧 הוסיפו מייל לחשבון – הכניסה לאפליקציה היא עם קוד שנשלח למייל. לחצו כאן</button>
   </header>
 
@@ -119,6 +127,7 @@
         <button id="scan" class="primary">בדיקת מבצעים עכשיו</button>
       </div>
       <div id="deals"></div>
+      <p class="muted small sources"></p>
       <details id="report" class="card" hidden><summary>🔍 מה נבדק בסריקה האחרונה</summary><div id="reportBody"></div></details>
       <details id="errors" hidden><summary>הערות מהסריקה האחרונה</summary><ul></ul></details>
     </section>
@@ -190,6 +199,7 @@
         <p id="cartSummary" class="small"></p>
         <div id="cartCards" class="cart-cards"></div>
         <p class="muted small">👆 לחיצה על מוצר בטבלה – להשוות תמיד את המוצר הזה (אותו ברקוד בכל הסניפים).</p>
+        <p class="muted small sources"></p>
         <details class="legend" open>
           <summary>מקרא</summary>
           <ul class="legend-list">
@@ -301,6 +311,21 @@
           <summary id="othersSum"></summary>
           <p class="muted small">משתמשים שהוזמנו על ידי משתמשים אחרים. רואים רק את השם ואת תאריך ההצטרפות.</p>
           <ul id="others" class="userlist"></ul>
+        </details>
+        <details id="inviteBox" class="ugroup" open>
+          <summary>🔗 קישור הזמנה</summary>
+          <p class="muted small">שולחים קישור (בוואטסאפ או במייל), ומי שמקבל אותו נרשם בעצמו – עם השם והמייל שלו. הקישור בתוקף 7 ימים, ואפשר לבטל אותו בכל רגע.</p>
+          <div class="row">
+            <button type="button" id="inviteHome" class="primary">🏠 קישור לבני הבית</button>
+            <button type="button" id="inviteSep">👤 קישור למשתמש נפרד</button>
+          </div>
+          <p id="inviteHomeHint" class="muted small">קישור לבני הבית: מי שמצטרף רואה ומעדכן איתך את רשימת ״חסר בבית״. קישור למשתמש נפרד: לחברים – עם רשימות משלהם.</p>
+          <div id="inviteNew" class="linkbox" hidden>
+            <code id="inviteUrl" dir="ltr"></code>
+            <button type="button" id="inviteCopy">📋 העתקת הקישור</button>
+            <button type="button" id="inviteShare" hidden>📤 שליחה</button>
+          </div>
+          <ul id="inviteList" class="userlist"></ul>
         </details>
         <div id="limitsBox" hidden>
           <h4>הגבלות הזמנה</h4>

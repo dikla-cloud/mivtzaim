@@ -34,9 +34,42 @@ function track(type, chain) {
 // ---------- כניסה ----------
 let setupInfo = {};
 const loginErr = (msg) => { $('#loginError').textContent = msg || ''; $('#loginError').hidden = !msg; };
-async function showLogin() {
+// קישור הזמנה: ‎/?invite=…‎ – מי שאין לו עדיין חשבון נרשם בעצמו
+const inviteToken = new URLSearchParams(location.search).get('invite');
+const clearInvite = () => { if (inviteToken) history.replaceState(null, '', location.pathname); };
+async function showJoin() {
+  try {
+    const r = await fetch(`/api/invite/${encodeURIComponent(inviteToken)}`, { headers: { 'x-app-lang': LANG } });
+    const inv = await r.json();
+    if (!r.ok) { loginErr(inv.error); return false; }
+    $('#codeForm').hidden = true;
+    $('#loginForm').hidden = true;
+    $('#joinForm').hidden = false;
+    $('#joinPassWrap').hidden = inv.emailLogin;
+    $('#joinPass').required = !inv.emailLogin;
+    $('#loginHint').textContent = t('{by} הזמין/ה אותך ל״הקניות שלי״ 🎉', { by: inv.by });
+    $('#joinHint').textContent = t(inv.join
+      ? 'תצטרפו למשק הבית – ותראו ותעדכנו יחד את רשימת ״חסר בבית״. הרשימה לחיפוש מבצעים, המיקום וההתראות נשארים אישיים.'
+      : 'תקבלו חשבון משלכם, עם רשימות משלכם.');
+    return true;
+  } catch { return false; }
+}
+$('#joinForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  loginErr('');
+  try {
+    const r = await api('POST', `/api/invite/${encodeURIComponent(inviteToken)}/join`, { name: $('#joinName').value.trim(), email: $('#joinEmail').value.trim(), password: $('#joinPass').value || undefined });
+    clearInvite();
+    $('#joinForm').hidden = true;
+    await loggedIn(r.token);
+  } catch (ex) { loginErr(ex.message); }
+});
+$('#joinHave').addEventListener('click', () => { clearInvite(); $('#joinForm').hidden = true; showLogin(true); });
+
+async function showLogin(skipInvite = false) {
   document.body.classList.add('logged-out');
   try { setupInfo = await (await fetch('/api/setup')).json(); } catch { /* בלי חיבור */ }
+  if (inviteToken && !skipInvite && !setupInfo.firstRun && (await showJoin())) return;
   const first = setupInfo.firstRun;
   const byEmail = !first && setupInfo.emailLogin;
   $('#codeForm').hidden = !byEmail;
@@ -107,6 +140,7 @@ function showTab(t) {
   document.querySelectorAll('nav button').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === t));
   $('#gear').setAttribute('aria-pressed', t === 'settings');
   if (t === 'settings' && S?.me.admin) loadStats();
+  if (t === 'settings' && S) loadInvites();
   document.querySelectorAll('main > section').forEach((s) => (s.hidden = s.id !== `tab-${t}`));
   if (t === 'cart' && S) initCart();
   scrollTo({ top: 0 });
@@ -116,7 +150,9 @@ function showTab(t) {
 function render() {
   const scanned = S.lastScan ? t('נבדק לאחרונה: {when}', { when: new Date(S.lastScan).toLocaleString(LOCALE, { dateStyle: 'short', timeStyle: 'short' }) }) : t('עוד לא בוצעה בדיקה');
   $('#status').textContent = S.location ? t('📍 {place} · רדיוס {km} ק"מ · {scanned}', { place: S.location.label, km: S.radiusKm, scanned }) : t('לחצו על ״עדכון מיקום״ כדי להתחיל');
-  $('#sources').textContent = S.lastSources.length ? t('מקור הנתונים: {src}', { src: S.lastSources.join(', ') }) : '';
+  // מקור הנתונים: מתחת למבצעים ולתוצאות השוואת העגלות
+  const src = S.lastSources.length ? t('מקור הנתונים: {src}', { src: S.lastSources.join(', ') }) : '';
+  document.querySelectorAll('.sources').forEach((el) => { el.textContent = src; el.hidden = !src; });
   $('#meName').textContent = S.me.name;
   // כניסה עם מייל: בלי סיסמאות. מי שעוד אין לו מייל בחשבון – תזכורת בראש המסך
   $('#passBox').hidden = S.emailLogin;
@@ -293,6 +329,8 @@ function renderFamily() {
   const canInvite = S.me.admin || L.membersCanInvite;
   const left = Math.max(L.maxUsers - L.count, 0);
   $('#addUser').hidden = !canInvite || !left;
+  $('#inviteBox').hidden = !canInvite;
+  $('#inviteSep').hidden = !S.me.admin;
   $('#limitsBox').hidden = !S.me.admin;
   $('#membersCanInvite').checked = L.membersCanInvite;
   if (document.activeElement !== $('#maxUsers')) $('#maxUsers').value = L.maxUsers;
@@ -682,6 +720,59 @@ $('#homeAdd').addEventListener('submit', async (e) => {
     }
   }
 });
+
+// ---------- קישורי הזמנה ----------
+const inviteUrl = (tok) => `${location.origin}/?invite=${tok}`;
+function renderInvites(list) {
+  $('#inviteList').replaceChildren(...list.map((v) => {
+    const li = document.createElement('li');
+    const who = Object.assign(document.createElement('span'), { className: 'who' });
+    who.append(Object.assign(document.createElement('b'), { textContent: v.join ? t('🏠 לבני הבית') : t('👤 משתמש נפרד') }),
+      Object.assign(document.createElement('span'), { className: 'muted small', textContent: ` · ${t('בתוקף עד {date}', { date: new Date(v.exp).toLocaleDateString(LOCALE) })} · ${t('הצטרפו: {n}', { n: v.uses })}` }));
+    const acts = Object.assign(document.createElement('span'), { className: 'acts' });
+    const copy = Object.assign(document.createElement('button'), { type: 'button', textContent: t('📋 העתקה') });
+    copy.addEventListener('click', () => copyText(inviteUrl(v.token), copy));
+    const del = Object.assign(document.createElement('button'), { type: 'button', textContent: t('ביטול הקישור') });
+    del.addEventListener('click', async () => {
+      if (!confirm(t('לבטל את הקישור? מי שעוד לא הצטרף דרכו לא יוכל להשתמש בו.'))) return;
+      try { renderInvites((await api('DELETE', `/api/invites/${v.token}`)).invites); $('#inviteNew').hidden = true; } catch (e) { alert(e.message); }
+    });
+    acts.append(copy, del);
+    li.append(who, acts);
+    return li;
+  }));
+}
+async function loadInvites() {
+  if ($('#inviteBox').hidden) return;
+  try { renderInvites((await api('GET', '/api/invites')).invites); } catch { /* */ }
+}
+async function copyText(text, btn) {
+  try { await navigator.clipboard.writeText(text); } catch { prompt(t('העתיקו את הקישור:'), text); return; }
+  const old = btn.textContent;
+  btn.textContent = t('✔ הועתק');
+  setTimeout(() => (btn.textContent = old), 2000);
+}
+async function newInvite(join) {
+  try {
+    const r = await api('POST', '/api/invites', { join });
+    renderInvites(r.invites);
+    $('#inviteUrl').textContent = inviteUrl(r.token);
+    $('#inviteNew').hidden = false;
+    $('#inviteNew').dataset.join = join ? '1' : '';
+    track('invite_link');
+  } catch (e) { alert(e.message); }
+}
+$('#inviteHome').addEventListener('click', () => newInvite(true));
+$('#inviteSep').addEventListener('click', () => newInvite(false));
+$('#inviteCopy').addEventListener('click', () => copyText($('#inviteUrl').textContent, $('#inviteCopy')));
+if (navigator.share) {
+  $('#inviteShare').hidden = false;
+  $('#inviteShare').addEventListener('click', () => navigator.share({
+    title: t('הקניות שלי'),
+    text: t($('#inviteNew').dataset.join ? 'הזמנה לרשימת הקניות המשותפת שלנו ב״הקניות שלי״:' : 'הזמנה לאפליקציה ״הקניות שלי״:'),
+    url: $('#inviteUrl').textContent,
+  }).catch(() => {}));
+}
 
 // קישור לאפליקציה: העתקה / שליחה
 $('#copyLink').addEventListener('click', async () => {
@@ -1586,7 +1677,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.10.26d';
+const APP_VERSION = '2026.10.26e';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });
@@ -1678,4 +1769,4 @@ async function boot() {
 }
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
-if (token) boot().catch(() => {}); else showLogin();
+if (token) { clearInvite(); boot().catch(() => {}); } else showLogin();

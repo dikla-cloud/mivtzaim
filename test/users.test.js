@@ -129,3 +129,27 @@ test('invite limits: max users and who may invite', async () => {
   s = (await call('GET', '/api/state', null, noa)).json;
   assert.deepEqual([s.limits.membersCanInvite, s.limits.count], [false, count + 1]);
 });
+
+test('invite link: the invited person signs up by themselves', async () => {
+  const owner = (await call('POST', '/api/login', { name: 'דיקלה', password: 'initial123' })).json.token;
+  const { token } = (await call('POST', '/api/invites', { join: true }, owner)).json;
+  const sep = (await call('POST', '/api/invites', { join: false }, owner)).json.token;
+  // בלי כניסה: רואים מי הזמין
+  assert.deepEqual((await call('GET', `/api/invite/${token}`)).json.by, 'דיקלה');
+  assert.equal((await call('GET', '/api/invite/nope')).status, 404);
+  // בלי שליחת מייל בשרת – צריך גם סיסמה
+  assert.equal((await call('POST', `/api/invite/${token}/join`, { name: 'רותם', email: 'rotem@example.com' })).status, 400);
+  const r = await call('POST', `/api/invite/${token}/join`, { name: 'רותם', email: 'rotem@example.com', password: 'rotem123' });
+  assert.equal(r.status, 200);
+  const me = (await call('GET', '/api/state', null, r.json.token)).json;
+  const ownerState = (await call('GET', '/api/state', null, owner)).json;
+  assert.equal(me.me.household, ownerState.me.household); // הצטרפה למשק הבית
+  assert.equal(ownerState.users.find((u) => u.name === 'רותם').invitedByMe, true);
+  // קישור למשתמש נפרד – משק בית חדש
+  const r2 = await call('POST', `/api/invite/${sep}/join`, { name: 'Friend2', email: 'f2@example.com', password: 'friend123' });
+  const f = (await call('GET', '/api/state', null, r2.json.token)).json;
+  assert.notEqual(f.me.household, ownerState.me.household);
+  // ביטול קישור
+  await call('DELETE', `/api/invites/${token}`, null, owner);
+  assert.equal((await call('GET', `/api/invite/${token}`)).status, 404);
+});

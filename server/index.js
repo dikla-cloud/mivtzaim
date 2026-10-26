@@ -120,6 +120,42 @@ app.post('/api/login/verify', (req, res) => {
 
 app.get('/api/setup', (req, res) => res.json({ firstRun: !db.users().length, emailLogin: mail.configured(), lang: i18n.DEFAULT_LANG, country: APP_COUNTRY }));
 
+// ---------- קישור הזמנה: מי שמקבל את הקישור נרשם בעצמו ----------
+// db.invites: { [token]: { by, household (null = משתמש נפרד), at, exp, uses } }. תוקף 7 ימים, אפשר לבטל.
+const INVITE_TTL = 7 * 86400000;
+const liveInvite = (token) => {
+  const inv = (db.get().invites || {})[String(token || '')];
+  return inv && Date.now() < inv.exp && db.get().users[db.userKey(inv.by)] ? inv : null;
+};
+app.get('/api/invite/:token', (req, res) => {
+  const inv = liveInvite(req.params.token);
+  if (!inv) return res.status(404).json({ error: T(req, 'קישור ההזמנה לא בתוקף. בקשו קישור חדש ממי שהזמין אתכם.') });
+  res.json({ by: inv.by, join: Boolean(inv.household), emailLogin: mail.configured() });
+});
+app.post('/api/invite/:token/join', (req, res) => {
+  const inv = liveInvite(req.params.token);
+  if (!inv) return res.status(404).json({ error: T(req, 'קישור ההזמנה לא בתוקף. בקשו קישור חדש ממי שהזמין אתכם.') });
+  const { name, email, password } = req.body || {};
+  if (!auth.validName(name)) return res.status(400).json({ error: T(req, 'השם צריך להכיל 2–30 תווים') });
+  if (!validEmail(email)) return res.status(400).json({ error: T(req, 'כתובת המייל לא תקינה') });
+  if (emailTaken(email)) return res.status(400).json({ error: T(req, 'המייל הזה כבר שייך למשתמש אחר') });
+  // בלי שליחת מייל בשרת – נכנסים עם סיסמה, ולכן בוחרים אחת כבר עכשיו
+  if (!mail.configured() && !auth.validPassword(password)) return res.status(400).json({ error: T(req, 'הסיסמה צריכה להכיל לפחות 6 תווים') });
+  if (db.get().users[db.userKey(name)]) return res.status(400).json({ error: T(req, 'כבר יש משתמש בשם הזה. נסו שם אחר (למשל עם האות הראשונה של שם המשפחה).') });
+  if (db.users().length >= db.get().limits.maxUsers) return res.status(400).json({ error: T(req, 'האפליקציה מלאה כרגע. בקשו ממי שהזמין אתכם לפנות למנהל.') });
+  const u = db.newUser(name, {
+    ...(auth.validPassword(password) ? { pass: auth.hashPassword(password) } : {}),
+    household: inv.household && db.get().households?.[inv.household] ? inv.household : null,
+    email: email.trim(),
+    invitedBy: inv.by,
+    joinedAt: new Date().toISOString(),
+  });
+  inv.uses = (inv.uses || 0) + 1;
+  metrics.count('signup');
+  db.save();
+  res.json({ token: auth.newSession(u) });
+});
+
 app.use('/api', (req, res, next) => {
   req.token = req.get('x-app-token');
   req.user = auth.sessionUser(req.token);
@@ -213,6 +249,30 @@ app.post('/api/users', (req, res) => {
   metrics.count('signup');
   db.save();
   res.json(state(req.user));
+});
+
+// קישורי ההזמנה שלי. משתמש רגיל (אם מותר לו להזמין) – רק למשק הבית שלו
+const myInvites = (u) => Object.entries(db.get().invites || {})
+  .filter(([, v]) => v.by === u.name && Date.now() < v.exp)
+  .map(([token, v]) => ({ token, join: Boolean(v.household), exp: v.exp, uses: v.uses || 0 }));
+app.get('/api/invites', (req, res) => res.json({ invites: myInvites(req.user) }));
+app.post('/api/invites', (req, res) => {
+  if (!req.user.admin && !db.get().limits.membersCanInvite) return res.status(403).json({ error: T(req, 'רק מנהל האפליקציה יכול להזמין משתמשים חדשים') });
+  const join = !req.user.admin || req.body?.join !== false;
+  const d = db.get();
+  d.invites ||= {};
+  for (const [k, v] of Object.entries(d.invites)) if (Date.now() >= v.exp) delete d.invites[k]; // ניקוי ישנים
+  const token = crypto.randomBytes(12).toString('base64url');
+  d.invites[token] = { by: req.user.name, household: join ? db.householdOf(req.user).id : null, at: Date.now(), exp: Date.now() + INVITE_TTL, uses: 0 };
+  db.save();
+  res.json({ token, invites: myInvites(req.user) });
+});
+app.delete('/api/invites/:token', (req, res) => {
+  const d = db.get();
+  const inv = d.invites?.[req.params.token];
+  if (inv && (inv.by === req.user.name || req.user.admin)) delete d.invites[req.params.token];
+  db.save();
+  res.json({ invites: myInvites(req.user) });
 });
 
 // ---------- ״חסר בבית״: רשימה משותפת לכל בני משק הבית ----------
