@@ -423,8 +423,8 @@ dialog:focus, dialog:focus-visible { outline: none; }
 .userlist { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .userlist li:last-child { border-bottom: 0; }
 .userlist:empty { display: none; }
-.others-box { margin-top: 14px; }
-.others-box summary { cursor: pointer; font-weight: 600; color: var(--text); }
+
+
 .ci-head { font-size: .8rem; font-weight: 700; color: var(--muted); padding: 0 0 4px; }
 .ci-head span:last-child { min-width: 150px; text-align: center; }
 .cart-card .ship-field { margin: 8px 0 0; }
@@ -432,3 +432,11 @@ dialog:focus, dialog:focus-visible { outline: none; }
 .legend summary { cursor: pointer; font-weight: 700; color: var(--text); }
 .legend-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2px 12px; color: var(--muted); }
 .legend-list b { display: inline-block; min-width: 1.6em; text-align: center; color: var(--text); }
+/* קבוצות המשתמשים: כותרת ירוקה בולטת, נפתחת ונסגרת */
+details.ugroup { margin-top: 12px; border: 1px solid var(--border); border-radius: 12px; padding: 0 12px; }
+details.ugroup > summary { list-style: none; cursor: pointer; padding: 12px 0; font-weight: 700; font-size: 1.05rem; color: var(--accent); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+details.ugroup > summary::-webkit-details-marker { display: none; }
+details.ugroup > summary::after { content: '▾'; color: var(--accent); transition: transform .2s; }
+details.ugroup[open] > summary::after { transform: rotate(180deg); }
+details.ugroup[open] { padding-bottom: 12px; }
+details.ugroup > p { margin-top: 0; }

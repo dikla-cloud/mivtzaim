@@ -287,15 +287,17 @@
       </div>
       <div class="card" id="familyCard" hidden>
         <h3>👥 בני הבית ומשתמשים</h3>
-        <h4>🏠 בני הבית שלי</h4>
-        <p class="muted small">כל מי שנמצא במשק הבית שלך רואה ומעדכן את אותה רשימת ״חסר בבית״. הרשימה לחיפוש מבצעים, המיקום וההתראות נשארים אישיים לכל אחד.</p>
-        <ul id="family" class="userlist"></ul>
-        <div id="invitedBox" hidden>
-          <h4>✉️ משתמשים שהזמנתי (משק בית אחר)</h4>
+        <details class="ugroup" open>
+          <summary>🏠 בני הבית שלי</summary>
+          <p class="muted small">כל מי שנמצא במשק הבית שלך רואה ומעדכן את אותה רשימת ״חסר בבית״. הרשימה לחיפוש מבצעים, המיקום וההתראות נשארים אישיים לכל אחד.</p>
+          <ul id="family" class="userlist"></ul>
+        </details>
+        <details id="invitedBox" class="ugroup" hidden>
+          <summary>✉️ משתמשים שהזמנתי (משק בית אחר)</summary>
           <p class="muted small">יש להם רשימות משלהם. מטעמי פרטיות לא רואים כאן את הרשימות, המיקום או המייל שלהם – רק אם כבר נכנסו לאפליקציה.</p>
           <ul id="invited" class="userlist"></ul>
-        </div>
-        <details id="othersBox" class="others-box" hidden>
+        </details>
+        <details id="othersBox" class="ugroup" hidden>
           <summary id="othersSum"></summary>
           <p class="muted small">משתמשים שהוזמנו על ידי משתמשים אחרים. רואים רק את השם ואת תאריך ההצטרפות.</p>
           <ul id="others" class="userlist"></ul>
