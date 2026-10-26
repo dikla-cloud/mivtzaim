@@ -47,10 +47,19 @@ const MAX_LINES = 15;
     if (!chain) continue;
     console.log(`\n=== ${chain.name} · ${s.name || ''} [${s.storeId}]`);
     let prices;
+    let raw;
     try {
-      prices = xml.parsePrices((await chain.storeFiles(String(s.storeId))).prices);
+      raw = (await chain.storeFiles(String(s.storeId))).prices;
+      prices = xml.parsePrices(raw);
     } catch (e) {
       console.log(`  ✘ ${e.message}`);
+      continue;
+    }
+    console.log(`  בקובץ המחירים: ${prices.size} מוצרים`);
+    // קובץ שלא נקרא ממנו אף מוצר – מציגים את תחילתו, כדי לראות את המבנה שלו
+    if (!prices.size) {
+      const text = xml.decode(raw);
+      console.log(`  גודל הקובץ: ${raw.length} בתים. תחילת הקובץ:\n${text.slice(0, 1500)}`);
       continue;
     }
     for (const w of words) {
