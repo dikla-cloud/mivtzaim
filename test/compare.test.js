@@ -147,3 +147,17 @@ test('price files: a broken XML file (unclosed tags) is still read', () => {
   const [p] = xml.parsePromos(promos);
   assert.deepEqual([p.items, p.minQty, p.clubOnly], [['111', '333'], 2, false]);
 });
+
+test('cart compare: coupon placeholder items are not real products', async () => {
+  const israel = require('../server/providers/israel');
+  const { compare } = require('../server/compare');
+  const files = '<Root><Items><Item><ItemCode>1</ItemCode><ItemName>ה.נ קופון יוגורט חלב מתנה</ItemName><ItemPrice>0.01</ItemPrice></Item><Item><ItemCode>2</ItemCode><ItemName>יוגורט חלב 3%</ItemName><ItemPrice>4.5</ItemPrice></Item></Items></Root>';
+  const fake = { id: 'faketest3', name: 'בדיקה', stores: async () => [], storeFiles: async () => ({ prices: Buffer.from(files), promos: Buffer.from('<Root/>') }) };
+  israel.chains.push(fake);
+  try {
+    const r = await compare([{ text: 'יוגורט' }], [{ chain: 'faketest3', storeId: '1' }], { pins: { 'יוגורט': 'any' } });
+    assert.equal(r.stores[0].lines[0].code, '2');
+  } finally {
+    israel.chains.splice(israel.chains.indexOf(fake), 1);
+  }
+});

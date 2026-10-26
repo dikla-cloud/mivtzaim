@@ -41,7 +41,9 @@ async function storeData(chain, storeId) {
         }
       }
       const items = [];
-      for (const [code, it] of prices) if (it.price) items.push({ code, name: it.name, price: it.price, weighted: Boolean(it.weighted), variants: variantsOf(it.name) });
+      // לא מוצרים אמיתיים: פריטי קופון/מתנה במחיר סמלי (״ה.נ קופון … מתנה״ ב-0.01 ₪)
+      const fake = (it) => it.price < 0.1 || /קופון|^ה\.נ\b/.test(it.name || '');
+      for (const [code, it] of prices) if (it.price && !fake(it)) items.push({ code, name: it.name, price: it.price, weighted: Boolean(it.weighted), variants: variantsOf(it.name) });
       const data = { at: Date.now(), items, byCode: new Map(items.map((i) => [i.code, i])), promoByCode, promos };
       cache.set(key, data);
       while (cache.size > MAX_CACHED) cache.delete(cache.keys().next().value);
