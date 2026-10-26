@@ -811,12 +811,22 @@ function renderOrder() {
     return li;
   }));
 }
+// ➕ פותח שדה ״מחלקה חדשה״ עם בחירה בין שלושה אייקונים
+let deptAddIcon = '🏷️';
+$('#deptAddToggle').addEventListener('click', () => {
+  $('#deptAddForm').hidden = !$('#deptAddForm').hidden;
+  if (!$('#deptAddForm').hidden) $('#deptAddName').focus();
+});
+document.querySelectorAll('.icon-pick button').forEach((b) => b.addEventListener('click', () => {
+  deptAddIcon = b.dataset.icon;
+  document.querySelectorAll('.icon-pick button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+}));
 $('#deptAddForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const d = await newDept($('#deptAddName').value, $('#deptAddIcon').value);
+  const d = await newDept($('#deptAddName').value, deptAddIcon);
   if (!d) return;
   $('#deptAddName').value = '';
-  $('#deptAddIcon').value = '';
+  $('#deptAddForm').hidden = true;
   orderDraft.splice(Math.max(orderDraft.indexOf('other'), 0), 0, d.id);
   renderOrder();
 });
@@ -1885,7 +1895,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.10.26m';
+const APP_VERSION = '2026.10.26n';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });

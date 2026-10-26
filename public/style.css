@@ -470,3 +470,11 @@ details.ugroup > p { margin-top: 0; }
 .dept-add #deptAddName { flex: 1; min-width: 0; }
 .dept-icon-in { width: 3.4em; text-align: center; padding: 10px 4px; }
 .dept-new { border-style: dashed; color: var(--accent); font-weight: 700; }
+.dept-add-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
+.dept-add-top .dept-add { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; margin: 0; }
+.dept-add-top .dept-add[hidden] { display: none; }
+.icon-pick { display: inline-flex; gap: 2px; }
+.icon-pick button { padding: 6px 7px; font-size: 1.1rem; line-height: 1; border-radius: 8px; }
+.icon-pick button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.dept-add-top #deptAddName { flex: 1; min-width: 0; padding: 8px 10px; }
+.dept-add-top .dept-add .primary { padding: 8px 12px; }

@@ -559,16 +559,18 @@ const I18N = {
   "השרת עוד לא שולח מיילים, ולכן הכניסה היא בשם וסיסמה.": ["Der Server versendet noch keine E-Mails, daher Anmeldung mit Name und Passwort.", "The server does not send email yet, so sign-in is with name and password."],
   "שולח…": ["Wird gesendet…", "Sending…"],
   "✔ נשלח מייל ל-{to}. אם הוא הגיע – הכניסה עם קוד למייל עובדת.": ["✔ E-Mail an {to} gesendet. Wenn sie ankommt, funktioniert die Anmeldung per Code.", "✔ Email sent to {to}. If it arrives, sign-in with an emailed code works."],
-  "אין לי מייל בחשבון – כניסה עם שם וסיסמה": ["Keine E-Mail im Konto – mit Name und Passwort anmelden", "No email on my account – sign in with name and password"],
+  "כניסה עם שם משתמש וסיסמה": ["Mit Benutzername und Passwort anmelden", "Sign in with username and password"],
   "📧 שליחת מיילים": ["📧 E-Mail-Versand", "📧 Sending email"],
   "שליחת מייל בדיקה אליי": ["Test-E-Mail an mich senden", "Send me a test email"],
   "🔌 חיבור לרשתות": ["🔌 Verbindung zu den Ketten", "🔌 Connection to chains"],
-  "סדרו את המחלקות לפי מסלול ההליכה בסופר שלכם, והוסיפו מחלקות משלכם. משותף לכל בני הבית.": ["Ordnen Sie die Abteilungen nach Ihrem Weg durch den Markt und fügen Sie eigene hinzu. Gilt für den ganzen Haushalt.", "Arrange the departments in your walking order and add your own. Shared with the whole household."],
+  "סדרו את המחלקות לפי מסלול ההליכה בסופר שלכם. משותף לכל בני הבית.": ["Ordnen Sie die Abteilungen nach Ihrem Weg durch den Markt und fügen Sie eigene hinzu. Gilt für den ganzen Haushalt.", "Arrange the departments in your walking order and add your own. Shared with the whole household."],
   "➕ הוספה": ["➕ Hinzufügen", "➕ Add"],
   "אייקון (לא חובה)": ["Symbol (optional)", "Icon (optional)"],
   "מחלקה חדשה, למשל: לשבת": ["Neue Abteilung, z. B.: Wochenende", "New department, e.g.: weekend"],
   "שם המחלקה": ["Name der Abteilung", "Department name"],
   "מהמקרר": ["Aus dem Kühlregal", "Chilled"],
+  "מחלקה חדשה": ["Neue Abteilung", "New department"],
+  "אייקון": ["Symbol", "Icon"],
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -1080,7 +1082,7 @@ const I18N_AR = {
   "השרת עוד לא שולח מיילים, ולכן הכניסה היא בשם וסיסמה.": "الخادم لا يرسل بريدًا بعد، لذا الدخول بالاسم وكلمة المرور.",
   "שולח…": "جارٍ الإرسال…",
   "✔ נשלח מייל ל-{to}. אם הוא הגיע – הכניסה עם קוד למייל עובדת.": "✔ أُرسل بريد إلى {to}. إن وصل، فالدخول بالرمز يعمل.",
-  "אין לי מייל בחשבון – כניסה עם שם וסיסמה": "لا يوجد بريد في حسابي – دخول بالاسم وكلمة المرور",
+  "כניסה עם שם משתמש וסיסמה": "الدخول باسم المستخدم وكلمة المرور",
   "📧 שליחת מיילים": "📧 إرسال البريد",
   "שליחת מייל בדיקה אליי": "أرسل لي بريد اختبار",
   "🔌 חיבור לרשתות": "🔌 الاتصال بالسلاسل",
@@ -1090,6 +1092,8 @@ const I18N_AR = {
   "מחלקה חדשה, למשל: לשבת": "قسم جديد، مثلًا: للعطلة",
   "שם המחלקה": "اسم القسم",
   "מהמקרר": "من الثلاجة",
+  "מחלקה חדשה": "قسم جديد",
+  "אייקון": "رمز",
 };
 
 // t('נוספו {n} פריטים', { n: 3 })
