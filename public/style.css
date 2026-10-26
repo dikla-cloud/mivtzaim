@@ -443,3 +443,26 @@ details.ugroup > p { margin-top: 0; }
 .diag-out { font-family: inherit; white-space: pre-wrap; word-break: break-word; max-height: 60vh; overflow: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: .8rem; line-height: 1.5; user-select: text; -webkit-user-select: text; }
 #diagBox select { display: block; width: 100%; margin-top: 4px; }
 #diagBox h4 { margin: 14px 0 0; }
+
+/* חסר בבית: מחלקות */
+.view-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 4px 0 8px; }
+.seg { display: inline-flex; border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; background: var(--surface); padding: 8px 12px; font-size: .9rem; color: var(--text); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.view-row button.linkish { margin: 0; }
+.dept-head { list-style: none; margin: 14px 0 4px; padding: 0 4px; font-weight: 700; color: var(--accent); font-size: .95rem; border: 0; background: none; }
+.dept-head.done-head { color: var(--muted); }
+#homeList > .dept-head:first-child { margin-top: 4px; }
+.dept-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.dept-opt { text-align: start; padding: 10px 12px; }
+.dept-opt.on { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+#deptDlg button.linkish { margin: 12px auto 0; }
+.order-list { list-style: none; margin: 8px 0; padding: 0; }
+.order-list li { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.order-list li span { flex: 1; }
+.order-list li button { padding: 4px 10px; }
+.homeitem { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+#prodDlg, #deptDlg, #orderDlg { width: min(560px, calc(100vw - 16px)); max-height: 90vh; border: 1px solid var(--border); border-radius: 16px; padding: 16px; background: var(--bg); color: var(--text); }
+#prodDlg::backdrop, #deptDlg::backdrop, #orderDlg::backdrop { background: rgb(0 0 0 / .45); }
+#deptDlg .dept-list { grid-template-columns: 1fr 1fr; }
+#deptDlg .dept-opt { padding: 10px 8px; font-size: .92rem; }

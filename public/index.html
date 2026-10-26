@@ -148,7 +148,15 @@
       </form>
       <p id="dupHint" class="dup" hidden></p>
       <p id="voiceHint" class="muted small"></p>
+      <div class="view-row">
+        <div class="seg" role="group" aria-label="סידור הרשימה">
+          <button type="button" id="viewDept" aria-pressed="true">🗂️ לפי מחלקות</button>
+          <button type="button" id="viewAdded" aria-pressed="false">🕒 לפי סדר הוספה</button>
+        </div>
+        <button type="button" id="deptOrderBtn" class="linkish small">סדר המחלקות</button>
+      </div>
       <ul id="homeList"></ul>
+      <p class="muted small">💡 פריט במחלקה הלא נכונה? לחיצה ארוכה עליו (במחשב: קליק ימני) – ובוחרים מחלקה. זה נשמר לכל בני הבית.</p>
       <p id="homeEmpty" class="empty muted" hidden>אין כרגע חוסרים 🎉</p>
       <div class="row" id="homeActions" hidden>
         <button id="clearDone">🧹 ניקוי פריטים שנקנו</button>
@@ -488,6 +496,28 @@
   </dialog>
 
 
+  <dialog id="deptDlg">
+    <div class="sheet-head">
+      <h3 id="deptTitle"></h3>
+      <button type="button" id="deptClose" class="sheet-x" aria-label="סגירה">✕</button>
+    </div>
+    <div id="deptList" class="dept-list"></div>
+    <button type="button" id="deptAuto" class="linkish small" hidden>חזרה למחלקה האוטומטית</button>
+  </dialog>
+
+  <dialog id="orderDlg">
+    <div class="sheet-head">
+      <h3>סדר המחלקות</h3>
+      <button type="button" id="orderClose" class="sheet-x" aria-label="סגירה">✕</button>
+    </div>
+    <p class="muted small">סדרו את המחלקות לפי מסלול ההליכה בסופר שלכם. הסדר משותף לכל בני הבית.</p>
+    <ol id="orderList" class="order-list"></ol>
+    <div class="row">
+      <button type="button" id="orderSave" class="primary">שמירה</button>
+      <button type="button" id="orderReset">סדר ברירת המחדל</button>
+    </div>
+  </dialog>
+
   <dialog id="prodDlg">
     <div class="sheet-head">
       <h3 id="prodTitle"></h3>
@@ -536,6 +566,7 @@
 
   <script src="i18n.js"></script>
   <script src="foods.js"></script>
+  <script src="depts.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -9,6 +9,7 @@ const FOOD_ICONS = [
   ['אורז', '🍚'], ['פסטה', '🍝'], ['ספגטי', '🍝'], ['פתיתים', '🍝'], ['קוסקוס', '🍚'],
   ['עוף', '🍗'], ['שניצל', '🍗'], ['הודו', '🍗'], ['בשר', '🥩'], ['סטייק', '🥩'], ['קציצ', '🍖'], ['נקניק', '🌭'],
   ['סלמון', '🐟'], ['טונה', '🐟'], ['דג', '🐟'],
+  ['פטרוזיל', '🌿'], ['כוסבר', '🌿'], ['כסבר', '🌿'], ['שמיר', '🌿'], ['נענע', '🌿'], ['בזיליק', '🌿'], ['עשבי תיבול', '🌿'],
   ['עגבני', '🍅'], ['מלפפון', '🥒'], ['גזר', '🥕'], ['בצל', '🧅'], ['שום', '🧄'], ['פלפל', '🫑'], ['חסה', '🥬'],
   ['כרוב', '🥬'], ['ברוקולי', '🥦'], ['תירס', '🌽'], ['פטרי', '🍄'], ['חציל', '🍆'], ['אבוקדו', '🥑'], ['זית', '🫒'],
   ['בננ', '🍌'], ['לימון', '🍋'], ['ענב', '🍇'], ['אבטיח', '🍉'], ['מלון', '🍈'], ['תות', '🍓'], ['אגס', '🍐'],
@@ -61,8 +62,13 @@ const FOOD_ICONS_AR = [
   ['نبيذ', '🍷'], ['بيرة', '🍺'], ['بيتزا', '🍕'], ['ورق تواليت', '🧻'], ['محارم', '🧻'], ['صابون', '🧼'], ['شامبو', '🧴'], ['مسحوق غسيل', '🧺'], ['سائل جلي', '🧽'], ['حفاض', '👶'],
 ];
 
+// אותיות סופיות כרגילות, כדי ש״מלפפון״ ימצא גם ״מלפפונים״
+const FINALS = { 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' };
+const unfinal = (s) => s.replace(/[ךםןףץ]/g, (c) => FINALS[c]);
+const FOOD_ICONS_N = FOOD_ICONS.map(([k, v]) => [unfinal(k), v]);
+
 function foodIcon(text) {
-  const t = String(text).split('|')[0].replace(/[׳'"״]/g, '').toLowerCase();
+  const t = unfinal(String(text).split('|')[0].replace(/[׳'"״]/g, '').toLowerCase());
   if (/^\d{7,14}$/.test(t.trim())) return '🏷️'; // ברקוד
   const words = t.split(/\s+/).flatMap((w) => (/^[הובלמש]/.test(w) && w.length > 3 ? [w, w.slice(1)] : [w]));
   if (/[\u0600-\u06FF]/.test(t)) {
@@ -70,7 +76,7 @@ function foodIcon(text) {
     const ar = FOOD_ICONS_AR.find(([k]) => (k.includes(' ') ? t.includes(k) : aw.some((w) => w.startsWith(k))));
     return ar ? ar[1] : '🛒';
   }
-  const hit = FOOD_ICONS.find(([k]) => (k.includes(' ') ? t.includes(k) : words.some((w) => w.startsWith(k))));
+  const hit = FOOD_ICONS_N.find(([k]) => (k.includes(' ') ? t.includes(k) : words.some((w) => w.startsWith(k))));
   if (hit) return hit[1];
   const ends = (w, k) => { const i = w.lastIndexOf(k); return i >= 0 && w.length - (i + k.length) <= 2 && (i === 0 || k.length >= 3); };
   // ״=מילה״ – רק מילה שלמה (Eis ולא Reis/Preis)

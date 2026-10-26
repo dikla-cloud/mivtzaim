@@ -219,6 +219,8 @@ const state = (u) => ({
   // המנהל רואה את כל המשתמשים (בפרטים מצומצמים – ראו userInfo); כל אחד אחר – את בני משק הבית שלו
   users: db.users().filter((x) => u.admin || x.household === u.household).map((x) => userInfo(x, u)),
   home: db.householdOf(u).home,
+  deptOf: db.householdOf(u).deptOf || {},
+  deptOrder: db.householdOf(u).deptOrder || null,
   limits: { ...db.get().limits, count: db.users().length },
   needTerms: u.termsVersion !== TERMS_VERSION,
   list: u.list, location: u.location, radiusKm: u.radiusKm, deals: u.deals,
@@ -306,9 +308,34 @@ app.delete('/api/invites/:token', (req, res) => {
 // ---------- ״חסר בבית״: רשימה משותפת לכל בני משק הבית ----------
 // כל פעולה היא על פריט בודד, כדי שכמה טלפונים יוכלו לעדכן באותו זמן בלי לדרוס זה את זה
 const home = (req) => db.householdOf(req.user).home;
-const homeState = (req) => ({ home: home(req) });
+// מחלקות בסופר: שיוך ידני של פריט למחלקה, וסדר המחלקות – משותפים לבני הבית (השיוך האוטומטי נעשה באפליקציה)
+const DEPT_IDS = ['produce', 'dairy', 'deli', 'bread', 'meat', 'frozen', 'dry', 'pantry', 'snacks', 'drinks', 'cleaning', 'care', 'baby', 'pets', 'other'];
+const homeState = (req) => {
+  const h = db.householdOf(req.user);
+  return { home: h.home, deptOf: h.deptOf || {}, deptOrder: h.deptOrder || null };
+};
 
 app.get('/api/home', (req, res) => res.json(homeState(req)));
+
+// העברת פריט למחלקה אחרת (dept ריק = חזרה לשיוך האוטומטי)
+app.put('/api/home/dept', (req, res) => {
+  const h = db.householdOf(req.user);
+  const key = compare.pinKey(req.body?.text || '');
+  if (!key) return res.status(400).json({ error: T(req, 'שגיאה') });
+  h.deptOf ||= {};
+  if (DEPT_IDS.includes(req.body?.dept)) h.deptOf[key] = req.body.dept; else delete h.deptOf[key];
+  db.save();
+  res.json(homeState(req));
+});
+// סדר המחלקות (null = ברירת המחדל)
+app.put('/api/home/dept-order', (req, res) => {
+  const h = db.householdOf(req.user);
+  const order = Array.isArray(req.body?.order) ? [...new Set(req.body.order.filter((d) => DEPT_IDS.includes(d)))] : null;
+  if (order && order.length) h.deptOrder = [...order, ...DEPT_IDS.filter((d) => !order.includes(d))];
+  else delete h.deptOrder;
+  db.save();
+  res.json(homeState(req));
+});
 
 // השוואת פריטים בלי תלות ברווחים, גרשיים, אותיות גדולות/קטנות וה' הידיעה (״החלב״ = ״חלב״)
 const sameItem = (a, b) => {

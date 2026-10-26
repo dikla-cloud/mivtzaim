@@ -625,11 +625,43 @@ function renderHome() {
   $('#homeShared').textContent = others.length ? t('🏠 משותף עם: {names}', { names: others.join(', ') }) : t('🏠 כרגע רק את/ה ברשימה הזו. אפשר לשתף בני בית בהגדרות ← ״בני הבית״.');
   $('#homeEmpty').hidden = items.length > 0;
   $('#homeActions').hidden = !items.some((x) => x.done);
-  const watched = new Set(S.list.map((x) => plain(x.text)));
+  homeWatched = new Set(S.list.map((x) => plain(x.text)));
 
-  $('#homeList').replaceChildren(...items.map((it) => {
+  // לפי מחלקות: כותרת לכל מחלקה (בסדר שנקבע), ופריטים שנקנו בסוף. אחרת – לפי סדר ההוספה
+  const byDept = homeView() === 'dept';
+  $('#viewDept').setAttribute('aria-pressed', byDept);
+  $('#viewAdded').setAttribute('aria-pressed', !byDept);
+  $('#deptOrderBtn').hidden = !byDept;
+  const rows = [];
+  if (byDept) {
+    const open = items.filter((x) => !x.done);
+    for (const id of deptOrder()) {
+      const group = open.filter((x) => deptOfItem(x.text) === id);
+      if (!group.length) continue;
+      const d = DEPT_BY_ID[id];
+      rows.push(Object.assign(document.createElement('li'), { className: 'dept-head', textContent: `${d.icon} ${t(d.name)}` }), ...group.map(homeRow));
+    }
+    const done = items.filter((x) => x.done);
+    if (done.length) rows.push(Object.assign(document.createElement('li'), { className: 'dept-head done-head', textContent: t('✔ נקנו') }), ...done.map(homeRow));
+  } else rows.push(...items.map(homeRow));
+  $('#homeList').replaceChildren(...rows);
+  for (const id of freshIds) $(`#homeList [data-id="${CSS.escape(id)}"]`)?.classList.add('flash');
+}
+
+// תצוגת ״חסר בבית״: לפי מחלקות (ברירת מחדל) או לפי סדר ההוספה – נשמר במכשיר
+const homeView = () => store.get('homeView') || 'dept';
+const deptOrder = () => (S.deptOrder?.length ? S.deptOrder : DEPTS.map((d) => d.id));
+const deptOfItem = (text) => S.deptOf?.[deptKey(text)] || autoDept(text);
+let freshIds = new Set(); // פריטים שנוספו זה עתה – מודגשים לכמה שניות
+let homeWatched = new Set(); // פריטים שכבר ברשימה לחיפוש מבצעים (בלי כפתור ⭐)
+$('#viewDept').addEventListener('click', () => { store.set('homeView', 'dept'); renderHome(); });
+$('#viewAdded').addEventListener('click', () => { store.set('homeView', 'added'); renderHome(); });
+
+function homeRow(it) {
+  {
     const li = document.createElement('li');
     li.className = 'homeitem' + (it.done ? ' done' : '');
+    li.dataset.id = it.id;
     const toggle = Object.assign(document.createElement('button'), { className: 'check', ariaLabel: t(it.done ? 'סימון כלא נקנה' : 'סימון כנקנה'), textContent: it.done ? '✔' : '' });
     const body = Object.assign(document.createElement('span'), { className: 'hbody' });
     body.append(Object.assign(document.createElement('span'), { className: 'food', textContent: foodIcon(it.text) }));
@@ -658,7 +690,7 @@ function renderHome() {
     toggle.addEventListener('click', flip);
     body.addEventListener('click', flip);
     li.append(toggle, body);
-    if (!watched.has(plain(it.text))) {
+    if (!homeWatched.has(plain(it.text))) {
       const star = Object.assign(document.createElement('button'), { className: 'mini', textContent: '⭐', title: t('להוסיף לרשימה לחיפוש מבצעים') });
       star.addEventListener('click', async () => {
         await saveList([...S.list.map((x) => x.text), it.text]);
@@ -674,9 +706,64 @@ function renderHome() {
       offerUndo(t('״{item}״ נמחק מהרשימה', { item: it.text }), [{ item: it, index }]);
     });
     li.append(del);
+    // לחיצה ארוכה (או קליק ימני) – העברה למחלקה אחרת
+    let timer = null;
+    let longPressed = false;
+    body.addEventListener('pointerdown', () => { longPressed = false; timer = setTimeout(() => { longPressed = true; openDeptPicker(it.text); }, 550); });
+    for (const ev of ['pointerup', 'pointerleave', 'pointercancel', 'pointermove']) body.addEventListener(ev, (e) => { if (ev !== 'pointermove' || Math.abs(e.movementY) > 4) clearTimeout(timer); });
+    body.addEventListener('click', (e) => { if (longPressed) { e.stopImmediatePropagation(); longPressed = false; } }, true);
+    body.addEventListener('contextmenu', (e) => { e.preventDefault(); clearTimeout(timer); openDeptPicker(it.text); });
+    return li;
+  }
+}
+
+// בחירת מחלקה לפריט (נשמר לכל בני הבית)
+let deptPickItem = null;
+function openDeptPicker(text) {
+  deptPickItem = text;
+  $('#deptTitle').textContent = t('לאיזו מחלקה שייך ״{item}״?', { item: text });
+  const cur = deptOfItem(text);
+  const manual = Boolean(S.deptOf?.[deptKey(text)]);
+  $('#deptList').replaceChildren(...DEPTS.map((d) => {
+    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'dept-opt' + (d.id === cur ? ' on' : ''), textContent: `${d.icon} ${t(d.name)}${d.id === cur ? ' ✓' : ''}` });
+    b.addEventListener('click', () => setDept(text, d.id === autoDept(text) ? '' : d.id));
+    return b;
+  }));
+  $('#deptAuto').hidden = !manual;
+  $('#deptDlg').showModal();
+}
+async function setDept(text, dept) {
+  try {
+    Object.assign(S, await api('PUT', '/api/home/dept', { text, dept }));
+    $('#deptDlg').close();
+    renderHome();
+  } catch (e) { alert(e.message); }
+}
+$('#deptAuto').addEventListener('click', () => setDept(deptPickItem, ''));
+$('#deptClose').addEventListener('click', () => $('#deptDlg').close());
+
+// סדר המחלקות: חיצים למעלה/למטה, ושמירה לכל בני הבית
+let orderDraft = [];
+function renderOrder() {
+  $('#orderList').replaceChildren(...orderDraft.map((id, i) => {
+    const d = DEPT_BY_ID[id];
+    const li = document.createElement('li');
+    li.append(Object.assign(document.createElement('span'), { textContent: `${i + 1}. ${d.icon} ${t(d.name)}` }));
+    const move = (dir) => { const j = i + dir; [orderDraft[i], orderDraft[j]] = [orderDraft[j], orderDraft[i]]; renderOrder(); };
+    const up = Object.assign(document.createElement('button'), { type: 'button', textContent: '⬆️', disabled: i === 0, ariaLabel: t('למעלה') });
+    const down = Object.assign(document.createElement('button'), { type: 'button', textContent: '⬇️', disabled: i === orderDraft.length - 1, ariaLabel: t('למטה') });
+    up.addEventListener('click', () => move(-1));
+    down.addEventListener('click', () => move(1));
+    li.append(up, down);
     return li;
   }));
 }
+$('#deptOrderBtn').addEventListener('click', () => { orderDraft = [...deptOrder()]; renderOrder(); $('#orderDlg').showModal(); });
+$('#orderSave').addEventListener('click', async () => {
+  try { Object.assign(S, await api('PUT', '/api/home/dept-order', { order: orderDraft })); $('#orderDlg').close(); renderHome(); toast(t('סדר המחלקות נשמר ✔')); } catch (e) { alert(e.message); }
+});
+$('#orderReset').addEventListener('click', () => { orderDraft = DEPTS.map((d) => d.id); renderOrder(); });
+$('#orderClose').addEventListener('click', () => $('#orderDlg').close());
 
 // פריט שכבר ברשימה: אזהרה כבר בזמן ההקלדה, והודעה אחרי ההוספה
 const sameItem = (a, b) => {
@@ -704,9 +791,15 @@ $('#homeAdd').addEventListener('submit', async (e) => {
   const items = splitItems($('#homeItem').value);
   if (!items.length) return;
   $('#homeItem').value = '';
+  const before = new Set(S.home.map((x) => x.id));
   const r = await api('POST', '/api/home', { items });
   Object.assign(S, { home: r.home });
+  // מה שנוסף עכשיו – מודגש לכמה שניות (בתצוגה לפי מחלקות הוא נכנס לאמצע הרשימה)
+  freshIds = new Set(r.home.filter((x) => !before.has(x.id)).map((x) => x.id));
+  setTimeout(() => { freshIds = new Set(); }, 4000);
   renderHome();
+  const first = [...freshIds][0];
+  if (first) $(`#homeList [data-id="${CSS.escape(first)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   showDuplicates(r.duplicates || []);
   const added = items.length - (r.duplicates || []).length;
   if (r.duplicates?.length) {
@@ -1720,7 +1813,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.10.26k';
+const APP_VERSION = '2026.10.26l';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });

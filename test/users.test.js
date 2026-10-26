@@ -153,3 +153,16 @@ test('invite link: the invited person signs up by themselves', async () => {
   await call('DELETE', `/api/invites/${token}`, null, owner);
   assert.equal((await call('GET', `/api/invite/${token}`)).status, 404);
 });
+
+test('departments: manual department and department order are shared by the household', async () => {
+  const token = (await call('POST', '/api/login', { name: 'דיקלה', password: 'initial123' })).json.token;
+  let r = (await call('PUT', '/api/home/dept', { text: 'Hummus', dept: 'dry' }, token)).json;
+  assert.equal(r.deptOf.hummus, 'dry');
+  r = (await call('PUT', '/api/home/dept', { text: 'hummus', dept: '' }, token)).json;
+  assert.equal(r.deptOf.hummus, undefined);
+  r = (await call('PUT', '/api/home/dept-order', { order: ['bread', 'produce', 'nope'] }, token)).json;
+  assert.deepEqual(r.deptOrder.slice(0, 3), ['bread', 'produce', 'dairy']);
+  assert.equal(r.deptOrder.length, 15);
+  r = (await call('PUT', '/api/home/dept-order', { order: null }, token)).json;
+  assert.equal(r.deptOrder, null);
+});
