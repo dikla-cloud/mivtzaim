@@ -5,6 +5,8 @@
 set -euo pipefail
 APP_DIR=/opt/mivtzaim
 cd "$APP_DIR"
+# השירות רץ כ-root, והתיקייה שייכת למשתמש אחר: בלי זה git מסרב לעבוד („dubious ownership”)
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0="$APP_DIR"
 git fetch --quiet origin main
 OLD="$(git rev-parse HEAD)"
 NEW="$(git rev-parse origin/main)"
