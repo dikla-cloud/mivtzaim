@@ -728,8 +728,9 @@ function renderDiagChains() {
   for (const c of S.chains) sel.append(new Option(c.name, c.id));
 }
 let diagRun = 0;
-async function runDiag(body, needChain) {
+async function runDiag(body, needChain, btn) {
   if (needChain && !$('#diagChain').value) return alert(t('בחרו רשת'));
+  btn.closest('.row').after($('#diagResult'));
   const run = ++diagRun;
   const out = $('#diagOut');
   out.hidden = false;
@@ -755,11 +756,11 @@ async function runDiag(body, needChain) {
     document.querySelectorAll('#diagBox button').forEach((b) => { b.disabled = false; });
   }
 }
-$('#diagChains').addEventListener('click', () => runDiag({ kind: 'chains' }));
-$('#diagStores').addEventListener('click', () => runDiag({ kind: 'stores', filter: $('#diagFilter').value }, true));
+$('#diagChains').addEventListener('click', () => runDiag({ kind: 'chains' }, false, $('#diagChains')));
+$('#diagStores').addEventListener('click', () => runDiag({ kind: 'stores', filter: $('#diagFilter').value }, true, $('#diagStores')));
 $('#diagProduct').addEventListener('click', () => {
   if (!$('#diagWords').value.trim()) return alert(t('כתבו מה לחפש'));
-  runDiag({ kind: 'product', words: $('#diagWords').value, store: $('#diagStore').value.trim() }, Boolean($('#diagStore').value.trim()));
+  runDiag({ kind: 'product', words: $('#diagWords').value, store: $('#diagStore').value.trim() }, Boolean($('#diagStore').value.trim()), $('#diagProduct'));
 });
 $('#diagCopy').addEventListener('click', () => copyText($('#diagOut').textContent, $('#diagCopy')));
 
@@ -1719,7 +1720,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.10.26f';
+const APP_VERSION = '2026.10.26g';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });

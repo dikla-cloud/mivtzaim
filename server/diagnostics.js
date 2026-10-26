@@ -23,7 +23,8 @@ async function checkChains(log, only) {
       }
       const files = await chain.storeFiles(s.storeId);
       const n = xml.parsePrices(files.prices).size;
-      log(`✔ ${chain.name} (${chain.id}): ${stores.length} סניפים · קבצים של "${s.name}" (${s.city}) ירדו: מבצעים ${files.promos.length} בתים, מחירים ${files.prices.length} בתים (${n} מוצרים)`);
+      const city = (await geo.storeCity(s)) || s.city; // שם העיר, גם כשבקובץ יש רק קוד עיר
+      log(`✔ ${chain.name} (${chain.id}): ${stores.length} סניפים · קבצים של "${s.name}"${city && city !== '0' ? ` (${city})` : ''} ירדו: מבצעים ${files.promos.length} בתים, מחירים ${files.prices.length} בתים (${n} מוצרים)`);
     } catch (e) {
       log(`✘ ${chain.name} (${chain.id}): ${e.message}`);
     }

@@ -304,11 +304,14 @@
           <div class="row"><button type="button" id="diagStores">הצגת הסניפים</button></div>
           <h4>🔍 חיפוש מוצר בקובץ המחירים</h4>
           <label>מה לחפש (אפשר חלק ממילה; כמה מילים – בפסיקים)<input id="diagWords" placeholder="למשל: פטרוזיל, כוסב"></label>
-          <label>מספר סניף (לא חובה – בלי מספר: הסניפים שנבחרו)<input id="diagStore" inputmode="numeric" placeholder="למשל: 39"></label>
+          <label>מספר סניף (לא חובה – בלי מספר ייבדקו הסניפים שנבחרו)<input id="diagStore" inputmode="numeric" placeholder="למשל: 39"></label>
           <div class="row"><button type="button" id="diagProduct">חיפוש</button></div>
-          <p id="diagStatus" class="small loading-note" hidden></p>
-          <pre id="diagOut" class="diag-out" dir="auto" hidden></pre>
-          <div class="row"><button type="button" id="diagCopy" hidden>📋 העתקת התוצאה</button></div>
+          <!-- התוצאה מוצגת מתחת לכפתור של הבדיקה שהורצה -->
+          <div id="diagResult">
+            <p id="diagStatus" class="small loading-note" hidden></p>
+            <pre id="diagOut" class="diag-out" dir="auto" hidden></pre>
+            <div class="row"><button type="button" id="diagCopy" hidden>📋 העתקת התוצאה</button></div>
+          </div>
         </details>
       </div>
       <div class="card" id="familyCard" hidden>
