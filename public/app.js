@@ -1400,12 +1400,18 @@ function renderCartItems() {
     minus.addEventListener('click', () => setTo(Math.max(min, Math.round((cur - step) * 2) / 2)));
     plus.addEventListener('click', () => setTo(Math.min(max, Math.round((cur + step) * 2) / 2)));
     amount.append(minus, Object.assign(document.createElement('b'), { className: 'qty', textContent: byKg ? t('{kg} ק"ג', { kg: cur }) : String(cur) }), plus);
-    const unit = Object.assign(document.createElement('button'), { type: 'button', className: 'linkish small', textContent: byKg ? t('לפי יחידות') : t('⚖️ לפי משקל') });
-    unit.addEventListener('click', () => {
-      if (byKg) save({ kg: null });
-      else save({ kg: 0.5, qty: null });
-    });
-    amount.append(unit);
+    // יחידת המידה: יחידות או ק"ג
+    const unit = Object.assign(document.createElement('span'), { className: 'seg unit-seg', role: 'group', ariaLabel: t('יחידת מידה') });
+    for (const [kg, label] of [[false, t('יח\'')], [true, t('ק"ג')]]) {
+      const b = Object.assign(document.createElement('button'), { type: 'button', textContent: label });
+      b.setAttribute('aria-pressed', kg === byKg);
+      b.addEventListener('click', () => {
+        if (kg === byKg) return;
+        save(kg ? { kg: 0.5, qty: null } : { kg: null });
+      });
+      unit.append(b);
+    }
+    amount.prepend(unit);
     li.append(name, amount);
     return li;
   }));
@@ -1897,7 +1903,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.10.26o';
+const APP_VERSION = '2026.10.29';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });

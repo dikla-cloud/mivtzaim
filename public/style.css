@@ -478,3 +478,5 @@ details.ugroup > p { margin-top: 0; }
 .icon-pick button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
 .dept-add-top #deptAddName { flex: 1; min-width: 0; padding: 8px 10px; }
 .dept-add-top .dept-add .primary { padding: 8px 12px; }
+.unit-seg button { padding: 6px 10px; font-size: .85rem; }
+.ci-amount { justify-content: flex-end; }
