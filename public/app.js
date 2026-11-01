@@ -1459,7 +1459,7 @@ function renderCartItems() {
     name.className = 'ci-name';
     name.append(Object.assign(document.createElement('b'), { textContent: `${foodIcon(it.text)} ${it.text}` }));
     const pin = pinOf(it.text);
-    const pinLabel = pin === 'any' ? t('🔀 הכי זול מכל מותג') : pin && pin !== 'auto' ? `📌 ${S.pinNames?.[pinKeyOf(it.text)] || pin}` : t('בחירה אוטומטית');
+    const pinLabel = pin === 'any' ? t('🔀 הכי זול מכל מותג') : pin === 'loose' ? t('⚖️ בתפזורת') : pin && pin !== 'auto' ? `📌 ${S.pinNames?.[pinKeyOf(it.text)] || pin}` : t('בחירה אוטומטית');
     const choose = Object.assign(document.createElement('button'), { type: 'button', className: 'linkish ci-pick', textContent: `${pinLabel} · ${t('בחירת מוצר ‹')}` });
     choose.addEventListener('click', () => openProductPicker(it.text));
     name.append(choose);
@@ -1587,6 +1587,7 @@ function renderResolve(o) {
     }
     const autoName = it.options.find((p) => p.code === it.auto)?.name;
     box.append(optionRow(`rs${gi}`, 'auto', t('בחירה אוטומטית'), autoName ? t('כרגע: {name}', { name: autoName }) : t('המוצר שנמכר בכמה שיותר סניפים'), true));
+    box.append(optionRow(`rs${gi}`, 'loose', t('⚖️ בתפזורת – לפי משקל'), t('ירקות, פירות ומעדנייה: הזול לק"ג בכל סניף'), false));
     box.append(optionRow(`rs${gi}`, 'any', t('לא משנה המותג – הכי זול בכל סניף'), t('משווים את המוצר הזול ביותר שמתאים, גם אם הוא שונה בין הסניפים'), false));
     const more = Object.assign(document.createElement('button'), { type: 'button', className: 'linkish small', textContent: t('🔍 מוצר אחר – חיפוש או צילום ברקוד') });
     more.addEventListener('click', () => openProductPicker(it.text, () => runCompare()));
@@ -1646,6 +1647,7 @@ function showPickerOptions(options, stores, auto, loose = false) {
   });
   const autoName = options.find((p) => p.code === auto)?.name;
   rows.push(optionRow('prodPick', 'auto', t('בחירה אוטומטית'), loose ? t('⚖️ בתפזורת – הזול לק"ג בכל סניף') : autoName ? t('כרגע: {name}', { name: autoName }) : t('המוצר שנמכר בכמה שיותר סניפים'), !pin || pin === 'auto'));
+  rows.push(optionRow('prodPick', 'loose', t('⚖️ בתפזורת – לפי משקל'), t('ירקות, פירות ומעדנייה: הזול לק"ג בכל סניף'), pin === 'loose'));
   rows.push(optionRow('prodPick', 'any', t('לא משנה המותג – הכי זול בכל סניף'), t('משווים את המוצר הזול ביותר שמתאים, גם אם הוא שונה בין הסניפים'), pin === 'any'));
   $('#prodList').replaceChildren(...rows);
 }
@@ -2084,7 +2086,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.01d';
+const APP_VERSION = '2026.11.01e';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });

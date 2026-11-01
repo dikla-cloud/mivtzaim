@@ -349,7 +349,8 @@ async function compare(items, stores, { pins = {}, clubs = null, shipping = {} }
     const pinned = pins[pinKey(t)];
     if (pinned === 'any') return [t, { code: null, pinned: false, any: true }];
     if (/^\d+$/.test(pinned || '')) return [t, { code: pinned, pinned: true }];
-    if (isLoose(t, datas, it)) return [t, { code: null, pinned: false, loose: true }];
+    // בתפזורת: כשבחרו את זה במפורש, או אוטומטית (ראו isLoose)
+    if (pinned === 'loose' || isLoose(t, datas, it)) return [t, { code: null, pinned: false, loose: true }];
     return [t, { code: commonCode(t, datas), pinned: false }];
   }));
   const results = loaded.map(({ base, data, error }) => {

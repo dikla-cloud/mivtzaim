@@ -695,7 +695,7 @@ app.put('/api/pins', (req, res) => {
     const key = compare.pinKey(p?.text || '');
     const code = String(p?.code || '').trim();
     if (!key) return res.status(400).json({ error: T(req, 'שגיאה') });
-    if (/^\d{4,14}$/.test(code) || code === 'any' || code === 'auto') h.pins[key] = code; else delete h.pins[key];
+    if (/^\d{4,14}$/.test(code) || ['any', 'auto', 'loose'].includes(code)) h.pins[key] = code; else delete h.pins[key];
     const name = String(p?.name || '').trim().slice(0, 100);
     if (/^\d/.test(code) && name) h.pinNames[key] = name; else delete h.pinNames[key];
   }

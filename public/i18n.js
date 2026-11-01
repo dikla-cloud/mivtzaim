@@ -587,6 +587,9 @@ const I18N = {
   "כמות": ["Menge", "Quantity"],
   "⚖️ בתפזורת – הזול לק\"ג בכל סניף": ["⚖️ Lose – das günstigste pro kg in jeder Filiale", "⚖️ Loose – cheapest per kg in each store"],
   "בתפזורת – הזול לק\"ג בכל סניף": ["Lose – das günstigste pro kg in jeder Filiale", "Loose – cheapest per kg in each store"],
+  "⚖️ בתפזורת": ["⚖️ Lose", "⚖️ Loose"],
+  "⚖️ בתפזורת – לפי משקל": ["⚖️ Lose – nach Gewicht", "⚖️ Loose – by weight"],
+  "ירקות, פירות ומעדנייה: הזול לק\"ג בכל סניף": ["Obst, Gemüse, Feinkost: das günstigste pro kg in jeder Filiale", "Fruit, vegetables, deli: cheapest per kg in each store"],
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -1126,6 +1129,9 @@ const I18N_AR = {
   "כמות": "الكمية",
   "⚖️ בתפזורת – הזול לק\"ג בכל סניף": "⚖️ سائب – الأرخص للكغ في كل فرع",
   "בתפזורת – הזול לק\"ג בכל סניף": "سائب – الأرخص للكغ في كل فرع",
+  "⚖️ בתפזורת": "⚖️ سائب",
+  "⚖️ בתפזורת – לפי משקל": "⚖️ سائب – بالوزن",
+  "ירקות, פירות ומעדנייה: הזול לק\"ג בכל סניף": "خضار وفواكه وأطعمة جاهزة: الأرخص للكغ في كل فرع",
 };
 
 // t('נוספו {n} פריטים', { n: 3 })
