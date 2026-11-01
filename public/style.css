@@ -506,3 +506,11 @@ details.ugroup > p { margin-top: 0; }
 .cart-table th:first-child, .cart-table td:first-child { position: sticky; inset-inline-start: 0; z-index: 1; background: var(--bg); box-shadow: -1px 0 0 var(--border); }
 .cart-table tr:first-child th:first-child { z-index: 3; }
 .cart-table td:first-child small { max-width: 90px; }
+/* עריכת פריט */
+#deptDlg h4 { margin: 14px 0 6px; }
+.item-qty { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.item-qty-label { font-weight: 600; }
+.item-qty .step { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 1.1rem; line-height: 1; }
+.item-qty .qty { min-width: 3.2em; text-align: center; }
+.amt { display: inline-block; margin-inline-start: 6px; padding: 0 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: .78rem; font-weight: 700; white-space: nowrap; vertical-align: middle; }
+.homeitem.done .amt { opacity: .6; }

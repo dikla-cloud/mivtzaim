@@ -157,7 +157,7 @@
         <button type="button" id="deptOrderBtn" class="linkish small">סדר המחלקות</button>
       </div>
       <ul id="homeList"></ul>
-      <p class="muted small">💡 פריט במחלקה הלא נכונה? לחיצה ארוכה עליו (במחשב: קליק ימני) – ובוחרים מחלקה. זה נשמר לכל בני הבית.</p>
+      <p class="muted small">✏️ עריכת פריט – שם, כמות ומחלקה: בכפתור ✏️ או בלחיצה ארוכה על הפריט. נשמר לכל בני הבית.</p>
       <p id="homeEmpty" class="empty muted" hidden>אין כרגע חוסרים 🎉</p>
       <div class="row" id="homeActions" hidden>
         <button id="clearDone">🧹 ניקוי פריטים שנקנו</button>
@@ -513,8 +513,23 @@
       <h3 id="deptTitle"></h3>
       <button type="button" id="deptClose" class="sheet-x" aria-label="סגירה">✕</button>
     </div>
-    <div id="deptList" class="dept-list"></div>
-    <button type="button" id="deptAuto" class="linkish small" hidden>חזרה למחלקה האוטומטית</button>
+    <form id="itemEditForm">
+      <label>שם הפריט<input id="itemEditName" maxlength="200" required></label>
+      <div class="item-qty">
+        <span class="item-qty-label">כמות</span>
+        <span class="seg unit-seg" role="group" aria-label="יחידת מידה">
+          <button type="button" id="itemUnitPcs">יח'</button>
+          <button type="button" id="itemUnitKg">ק"ג</button>
+        </span>
+        <button type="button" id="itemQtyMinus" class="step" aria-label="פחות">−</button>
+        <b id="itemQty" class="qty"></b>
+        <button type="button" id="itemQtyPlus" class="step" aria-label="עוד">+</button>
+      </div>
+      <h4>מחלקה</h4>
+      <div id="deptList" class="dept-list"></div>
+      <button type="button" id="deptAuto" class="linkish small" hidden>חזרה למחלקה האוטומטית</button>
+      <div class="row"><button class="primary" id="itemEditSave">שמירה</button></div>
+    </form>
   </dialog>
 
   <dialog id="orderDlg">

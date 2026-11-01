@@ -695,7 +695,10 @@ function homeRow(it) {
     const body = Object.assign(document.createElement('span'), { className: 'hbody' });
     body.append(Object.assign(document.createElement('span'), { className: 'food', textContent: foodIcon(it.text) }));
     const txt = Object.assign(document.createElement('span'), { className: 'htext' });
-    txt.append(Object.assign(document.createElement('span'), { textContent: it.text + (it.kg ? ` · ${t('{kg} ק"ג', { kg: it.kg })}` : it.qty > 1 ? ` ×${it.qty}` : '') }));
+    const name = Object.assign(document.createElement('span'), { textContent: it.text });
+    // כמות (אם שונתה): תגית קטנה ליד השם
+    if (it.kg || it.qty > 1) name.append(Object.assign(document.createElement('span'), { className: 'amt', textContent: it.kg ? t('{kg} ק"ג', { kg: it.kg }) : t('{n} יח\'', { n: it.qty }) }));
+    txt.append(name);
     const meta = [it.by && it.by !== S.me.name ? t('הוסיף/ה {name}', { name: it.by }) : '', it.done && it.doneBy ? t('נקנה ע״י {name}', { name: it.doneBy }) : ''].filter(Boolean).join(' · ');
     if (meta) txt.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: meta }));
     const d = !it.done && dealFor(it.text);
@@ -727,6 +730,10 @@ function homeRow(it) {
       });
       li.append(star);
     }
+    const editBtn = Object.assign(document.createElement('button'), { className: 'mini', textContent: '✏️', title: t('עריכה: שם, כמות ומחלקה') });
+    editBtn.setAttribute('aria-label', t('עריכה: שם, כמות ומחלקה'));
+    editBtn.addEventListener('click', () => openItemEditor(it));
+    li.append(editBtn);
     const del = Object.assign(document.createElement('button'), { className: 'mini', textContent: '✕', title: t('מחיקה') });
     del.addEventListener('click', async () => {
       const index = S.home.findIndex((x) => x.id === it.id);
@@ -738,42 +745,80 @@ function homeRow(it) {
     // לחיצה ארוכה (או קליק ימני) – העברה למחלקה אחרת
     let timer = null;
     let longPressed = false;
-    body.addEventListener('pointerdown', () => { longPressed = false; timer = setTimeout(() => { longPressed = true; openDeptPicker(it.text); }, 550); });
+    body.addEventListener('pointerdown', () => { longPressed = false; timer = setTimeout(() => { longPressed = true; openItemEditor(it); }, 550); });
     for (const ev of ['pointerup', 'pointerleave', 'pointercancel', 'pointermove']) body.addEventListener(ev, (e) => { if (ev !== 'pointermove' || Math.abs(e.movementY) > 4) clearTimeout(timer); });
     body.addEventListener('click', (e) => { if (longPressed) { e.stopImmediatePropagation(); longPressed = false; } }, true);
-    body.addEventListener('contextmenu', (e) => { e.preventDefault(); clearTimeout(timer); openDeptPicker(it.text); });
+    body.addEventListener('contextmenu', (e) => { e.preventDefault(); clearTimeout(timer); openItemEditor(it); });
     return li;
   }
 }
 
 // בחירת מחלקה לפריט (נשמר לכל בני הבית)
-let deptPickItem = null;
-function openDeptPicker(text) {
-  deptPickItem = text;
-  $('#deptTitle').textContent = t('לאיזו מחלקה שייך ״{item}״?', { item: text });
-  const cur = deptOfItem(text);
-  const manual = Boolean(S.deptOf?.[deptKey(text)]);
+// עריכת פריט: שם, כמות (יחידות או ק"ג) ומחלקה – נשמר בלחיצה על ״שמירה״, לכל בני הבית
+let edit = null; // { it, text, kg, qty, dept }
+function openItemEditor(it) {
+  edit = { it, kg: it.kg ?? null, qty: it.qty || 1, dept: S.deptOf?.[deptKey(it.text)] || null };
+  $('#deptTitle').textContent = t('עריכת ״{item}״', { item: it.text });
+  $('#itemEditName').value = it.text;
+  renderItemEditor();
+  $('#deptDlg').showModal();
+}
+function renderItemEditor() {
+  const byKg = edit.kg != null;
+  $('#itemUnitPcs').setAttribute('aria-pressed', !byKg);
+  $('#itemUnitKg').setAttribute('aria-pressed', byKg);
+  $('#itemQty').textContent = byKg ? t('{kg} ק"ג', { kg: edit.kg }) : String(edit.qty);
+  $('#itemQtyMinus').disabled = byKg ? edit.kg <= 0.5 : edit.qty <= 1;
+  $('#itemQtyPlus').disabled = byKg ? edit.kg >= 50 : edit.qty >= 99;
+  // מחלקה: הנבחרת ידנית, או האוטומטית לפי השם (גם אחרי שינוי השם)
+  const auto = autoDept($('#itemEditName').value || edit.it.text);
+  const cur = edit.dept && allDepts().some((d) => d.id === edit.dept) ? edit.dept : auto;
   const add = Object.assign(document.createElement('button'), { type: 'button', className: 'dept-opt dept-new', textContent: t('➕ מחלקה חדשה') });
   add.addEventListener('click', async () => {
     const d = await newDept();
-    if (d) setDept(text, d.id);
+    if (d) { edit.dept = d.id; renderItemEditor(); }
   });
   $('#deptList').replaceChildren(...deptOrder().map(deptById).map((d) => {
     const b = Object.assign(document.createElement('button'), { type: 'button', className: 'dept-opt' + (d.id === cur ? ' on' : ''), textContent: `${d.icon} ${deptName(d)}${d.id === cur ? ' ✓' : ''}` });
-    b.addEventListener('click', () => setDept(text, d.id === autoDept(text) ? '' : d.id));
+    b.addEventListener('click', () => { edit.dept = d.id === auto ? null : d.id; renderItemEditor(); });
     return b;
   }), add);
-  $('#deptAuto').hidden = !manual;
-  $('#deptDlg').showModal();
+  $('#deptAuto').hidden = !edit.dept;
 }
-async function setDept(text, dept) {
+$('#itemUnitPcs').addEventListener('click', () => { edit.kg = null; renderItemEditor(); });
+$('#itemUnitKg').addEventListener('click', () => { if (edit.kg == null) edit.kg = 0.5; renderItemEditor(); });
+$('#itemQtyMinus').addEventListener('click', () => {
+  if (edit.kg != null) edit.kg = Math.max(0.5, edit.kg - 0.5); else edit.qty = Math.max(1, edit.qty - 1);
+  renderItemEditor();
+});
+$('#itemQtyPlus').addEventListener('click', () => {
+  if (edit.kg != null) edit.kg = Math.min(50, edit.kg + 0.5); else edit.qty = Math.min(99, edit.qty + 1);
+  renderItemEditor();
+});
+$('#itemEditName').addEventListener('input', () => { if (!edit.dept) renderItemEditor(); });
+$('#deptAuto').addEventListener('click', () => { edit.dept = null; renderItemEditor(); });
+$('#itemEditForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const { it } = edit;
+  const text = $('#itemEditName').value.trim();
+  if (!text) return;
   try {
-    Object.assign(S, await api('PUT', '/api/home/dept', { text, dept }));
+    const body = {};
+    if (text !== it.text) body.text = text;
+    if (edit.kg != null) { if (edit.kg !== it.kg) Object.assign(body, { kg: edit.kg, qty: null }); } else {
+      if (it.kg != null) body.kg = null;
+      if (edit.qty !== (it.qty || 1)) body.qty = edit.qty;
+    }
+    if (Object.keys(body).length) Object.assign(S, await api('PATCH', `/api/home/${it.id}`, body));
+    // המחלקה שמורה לפי שם הפריט: בשינוי שם – השיוך הידני עובר לשם החדש
+    const renamed = text !== it.text;
+    const oldDept = S.deptOf?.[deptKey(it.text)] || null;
+    if (renamed && oldDept) Object.assign(S, await api('PUT', '/api/home/dept', { text: it.text, dept: '' }));
+    if (renamed ? edit.dept : edit.dept !== oldDept) Object.assign(S, await api('PUT', '/api/home/dept', { text, dept: edit.dept || '' }));
     $('#deptDlg').close();
     renderHome();
-  } catch (e) { alert(e.message); }
-}
-$('#deptAuto').addEventListener('click', () => setDept(deptPickItem, ''));
+  } catch (ex) { alert(ex.message); }
+});
 $('#deptClose').addEventListener('click', () => $('#deptDlg').close());
 
 // סדר המחלקות: חיצים למעלה/למטה, ושמירה לכל בני הבית
@@ -1973,7 +2018,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.01';
+const APP_VERSION = '2026.11.01b';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });

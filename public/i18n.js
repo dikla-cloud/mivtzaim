@@ -577,6 +577,12 @@ const I18N = {
   "🧾 לפי פריט": ["🧾 Nach Artikel", "🧾 By item"],
   "📊 טבלה": ["📊 Tabelle", "📊 Table"],
   "תצוגת ההשוואה": ["Ansicht des Vergleichs", "Comparison view"],
+  "עריכה: שם, כמות ומחלקה": ["Bearbeiten: Name, Menge und Abteilung", "Edit: name, quantity and department"],
+  "עריכת ״{item}״": ["„{item}“ bearbeiten", "Edit “{item}”"],
+  "✏️ עריכת פריט – שם, כמות ומחלקה: בכפתור ✏️ או בלחיצה ארוכה על הפריט. נשמר לכל בני הבית.": ["✏️ Artikel bearbeiten – Name, Menge und Abteilung: mit ✏️ oder lange auf den Artikel tippen. Gilt für den ganzen Haushalt.", "✏️ Edit an item – name, quantity and department: with ✏️ or a long press on the item. Saved for the whole household."],
+  "שם הפריט": ["Name des Artikels", "Item name"],
+  "מחלקה": ["Abteilung", "Department"],
+  "{n} יח'": ["{n} Stk.", "{n} pcs"],
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -1106,6 +1112,12 @@ const I18N_AR = {
   "🧾 לפי פריט": "🧾 حسب الغرض",
   "📊 טבלה": "📊 جدول",
   "תצוגת ההשוואה": "طريقة عرض المقارنة",
+  "עריכה: שם, כמות ומחלקה": "تعديل: الاسم والكمية والقسم",
+  "עריכת ״{item}״": "تعديل «{item}»",
+  "✏️ עריכת פריט – שם, כמות ומחלקה: בכפתור ✏️ או בלחיצה ארוכה על הפריט. נשמר לכל בני הבית.": "✏️ تعديل غرض – الاسم والكمية والقسم: بزر ✏️ أو بضغطة مطولة على الغرض. يُحفظ لكل أهل البيت.",
+  "שם הפריט": "اسم الغرض",
+  "מחלקה": "القسم",
+  "{n} יח'": "{n} وحدات",
 };
 
 // t('נוספו {n} פריטים', { n: 3 })
