@@ -2122,7 +2122,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.02';
+const APP_VERSION = '2026.11.02b';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });
@@ -2166,6 +2166,7 @@ $('#menuShare').addEventListener('click', async () => {
 $('#menuAbout').addEventListener('click', () => { $('#menuDlg').close(); $('#aboutDlg').showModal(); });
 $('#aboutClose').addEventListener('click', () => $('#aboutDlg').close());
 $('#settingsVersion').textContent = t('גרסה {v}', { v: APP_VERSION });
+$('#menuVersion').textContent = t('גרסה {v}', { v: APP_VERSION });
 // רענון: מוחקים את העותק השמור של האפליקציה בטלפון וטוענים מחדש מהשרת
 async function refreshApp() {
   try {

@@ -526,3 +526,4 @@ details.ugroup > p { margin-top: 0; }
 .list-pick-bar button.linkish { margin: 0; }
 #items li input:not(.list-pick) { min-width: 0; }
 #items li .on-home { font-size: .72rem; padding: 0 6px; }
+.menu-version { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--border); text-align: center; }
