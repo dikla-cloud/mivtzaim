@@ -381,17 +381,25 @@ const sameItem = (a, b) => {
 };
 
 app.post('/api/home', (req, res) => {
-  const texts = [].concat(req.body?.items ?? req.body?.text ?? []).map((t) => String(t).trim()).filter(Boolean);
+  // פריט: טקסט, או { text, qty, kg } – כמות כבר בהוספה
+  const entries = [].concat(req.body?.items ?? req.body?.text ?? [])
+    .map((x) => (x && typeof x === 'object' ? x : { text: x }))
+    .map((x) => ({ text: String(x.text ?? '').trim(), qty: Math.round(Number(x.qty)), kg: Number(x.kg) }))
+    .filter((x) => x.text);
+  const texts = entries.map((x) => x.text);
   const list = home(req);
   const duplicates = []; // פריטים שכבר ברשימה – מוחזרים כדי שהאפליקציה תודיע עליהם
   const added = [];
-  for (const text of texts.slice(0, 200)) {
+  for (const { text, qty, kg } of entries.slice(0, 200)) {
     const existing = [...list, ...added].find((x) => !x.done && sameItem(x.text, text));
     if (existing) {
       duplicates.push({ text: existing.text, by: existing.by, at: existing.at });
       continue;
     }
-    added.push({ id: crypto.randomUUID(), text, done: false, by: req.user.name, at: new Date().toISOString() });
+    added.push({
+      id: crypto.randomUUID(), text, done: false, by: req.user.name, at: new Date().toISOString(),
+      ...(kg > 0 && kg <= 50 ? { kg: Math.round(kg * 1000) / 1000 } : qty > 1 && qty <= 99 ? { qty } : {}),
+    });
   }
   // פריט חדש נכנס לראש הרשימה – כדי שרואים מיד שהוא נוסף
   list.unshift(...added);

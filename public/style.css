@@ -514,3 +514,6 @@ details.ugroup > p { margin-top: 0; }
 .item-qty .qty { min-width: 3.2em; text-align: center; }
 .amt { display: inline-block; margin-inline-start: 6px; padding: 0 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: .78rem; font-weight: 700; white-space: nowrap; vertical-align: middle; }
 .homeitem.done .amt { opacity: .6; }
+.add-amt { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: -2px 0 8px; font-size: .9rem; }
+.add-amt .step { width: 30px; height: 30px; padding: 0; border-radius: 50%; font-size: 1rem; line-height: 1; }
+.add-amt .qty { min-width: 2.6em; text-align: center; }

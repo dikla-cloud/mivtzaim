@@ -583,6 +583,8 @@ const I18N = {
   "שם הפריט": ["Name des Artikels", "Item name"],
   "מחלקה": ["Abteilung", "Department"],
   "{n} יח'": ["{n} Stk.", "{n} pcs"],
+  "״{item}״ כבר ברשימה – הכמות עודכנה ל-{amount}": ["„{item}“ ist schon auf der Liste – Menge auf {amount} geändert", "“{item}” is already on the list – quantity updated to {amount}"],
+  "כמות": ["Menge", "Quantity"],
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -1118,6 +1120,8 @@ const I18N_AR = {
   "שם הפריט": "اسم الغرض",
   "מחלקה": "القسم",
   "{n} יח'": "{n} وحدات",
+  "״{item}״ כבר ברשימה – הכמות עודכנה ל-{amount}": "«{item}» موجود في القائمة – تم تحديث الكمية إلى {amount}",
+  "כמות": "الكمية",
 };
 
 // t('נוספו {n} פריטים', { n: 3 })

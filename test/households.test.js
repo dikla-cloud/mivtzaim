@@ -42,7 +42,11 @@ test('undo: deleted and cleared items come back in place', async () => {
   const call = (method, url, body, token) => fetch(base + url, { method, headers: { 'Content-Type': 'application/json', 'x-app-token': token }, body: body && JSON.stringify(body) }).then((r) => r.json());
   try {
     const t = auth.newSession(db.get().users['דיקלה']);
-    let h = (await call('POST', '/api/home', { items: ['א1', 'ב2', 'ג3'] }, t)).home;
+    // כמות כבר בהוספה
+    let h = (await call('POST', '/api/home', { items: [{ text: 'קפה', qty: 3 }, { text: 'עגבניות', kg: 1.5 }, { text: 'במבה', qty: 0 }] }, t)).home;
+    assert.deepEqual(['קפה', 'עגבניות', 'במבה'].map((n) => { const x = h.find((i) => i.text === n); return [x.qty ?? null, x.kg ?? null]; }), [[3, null], [null, 1.5], [null, null]]);
+    for (const x of h.filter((i) => ['קפה', 'עגבניות', 'במבה'].includes(i.text))) await call('DELETE', `/api/home/${x.id}`, null, t);
+    h = (await call('POST', '/api/home', { items: ['א1', 'ב2', 'ג3'] }, t)).home;
     const start = h.map((x) => x.text);
     const idx = h.findIndex((x) => x.text === 'ב2');
     const item = h[idx];

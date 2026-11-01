@@ -907,9 +907,15 @@ $('#homeItem').addEventListener('input', () => {
 
 $('#homeAdd').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const items = splitItems($('#homeItem').value);
+  const items = $('#homeItem').value.split(/[\n,;]+/).map(parseAmount).filter((x) => x.text);
   if (!items.length) return;
+  // כמות מהבקר שמתחת לשדה – לפריט יחיד שלא נכתבה לו כמות בטקסט
+  if (items.length === 1 && items[0].qty == null && items[0].kg == null) {
+    if (addAmt.kg != null) items[0].kg = addAmt.kg; else if (addAmt.qty > 1) items[0].qty = addAmt.qty;
+  }
   $('#homeItem').value = '';
+  addAmt = { qty: 1, kg: null };
+  renderAddAmt();
   const before = new Set(S.home.map((x) => x.id));
   const r = await api('POST', '/api/home', { items });
   Object.assign(S, { home: r.home });
@@ -920,6 +926,16 @@ $('#homeAdd').addEventListener('submit', async (e) => {
   const first = [...freshIds][0];
   if (first) $(`#homeList [data-id="${CSS.escape(first)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   showDuplicates(r.duplicates || []);
+  // כמות שלא נכנסה כי הפריט כבר ברשימה – מעדכנים את הפריט הקיים
+  for (const it of items) {
+    if (it.qty == null && it.kg == null) continue;
+    const ex = r.home.find((x) => !x.done && (r.duplicates || []).some((d) => d.text === x.text) && sameItem(x.text, it.text));
+    if (!ex) continue;
+    Object.assign(S, await api('PATCH', `/api/home/${ex.id}`, it.kg != null ? { kg: it.kg, qty: null } : { qty: it.qty, kg: null }));
+    toast(t('״{item}״ כבר ברשימה – הכמות עודכנה ל-{amount}', { item: ex.text, amount: it.kg != null ? t('{kg} ק"ג', { kg: it.kg }) : t('{n} יח\'', { n: it.qty }) }));
+    $('#dupHint').hidden = true;
+  }
+  renderHome();
   const added = items.length - (r.duplicates || []).length;
   if (r.duplicates?.length) {
     const dupText = r.duplicates.length === 1 ? t('״{item}״ כבר ברשימה ולא נוסף שוב', { item: r.duplicates[0].text }) : t('{n} פריטים כבר ברשימה ולא נוספו שוב', { n: r.duplicates.length });
@@ -932,6 +948,27 @@ $('#homeAdd').addEventListener('submit', async (e) => {
     }
   }
 });
+
+// בקר הכמות שמתחת לשדה ההוספה: יחידות או ק"ג, ‎−/+‎ (חוזר ל-1 אחרי כל הוספה)
+let addAmt = { qty: 1, kg: null };
+function renderAddAmt() {
+  const byKg = addAmt.kg != null;
+  $('#addUnitPcs').setAttribute('aria-pressed', !byKg);
+  $('#addUnitKg').setAttribute('aria-pressed', byKg);
+  $('#addQty').textContent = byKg ? t('{kg} ק"ג', { kg: addAmt.kg }) : String(addAmt.qty);
+  $('#addMinus').disabled = byKg ? addAmt.kg <= 0.5 : addAmt.qty <= 1;
+}
+$('#addUnitPcs').addEventListener('click', () => { addAmt = { qty: 1, kg: null }; renderAddAmt(); });
+$('#addUnitKg').addEventListener('click', () => { if (addAmt.kg == null) addAmt = { qty: 1, kg: 0.5 }; renderAddAmt(); });
+$('#addMinus').addEventListener('click', () => {
+  if (addAmt.kg != null) addAmt.kg = Math.max(0.5, addAmt.kg - 0.5); else addAmt.qty = Math.max(1, addAmt.qty - 1);
+  renderAddAmt();
+});
+$('#addPlus').addEventListener('click', () => {
+  if (addAmt.kg != null) addAmt.kg = Math.min(50, addAmt.kg + 0.5); else addAmt.qty = Math.min(99, addAmt.qty + 1);
+  renderAddAmt();
+});
+renderAddAmt();
 
 // ---------- בדיקות בשרת (למנהל) ----------
 function renderDiagChains() {
@@ -1867,6 +1904,35 @@ function syncTopScroll() {
 }
 
 // ---------- רשימה לחיפוש מבצעים ----------
+// כמות בתוך הטקסט: ״חלב ×3״, ״3 יח' יוגורט״, ״עגבניות 1.5 ק"ג״, ״חצי קילו גבינה״.
+// מספר בלי יחידה (״חלב 3%״, ״במבה 80 גרם״) הוא חלק מהשם – לא כמות
+function parseAmount(raw) {
+  let text = String(raw).replace(/[״”]/g, '"').replace(/[׳’]/g, "'");
+  let qty = null;
+  let kg = null;
+  const take = (re, fn) => {
+    const m = text.match(re);
+    if (!m) return;
+    fn(m);
+    text = text.replace(m[0], ' ');
+  };
+  take(/(?:^|\s)(\d+(?:[.,]\d+)?)\s*(?:ק"ג|קג|קילו(?:גרם)?|kg)(?=\s|$)/i, (m) => { kg = Number(m[1].replace(',', '.')); });
+  if (kg == null) take(/(?:^|\s)(?:קילו וחצי|ק"ג וחצי)(?=\s|$)/, () => { kg = 1.5; });
+  if (kg == null) take(/(?:^|\s)חצי (?:קילו|ק"ג)(?=\s|$)/, () => { kg = 0.5; });
+  if (kg == null) take(/(?:^|\s)(?:קילו|ק"ג)(?=\s|$)/, () => { kg = 1; });
+  if (kg == null) {
+    take(/(?:^|\s)(\d+)\s*(?:יח'|יח|יחידות|pcs|stk)(?=\s|$)/i, (m) => { qty = Number(m[1]); });
+    if (qty == null) take(/(?:^|\s)[x×]\s*(\d+)(?=\s|$)/i, (m) => { qty = Number(m[1]); });
+    if (qty == null) take(/(?:^|\s)(\d+)\s*[x×](?=\s|$)/i, (m) => { qty = Number(m[1]); });
+  }
+  text = text.replace(/^[\s\-*•]+|^\d+[.)]\s*/, '').replace(/\s+/g, ' ').trim();
+  return {
+    text,
+    ...(kg > 0 && kg <= 50 ? { kg } : {}),
+    ...(qty > 1 && qty <= 99 ? { qty } : {}),
+  };
+}
+
 const splitItems = (txt) => txt.split(/[\n,;]+/).map((s) => s.replace(/^[\s\-*•\d.)]+(?=\D)/, '').trim()).filter(Boolean);
 
 async function saveList(items) {
@@ -2018,7 +2084,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.01b';
+const APP_VERSION = '2026.11.01c';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });
