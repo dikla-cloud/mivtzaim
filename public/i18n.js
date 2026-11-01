@@ -585,6 +585,8 @@ const I18N = {
   "{n} יח'": ["{n} Stk.", "{n} pcs"],
   "״{item}״ כבר ברשימה – הכמות עודכנה ל-{amount}": ["„{item}“ ist schon auf der Liste – Menge auf {amount} geändert", "“{item}” is already on the list – quantity updated to {amount}"],
   "כמות": ["Menge", "Quantity"],
+  "⚖️ בתפזורת – הזול לק\"ג בכל סניף": ["⚖️ Lose – das günstigste pro kg in jeder Filiale", "⚖️ Loose – cheapest per kg in each store"],
+  "בתפזורת – הזול לק\"ג בכל סניף": ["Lose – das günstigste pro kg in jeder Filiale", "Loose – cheapest per kg in each store"],
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -1122,6 +1124,8 @@ const I18N_AR = {
   "{n} יח'": "{n} وحدات",
   "״{item}״ כבר ברשימה – הכמות עודכנה ל-{amount}": "«{item}» موجود في القائمة – تم تحديث الكمية إلى {amount}",
   "כמות": "الكمية",
+  "⚖️ בתפזורת – הזול לק\"ג בכל סניף": "⚖️ سائب – الأرخص للكغ في كل فرع",
+  "בתפזורת – הזול לק\"ג בכל סניף": "سائب – الأرخص للكغ في كل فرع",
 };
 
 // t('נוספו {n} פריטים', { n: 3 })

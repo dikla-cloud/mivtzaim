@@ -1633,10 +1633,10 @@ async function openProductPicker(text, onDone = null) {
   try {
     const o = await api('POST', '/api/compare/options', { stores: cartSel, all: true, text });
     const it = o.items[0];
-    showPickerOptions(it ? it.options : [], o.stores, it?.auto);
+    showPickerOptions(it ? it.options : [], o.stores, it?.auto, it?.loose);
   } catch (e) { $('#prodInfo').textContent = e.message; }
 }
-function showPickerOptions(options, stores, auto) {
+function showPickerOptions(options, stores, auto, loose = false) {
   const pin = pinOf(pickerItem);
   $('#prodInfo').textContent = options.length ? '' : t('לא נמצאו מוצרים מתאימים. נסו חיפוש אחר – תחילת מילה, למשל ״פטרוז״, או ברקוד.');
   const rows = options.map((p) => {
@@ -1645,7 +1645,7 @@ function showPickerOptions(options, stores, auto) {
     return r;
   });
   const autoName = options.find((p) => p.code === auto)?.name;
-  rows.push(optionRow('prodPick', 'auto', t('בחירה אוטומטית'), autoName ? t('כרגע: {name}', { name: autoName }) : t('המוצר שנמכר בכמה שיותר סניפים'), !pin || pin === 'auto'));
+  rows.push(optionRow('prodPick', 'auto', t('בחירה אוטומטית'), loose ? t('⚖️ בתפזורת – הזול לק"ג בכל סניף') : autoName ? t('כרגע: {name}', { name: autoName }) : t('המוצר שנמכר בכמה שיותר סניפים'), !pin || pin === 'auto'));
   rows.push(optionRow('prodPick', 'any', t('לא משנה המותג – הכי זול בכל סניף'), t('משווים את המוצר הזול ביותר שמתאים, גם אם הוא שונה בין הסניפים'), pin === 'any'));
   $('#prodList').replaceChildren(...rows);
 }
@@ -1778,7 +1778,7 @@ function renderCart(r) {
       if (cheapest) cell.className = 'cheapest';
       cell.append(Object.assign(document.createElement('b'), { textContent: `${cheapest ? '✓ ' : ''}${l.promo ? '🏷️ ' : ''}${money(l.cost)}`, className: cheapest ? 'cheap' : '' }));
       const per = l.weighted ? t('{price} לק"ג', { price: money(l.price) }) : l.qty > 1 ? t('{price} ליח\'', { price: money(l.price) }) : '';
-      cell.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: `${l.similar ? '≈ ' : l.pinned ? '📌 ' : l.any ? '🔀 ' : ''}${l.name}${per ? ` · ${per}` : ''}` }));
+      cell.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: `${l.similar ? '≈ ' : l.pinned ? '📌 ' : l.any ? '🔀 ' : l.loose ? '⚖️ ' : ''}${l.name}${per ? ` · ${per}` : ''}` }));
       if (l.promo?.minQty) cell.append(Object.assign(document.createElement('small'), { className: 'deal-note', textContent: t('🏷️ מבצע כמות: {d}', { d: l.promo.description || `${l.promo.minQty}+` }) }));
       if (l.hint) cell.append(Object.assign(document.createElement('small'), { className: 'deal-note', textContent: t('💡 {d} – כדאי להגדיל כמות', { d: l.hint.description || t('מבצע מ-{n} יח\'', { n: l.hint.minQty }) }) }));
       if (l.promo?.clubOnly) cell.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: t('🎫 מבצע מועדון') }));
@@ -1832,7 +1832,7 @@ function renderCartByItem(r, ok) {
       const per = l.weighted ? t('{price} לק"ג', { price: money(l.price) }) : l.qty > 1 && !l.estimated ? t('{price} ליח\'', { price: money(l.price) }) : '';
       const sub = l.estimated
         ? (l.missing ? t('לא נמכר כאן – מחיר משוער') : t('≈ רק מוצר דומה: {name}', { name: l.name }))
-        : `${l.similar ? '≈ ' : l.pinned ? '📌 ' : l.any ? '🔀 ' : ''}${l.name}${per ? ` · ${per}` : ''}${l.promo?.clubOnly ? ` · ${t('🎫 מבצע מועדון')}` : ''}`;
+        : `${l.similar ? '≈ ' : l.pinned ? '📌 ' : l.any ? '🔀 ' : l.loose ? '⚖️ ' : ''}${l.name}${per ? ` · ${per}` : ''}${l.promo?.clubOnly ? ` · ${t('🎫 מבצע מועדון')}` : ''}`;
       li.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: sub }));
       if (l.hint) li.append(Object.assign(document.createElement('small'), { className: 'deal-note', textContent: t('💡 {d} – כדאי להגדיל כמות', { d: l.hint.description || t('מבצע מ-{n} יח\'', { n: l.hint.minQty }) }) }));
       if (!l.missing) li.addEventListener('click', () => pinProduct(item, l));
@@ -2084,7 +2084,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.01c';
+const APP_VERSION = '2026.11.01d';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });

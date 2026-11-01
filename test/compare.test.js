@@ -171,3 +171,35 @@ test('abbreviations: ללג = ללא גלוטן (deals and cart)', () => {
   const its = [item('41', 'לחם ללג אחיד', 20), item('42', 'לחם אחיד פרוס', 8)];
   assert.deepEqual([...candidates('לחם ללא גלוטן', { items: its }).keys()], ['41']);
 });
+
+test('cart compare: loose (by weight) produce is compared per kg, not a packaged product with a shared barcode', async () => {
+  const israel = require('../server/providers/israel');
+  const { compare, options } = require('../server/compare');
+  const xmlItems = (its) => Buffer.from(`<Root><Items>${its.map(([c, n, p, w]) => `<Item><ItemCode>${c}</ItemCode><ItemName>${n}</ItemName><ItemPrice>${p}</ItemPrice><bIsWeighted>${w ? 1 : 0}</bIsWeighted></Item>`).join('')}</Items></Root>`);
+  const files = {
+    a: [['7290000000500', 'עגבניות שרי ארוז 500 גרם', 9, false], ['111', 'עגבניה במשקל', 6, true]],
+    b: [['7290000000500', 'עגבניות שרי ארוז 500 גרם', 10, false], ['222', 'עגבניות', 5, true]],
+  };
+  const fake = { id: 'faketest4', name: 'בדיקה', stores: async () => [], storeFiles: async (id) => ({ prices: xmlItems(files[id]), promos: Buffer.from('<Root/>') }) };
+  israel.chains.push(fake);
+  try {
+    const stores = [{ chain: 'faketest4', storeId: 'a' }, { chain: 'faketest4', storeId: 'b' }];
+    const r = await compare([{ text: 'עגבניות', kg: 1 }], stores);
+    assert.deepEqual(r.stores.map((s) => [s.lines[0].code, s.lines[0].cost, s.lines[0].loose]), [['111', 6, true], ['222', 5, true]]);
+    // בלי כמות: ההתאמה הטובה ביותר היא במשקל – גם אז בתפזורת (חצי ק"ג כברירת מחדל)
+    const auto = await compare(['עגבניות'], stores);
+    assert.deepEqual(auto.stores.map((s) => s.lines[0].code), ['111', '222']);
+    // ביחידות – אריזה עם ברקוד משותף
+    const pcs = await compare([{ text: 'עגבניות', qty: 2 }], stores);
+    assert.deepEqual(pcs.stores.map((s) => s.lines[0].code), ['7290000000500', '7290000000500']);
+    assert.equal((await options(['עגבניות'], stores)).items.length, 0); // לא שואלים „למה התכוונת” על בתפזורת
+  } finally {
+    israel.chains.splice(israel.chains.indexOf(fake), 1);
+  }
+});
+
+test('cart compare: plural item also finds the singular loose product', () => {
+  const { candidates } = require('../server/compare');
+  const its = [item('51', 'מלפפונים בייבי ארוז 500 גרם', 8), { ...item('52', 'מלפפון', 4), weighted: true }];
+  assert.deepEqual([...candidates('מלפפונים', { items: its }).keys()].sort(), ['51', '52']);
+});

@@ -127,10 +127,10 @@ function candidates(text, data) {
     }
     return out;
   };
+  // גם בלי סיומת יחיד/רבים: ״מלפפונים״ מוצא גם ״מלפפון במשקל״, ״עגבניה״ – גם ״עגבניות״
   const alts = alternatives(text).map(tokens);
-  let out = find(alts);
-  // לא נמצא כלום – מנסים בלי סיומת יחיד/רבים
-  if (!out.size) out = find(alts.map((qt) => qt.map(stem)));
+  const out = find(alts);
+  for (const [code, c] of find(alts.map((qt) => qt.map(stem)))) if (!out.has(code) || out.get(code).tier > c.tier) out.set(code, c);
   const best = Math.min(...[...out.values()].map((c) => c.tier));
   // אם יש התאמות טובות (0/1) – רק הן; „שוקו בטעם חלב” לא נכנס כשמחפשים „חלב”
   return new Map([...out].filter(([, c]) => c.tier <= Math.max(best, 1)));
@@ -245,10 +245,15 @@ async function options(items, stores, pins = {}, { all = false, limit = 5 } = {}
     const list = aggregate(datas, (d) => candidates(text, d).values());
     // פריט שיש לו רק מוצר אחד אפשרי – אין מה לשאול
     if (list.length < 2 && !all) continue;
+    const item = items.find((x) => (typeof x === 'string' ? x : x?.text) === text);
+    const loose = isLoose(text, datas, typeof item === 'object' ? item : {});
+    // בתפזורת אין מה לשאול: משווים לפי ק"ג את הזול בכל סניף (אפשר לשנות במסך „בחירת מוצר”)
+    if (loose && !all) continue;
     out.push({
       text: text.split('|')[0],
       pin: pin || null,
-      auto: commonCode(text, datas),
+      loose,
+      auto: loose ? null : commonCode(text, datas),
       stores: datas.length,
       options: list.slice(0, limit).map(publicOption),
     });
@@ -310,23 +315,53 @@ const median = (xs) => {
 //
 // כל סניף מקבל מחיר של כל העגלה: פריט שהמוצר המדויק שלו לא נמכר בסניף (חסר, או רק מוצר דומה ≈)
 // מקבל מחיר משוער – החציון של המחיר שלו בסניפים שבהם הוא נמכר – ומסומן. כך משווים את אותה עגלה.
+// ״בתפזורת״: ירקות ופירות במשקל (וכל מוצר שנמכר לפי ק"ג) – לכל רשת קוד פנימי משלה, ואין ברקוד משותף.
+// לכן כשברוב הסניפים ההתאמה הטובה ביותר כוללת מוצר במשקל (או כשנקבעה כמות בק"ג) –
+// משווים בכל סניף את המוצר במשקל הזול ביותר שמתאים, ולא מוצר ארוז עם ברקוד משותף
+function isLoose(text, datas, item = {}) {
+  if (item.kg) return true;
+  if (item.qty > 1) return false; // נקבעה כמות ביחידות – משווים אריזות
+  let n = 0;
+  for (const d of datas) {
+    const c = [...candidates(text, d).values()];
+    const best = Math.min(...c.map((x) => x.tier));
+    if (c.some((x) => x.weighted && x.tier === best)) n++;
+  }
+  return datas.length > 0 && n >= Math.ceil(datas.length / 2);
+}
+// המוצר במשקל הזול ביותר שמתאים לפריט בסניף
+function pickLoose(text, data, ctx = {}) {
+  let best = null;
+  for (const c of candidates(text, data).values()) {
+    if (c.weighted && (!best || c.tier < best.tier || (c.tier === best.tier && c.price < best.price))) best = c;
+  }
+  return best ? priced(best, data, { loose: true }, ctx) : null;
+}
+
 async function compare(items, stores, { pins = {}, clubs = null, shipping = {} } = {}) {
   const cart = cartItems(items);
   const texts = cart.map((c) => c.text);
   const loaded = await loadStores(stores);
   const datas = loaded.filter((x) => x.data).map((x) => x.data);
   // לכל פריט: הברקוד שמשווים (שנקבע ידנית, או המשותף לכמה שיותר סניפים)
-  const codes = Object.fromEntries(texts.map((t) => {
+  const codes = Object.fromEntries(cart.map((it) => {
+    const t = it.text;
     const pinned = pins[pinKey(t)];
     if (pinned === 'any') return [t, { code: null, pinned: false, any: true }];
-    return [t, /^\d+$/.test(pinned || '') ? { code: pinned, pinned: true } : { code: commonCode(t, datas), pinned: false }];
+    if (/^\d+$/.test(pinned || '')) return [t, { code: pinned, pinned: true }];
+    if (isLoose(t, datas, it)) return [t, { code: null, pinned: false, loose: true }];
+    return [t, { code: commonCode(t, datas), pinned: false }];
   }));
   const results = loaded.map(({ base, data, error }) => {
     if (error) return { ...base, error };
     const club = !Array.isArray(clubs) || clubs.includes(base.chain);
     const lines = cart.map(({ text, qty, kg }) => {
       const ctx = { qty, kg, club };
-      const { code, pinned, any } = codes[text];
+      const { code, pinned, any, loose } = codes[text];
+      if (loose) { // בתפזורת: המוצר במשקל הזול ביותר שמתאים, לפי ק"ג
+        const p = pickLoose(text, data, ctx);
+        return p ? { text, ...p } : { text, qty, missing: true };
+      }
       if (any) { // „לא משנה המותג”: הזול שמתאים בכל סניף
         const p = pick(text, data, ctx);
         return p ? { text, ...p, any: true } : { text, qty, missing: true };
