@@ -207,7 +207,7 @@
       <div id="cartResult" hidden>
         <p id="cartSummary" class="small"></p>
         <div id="cartCards" class="cart-cards"></div>
-        <p class="muted small">👆 לחיצה על מוצר בטבלה – להשוות תמיד את המוצר הזה (אותו ברקוד בכל הסניפים).</p>
+        <p class="muted small">👆 לחיצה על מוצר – להשוות תמיד את המוצר הזה (אותו ברקוד בכל הסניפים).</p>
         <p class="muted small sources"></p>
         <details class="legend" open>
           <summary>מקרא</summary>
@@ -225,12 +225,19 @@
             <li><b>—</b> לא נמצא באף סניף</li>
           </ul>
         </details>
-        <div class="top-scroll-bar" hidden>
-          <button id="cartScrollRight" class="icon-btn" type="button" aria-label="ימינה">▶</button>
-          <div id="cartTopScroll" class="top-scroll"><div></div></div>
-          <button id="cartScrollLeft" class="icon-btn" type="button" aria-label="שמאלה">◀</button>
+        <div class="seg cart-view-seg" role="group" aria-label="תצוגת ההשוואה">
+          <button type="button" id="cartViewItems" aria-pressed="true">🧾 לפי פריט</button>
+          <button type="button" id="cartViewTable" aria-pressed="false">📊 טבלה</button>
         </div>
-        <div class="tablewrap"><table id="cartTable" class="stats cart-table"></table></div>
+        <div id="cartItemsView" class="ci-view"></div>
+        <div id="cartTableView" hidden>
+          <div class="top-scroll-bar" hidden>
+            <button id="cartScrollRight" class="icon-btn" type="button" aria-label="ימינה">▶</button>
+            <div id="cartTopScroll" class="top-scroll"><div></div></div>
+            <button id="cartScrollLeft" class="icon-btn" type="button" aria-label="שמאלה">◀</button>
+          </div>
+          <div class="tablewrap cart-wrap"><table id="cartTable" class="stats cart-table"></table></div>
+        </div>
         <p class="muted small">לכל פריט מושווה אותו מוצר (אותו ברקוד) בכל הסניפים, לפי הכמות שבעגלה ועם המבצעים שבתוקף – כולל מבצעי כמות, ומבצעי מועדון רק ברשתות שסימנתם. המחירים מקובצי הרשתות; כדאי לבדוק בחנות.</p>
       </div>
     </section>

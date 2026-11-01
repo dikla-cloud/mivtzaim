@@ -480,3 +480,29 @@ details.ugroup > p { margin-top: 0; }
 .dept-add-top .dept-add .primary { padding: 8px 12px; }
 .unit-seg button { padding: 6px 10px; font-size: .85rem; }
 .ci-amount { justify-content: flex-end; }
+
+/* השוואת עגלות – תצוגה לפי פריט */
+.cart-view-seg { margin: 8px 0; }
+.ci-view { display: flex; flex-direction: column; gap: 8px; }
+.ci-view[hidden] { display: none; }
+.ci-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
+.ci-title { margin-bottom: 6px; font-size: 1.02rem; }
+.ci-stores { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ci-stores li { padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+.ci-stores li.extra { display: none; }
+.ci-card.open .ci-stores li.extra { display: block; }
+.ci-stores li.cheapest { background: var(--accent-soft); }
+.ci-stores li.cheapest b, .ci-stores li.cheapest .ci-store { color: var(--accent); font-weight: 700; }
+.ci-stores li.estimated b { font-style: italic; color: var(--muted); }
+.ci-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ci-store { min-width: 0; }
+.ci-stores small { display: block; font-size: .75rem; line-height: 1.35; }
+.ci-stores .deal-note { color: var(--warn); }
+.ci-card button.ci-more { margin: 6px 0 0; display: inline-block; }
+
+/* תצוגת טבלה: שורת הכותרת והעמודה הימנית (הפריט) קבועות בזמן גלילה */
+.cart-wrap { max-height: 70vh; overflow: auto; }
+.cart-table tr:first-child th { position: sticky; top: 0; z-index: 2; background: var(--bg); }
+.cart-table th:first-child, .cart-table td:first-child { position: sticky; inset-inline-start: 0; z-index: 1; background: var(--bg); box-shadow: -1px 0 0 var(--border); }
+.cart-table tr:first-child th:first-child { z-index: 3; }
+.cart-table td:first-child small { max-width: 90px; }

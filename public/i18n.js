@@ -167,7 +167,7 @@ const I18N = {
   "🧮 השוואת מחיר העגלה": ["🧮 Warenkorb vergleichen", "🧮 Compare cart prices"],
   "השוואה": ["Vergleichen", "Compare"],
   "לכל פריט נבחר אותו מוצר (אותו ברקוד) בכל הסניפים – זה שנמכר בכמה שיותר מהם, ואם יש עליו מבצע ליחידה – מחיר המבצע (🏷️). לתוצאה מדויקת יותר כתבו ברשימה שם מפורט (למשל ״חלב 3% 1 ליטר״) או ברקוד. כדאי לבדוק את המחירים בחנות.": ["Für jeden Eintrag wird in allen Filialen dasselbe Produkt (gleicher Barcode) verglichen – das, das in den meisten Filialen erhältlich ist, bei Angebot der Angebotspreis (🏷️). Genauer wird es mit genauen Namen oder Barcodes. Bitte Preise im Geschäft prüfen.", "For each item the same product (same barcode) is compared in all stores – the one sold in the most of them, at its sale price if it has a single-unit deal (🏷️). For a more exact result, write a detailed name (e.g. “milk 3% 1 litre”) or a barcode. Check prices in the store."],
-  "👆 לחיצה על מוצר בטבלה – להשוות תמיד את המוצר הזה (אותו ברקוד בכל הסניפים).": ["👆 Tippen Sie auf ein Produkt in der Tabelle, um immer dieses Produkt zu vergleichen (gleicher Barcode in allen Filialen).", "👆 Tap a product in the table to always compare that product (same barcode in all stores)."],
+  "👆 לחיצה על מוצר – להשוות תמיד את המוצר הזה (אותו ברקוד בכל הסניפים).": ["👆 Tippen Sie auf ein Produkt, um immer dieses Produkt zu vergleichen (gleicher Barcode in allen Filialen).", "👆 Tap a product to always compare that product (same barcode in all stores)."],
   "≈ המוצר לא נמכר בסניף הזה, מוצג מוצר דומה · 📌 מוצר שבחרתם · 🔀 הכי זול מכל מותג": ["≈ In dieser Filiale nicht erhältlich, ähnliches Produkt angezeigt · 📌 von Ihnen gewählt · 🔀 günstigstes, egal welche Marke", "≈ not sold in this store, a similar product is shown · 📌 your chosen product · 🔀 cheapest of any brand"],
   "למה התכוונת?": ["Was meinten Sie?", "What did you mean?"],
   "כדי שההשוואה תהיה מדויקת, בחרו לכל פריט את המוצר המדויק – וכך יושווה אותו מוצר (אותו ברקוד) בכל הסניפים. הבחירה נשמרת לפעם הבאה.": ["Für einen genauen Vergleich wählen Sie für jeden Eintrag das genaue Produkt – dann wird in allen Filialen dasselbe Produkt (gleicher Barcode) verglichen. Die Auswahl wird gespeichert.", "For an exact comparison, choose the exact product for each item – the same product (same barcode) will then be compared in all stores. Your choice is saved for next time."],
@@ -573,6 +573,10 @@ const I18N = {
   "אייקון": ["Symbol", "Icon"],
   "יחידת מידה": ["Maßeinheit", "Unit"],
   "יח'": ["Stk.", "pcs"],
+  "+ עוד {n} סניפים": ["+ {n} weitere Filialen", "+ {n} more stores"],
+  "🧾 לפי פריט": ["🧾 Nach Artikel", "🧾 By item"],
+  "📊 טבלה": ["📊 Tabelle", "📊 Table"],
+  "תצוגת ההשוואה": ["Ansicht des Vergleichs", "Comparison view"],
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -647,7 +651,7 @@ const I18N_AR = {
   "🧮 השוואת מחיר העגלה": "🧮 مقارنة سعر العربة",
   "השוואה": "قارن",
   "לכל פריט נבחר אותו מוצר (אותו ברקוד) בכל הסניפים – זה שנמכר בכמה שיותר מהם, ואם יש עליו מבצע ליחידה – מחיר המבצע (🏷️). לתוצאה מדויקת יותר כתבו ברשימה שם מפורט (למשל ״חלב 3% 1 ליטר״) או ברקוד. כדאי לבדוק את המחירים בחנות.": "لكل غرض يُقارن المنتج نفسه (الباركود نفسه) في كل الفروع – المنتج المتوفر في أكثرها، وإذا كان عليه عرض للوحدة – سعر العرض (🏷️). لنتيجة أدق اكتب في القائمة اسمًا مفصّلًا (مثلًا «حليب 3% لتر») أو باركود. يُنصح بالتحقق من الأسعار في المتجر.",
-  "👆 לחיצה על מוצר בטבלה – להשוות תמיד את המוצר הזה (אותו ברקוד בכל הסניפים).": "👆 اضغط على منتج في الجدول لمقارنة هذا المنتج دائمًا (الباركود نفسه في كل الفروع).",
+  "👆 לחיצה על מוצר – להשוות תמיד את המוצר הזה (אותו ברקוד בכל הסניפים).": "👆 اضغط على منتج لمقارنة هذا المنتج دائمًا (الباركود نفسه في كل الفروع).",
   "≈ המוצר לא נמכר בסניף הזה, מוצג מוצר דומה · 📌 מוצר שבחרתם · 🔀 הכי זול מכל מותג": "≈ المنتج غير متوفر في هذا الفرع، يُعرض منتج مشابه · 📌 منتج اخترته · 🔀 الأرخص من أي ماركة",
   "למה התכוונת?": "ماذا قصدت؟",
   "כדי שההשוואה תהיה מדויקת, בחרו לכל פריט את המוצר המדויק – וכך יושווה אותו מוצר (אותו ברקוד) בכל הסניפים. הבחירה נשמרת לפעם הבאה.": "لمقارنة دقيقة، اختر لكل غرض المنتج الدقيق – وهكذا يُقارن المنتج نفسه (الباركود نفسه) في كل الفروع. يُحفظ اختيارك للمرة القادمة.",
@@ -1098,6 +1102,10 @@ const I18N_AR = {
   "אייקון": "رمز",
   "יחידת מידה": "وحدة القياس",
   "יח'": "وحدة",
+  "+ עוד {n} סניפים": "+ {n} فروع أخرى",
+  "🧾 לפי פריט": "🧾 حسب الغرض",
+  "📊 טבלה": "📊 جدول",
+  "תצוגת ההשוואה": "طريقة عرض المقارنة",
 };
 
 // t('נוספו {n} פריטים', { n: 3 })

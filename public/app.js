@@ -1707,10 +1707,80 @@ function renderCart(r) {
     })]);
   });
   $('#cartTable').replaceChildren(head, ...rows);
-  syncTopScroll();
+  renderCartByItem(r, ok);
+  applyCartView();
   renderCartItems();
   $('#cartResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+// תצוגה „לפי פריט” (בטלפון – בלי גלילה הצידה): לכל פריט כרטיס, והסניפים בו מהזול ליקר
+const CI_SHOW = 3; // כמה סניפים מוצגים לפני ״עוד״
+function renderCartByItem(r, ok) {
+  const amountOf = (l) => (l?.weighted ? t('{kg} ק"ג', { kg: l.kg }) : l?.qty > 1 ? `×${l.qty}` : '');
+  const storeName = (s) => (ok.filter((x) => x.chainName === s.chainName).length > 1 ? `${s.chainName} · ${s.name}` : s.chainName);
+  const cards = r.items.map((item, idx) => {
+    const card = document.createElement('div');
+    card.className = 'ci-card';
+    const entries = ok.map((s) => ({ s, l: s.lines[idx] })).filter((e) => e.l);
+    const real = (l) => !l.missing && !l.estimated && !l.excluded;
+    const first = entries.find((e) => real(e.l)) || entries.find((e) => !e.l.missing);
+    const title = document.createElement('div');
+    title.className = 'ci-title';
+    title.append(Object.assign(document.createElement('b'), { textContent: `${foodIcon(item)} ${item}` }));
+    if (amountOf(first?.l)) title.append(Object.assign(document.createElement('span'), { className: 'muted', textContent: ` ${amountOf(first.l)}` }));
+    card.append(title);
+    if (entries.every((e) => e.l.excluded)) {
+      card.append(Object.assign(document.createElement('div'), { className: 'muted small', textContent: t('לא נמצא באף סניף') }));
+      return card;
+    }
+    // קודם המחירים מהסניף (מהזול ליקר), אחר כך מחירים משוערים
+    const sorted = [...entries.filter((e) => real(e.l)).sort((a, b) => a.l.cost - b.l.cost), ...entries.filter((e) => !real(e.l) && !e.l.excluded)];
+    const min = sorted.length && real(sorted[0].l) ? sorted[0].l.cost : null;
+    const list = document.createElement('ul');
+    list.className = 'ci-stores';
+    sorted.forEach(({ s, l }, i) => {
+      const li = document.createElement('li');
+      const best = ok.length > 1 && real(l) && l.cost === min;
+      li.className = (best ? 'cheapest' : '') + (l.estimated ? ' estimated' : '') + (i >= CI_SHOW ? ' extra' : '');
+      const top = document.createElement('div');
+      top.className = 'ci-row';
+      top.append(Object.assign(document.createElement('span'), { className: 'ci-store', textContent: `${best ? '✓ ' : ''}${storeName(s)}` }),
+        Object.assign(document.createElement('b'), { textContent: l.estimated ? `~${money(l.estCost)} *` : `${l.promo ? '🏷️ ' : ''}${money(l.cost)}` }));
+      li.append(top);
+      const per = l.weighted ? t('{price} לק"ג', { price: money(l.price) }) : l.qty > 1 && !l.estimated ? t('{price} ליח\'', { price: money(l.price) }) : '';
+      const sub = l.estimated
+        ? (l.missing ? t('לא נמכר כאן – מחיר משוער') : t('≈ רק מוצר דומה: {name}', { name: l.name }))
+        : `${l.similar ? '≈ ' : l.pinned ? '📌 ' : l.any ? '🔀 ' : ''}${l.name}${per ? ` · ${per}` : ''}${l.promo?.clubOnly ? ` · ${t('🎫 מבצע מועדון')}` : ''}`;
+      li.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: sub }));
+      if (l.hint) li.append(Object.assign(document.createElement('small'), { className: 'deal-note', textContent: t('💡 {d} – כדאי להגדיל כמות', { d: l.hint.description || t('מבצע מ-{n} יח\'', { n: l.hint.minQty }) }) }));
+      if (!l.missing) li.addEventListener('click', () => pinProduct(item, l));
+      list.append(li);
+    });
+    card.append(list);
+    if (sorted.length > CI_SHOW) {
+      const more = Object.assign(document.createElement('button'), { type: 'button', className: 'linkish small ci-more', textContent: t('+ עוד {n} סניפים', { n: sorted.length - CI_SHOW }) });
+      more.addEventListener('click', () => {
+        const open = card.classList.toggle('open');
+        more.textContent = open ? t('פחות') : t('+ עוד {n} סניפים', { n: sorted.length - CI_SHOW });
+      });
+      card.append(more);
+    }
+    return card;
+  });
+  $('#cartItemsView').replaceChildren(...cards);
+}
+// בטלפון ברירת המחדל – לפי פריט; במחשב – טבלה. הבחירה נשמרת במכשיר
+const cartView = () => store.get('cartView') || (innerWidth < 700 ? 'items' : 'table');
+function applyCartView() {
+  const items = cartView() === 'items';
+  $('#cartViewItems').setAttribute('aria-pressed', items);
+  $('#cartViewTable').setAttribute('aria-pressed', !items);
+  $('#cartItemsView').hidden = !items;
+  $('#cartTableView').hidden = items;
+  if (!items) syncTopScroll();
+}
+$('#cartViewItems').addEventListener('click', () => { store.set('cartView', 'items'); applyCartView(); });
+$('#cartViewTable').addEventListener('click', () => { store.set('cartView', 'table'); applyCartView(); });
 
 // לחיצה על מוצר בטבלה: „תמיד להשוות את המוצר הזה” (נשמר למשק הבית), או ביטול הבחירה
 async function pinProduct(item, l) {
@@ -1903,7 +1973,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.10.29';
+const APP_VERSION = '2026.11.01';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });
