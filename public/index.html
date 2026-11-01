@@ -84,7 +84,7 @@
     <nav role="tablist">
       <button role="tab" data-tab="home" class="tab-home">חסר בבית <span id="homeCount" class="count" hidden></span></button>
       <button role="tab" data-tab="cart" class="il-only">השוואת עגלות</button>
-      <button role="tab" data-tab="list">רשימה לחיפוש מבצעים</button>
+      <button role="tab" data-tab="list">הרשימה הקבועה שלי</button>
       <button role="tab" data-tab="deals" aria-selected="true">מבצעים</button>
     </nav>
   </div>
@@ -175,7 +175,7 @@
       <div class="row il-only">
         <button id="cartBtn">🧮 כמה תעלה הרשימה? להשוואת עגלות ‹</button>
       </div>
-      <p class="muted small">בסופר: לוחצים על פריט כשהוא נכנס לעגלה. ״ניקוי פריטים שנקנו״ משאיר ברשימה רק את מה שעוד לא נקנה. הרשימה לחיפוש מבצעים לא משתנה.</p>
+      <p class="muted small">בסופר: לוחצים על פריט כשהוא נכנס לעגלה. ״ניקוי פריטים שנקנו״ משאיר ברשימה רק את מה שעוד לא נקנה. הרשימה הקבועה לא משתנה.</p>
     </section>
 
     <section id="tab-cart" hidden>
@@ -254,7 +254,7 @@
     </section>
 
     <section id="tab-list" hidden>
-      <p class="muted small">המוצרים שהאפליקציה מחפשת עליהם מבצעים ושולחת עליהם התראות. זו רשימה קבועה: היא לא מתרוקנת כשקונים.</p>
+      <p class="muted small">המוצרים שאת/ה קונה באופן קבוע. האפליקציה מחפשת עליהם מבצעים ושולחת התראות, ומכאן אפשר לסמן מה להוסיף ל״חסר בבית״. הרשימה משתנה רק כשמוסיפים או מוחקים בה בעצמכם.</p>
       <form id="add" class="row">
         <input id="newItem" placeholder="הוספת מוצר (למשל: חלב 3%, קוטג', או ברקוד)" autocomplete="off">
         <button type="button" id="micList" class="mic" aria-label="הכתבה" title="הכתבה" hidden>🎤</button>
@@ -268,6 +268,10 @@
         <button class="primary">הוספה</button>
       </form>
       <p id="listHint" class="muted small"></p>
+      <div id="listPickBar" class="list-pick-bar" hidden>
+        <button type="button" id="listToHome" class="primary"></button>
+        <button type="button" id="listPickClear" class="linkish small">ניקוי הסימון</button>
+      </div>
       <ul id="items"></ul>
       <div class="card">
         <h3>העלאת רשימה</h3>
@@ -305,7 +309,7 @@
         <p class="muted small legal-links"><a href="terms.html" target="_blank">תנאי שימוש</a> · <a href="privacy.html" target="_blank">מדיניות פרטיות</a></p>
         <details id="deleteMeBox" hidden>
           <summary>מחיקת החשבון שלי</summary>
-          <p class="muted small">החשבון, הרשימה לחיפוש מבצעים, המיקום וההתראות יימחקו לצמיתות. רשימת ״חסר בבית״ נשארת לבני הבית האחרים.</p>
+          <p class="muted small">החשבון, הרשימה הקבועה, המיקום וההתראות יימחקו לצמיתות. רשימת ״חסר בבית״ נשארת לבני הבית האחרים.</p>
           <button id="deleteMe" class="danger">מחיקת החשבון שלי לצמיתות</button>
         </details>
       </div>
@@ -349,7 +353,7 @@
         <h3>👥 בני הבית ומשתמשים</h3>
         <details class="ugroup" open>
           <summary>🏠 בני הבית שלי</summary>
-          <p class="muted small">כל מי שנמצא במשק הבית שלך רואה ומעדכן את אותה רשימת ״חסר בבית״. הרשימה לחיפוש מבצעים, המיקום וההתראות נשארים אישיים לכל אחד.</p>
+          <p class="muted small">כל מי שנמצא במשק הבית שלך רואה ומעדכן את אותה רשימת ״חסר בבית״. הרשימה הקבועה, המיקום וההתראות נשארים אישיים לכל אחד.</p>
           <ul id="family" class="userlist"></ul>
         </details>
         <details id="invitedBox" class="ugroup" hidden>

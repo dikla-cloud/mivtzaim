@@ -517,3 +517,12 @@ details.ugroup > p { margin-top: 0; }
 .add-amt { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: -2px 0 8px; font-size: .9rem; }
 .add-amt .step { width: 30px; height: 30px; padding: 0; border-radius: 50%; font-size: 1rem; line-height: 1; }
 .add-amt .qty { min-width: 2.6em; text-align: center; }
+/* הרשימה הקבועה: סימון מוצרים להוספה ל״חסר בבית״ */
+#items li input.list-pick { flex: none; width: 22px; height: 22px; margin: 0; padding: 0; accent-color: var(--accent); cursor: pointer; }
+#items li input.list-pick:disabled { opacity: .35; cursor: default; }
+#items li .on-home { flex: none; }
+.list-pick-bar { position: sticky; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 3; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; margin: 8px 0; background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; box-shadow: 0 4px 14px rgb(0 0 0 / .15); }
+.list-pick-bar[hidden] { display: none; }
+.list-pick-bar button.linkish { margin: 0; }
+#items li input:not(.list-pick) { min-width: 0; }
+#items li .on-home { font-size: .72rem; padding: 0 6px; }
