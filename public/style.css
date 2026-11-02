@@ -527,3 +527,11 @@ details.ugroup > p { margin-top: 0; }
 #items li input:not(.list-pick) { min-width: 0; }
 #items li .on-home { font-size: .72rem; padding: 0 6px; }
 .menu-version { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--border); text-align: center; }
+/* יש גרסה חדשה: נקודה אדומה מהבהבת על כפתור הרענון ועל התפריט */
+#refreshBtn, #menuBtn, #menuRefresh { position: relative; }
+body.update-ready #refreshBtn::after, body.update-ready #menuBtn::after { content: ''; position: absolute; top: 4px; inset-inline-end: 4px; width: 11px; height: 11px; border-radius: 50%; background: #e11d48; box-shadow: 0 0 0 2px var(--bg); animation: pulse 1.6s ease-in-out infinite; }
+body.update-ready #menuRefresh::after { content: ''; display: inline-block; width: 9px; height: 9px; margin-inline-start: 8px; border-radius: 50%; background: #e11d48; vertical-align: middle; }
+body.update-ready #refreshBtn { border-color: #e11d48; }
+.menu-update { margin: 0 16px 6px; padding: 6px 10px; border-radius: 10px; background: #fde7ec; color: #9f1239; font-weight: 600; }
+@media (prefers-color-scheme: dark) { .menu-update { background: #3b1220; color: #fda4af; } }
+@keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.25); opacity: .7; } }

@@ -118,6 +118,10 @@ app.post('/api/login/verify', (req, res) => {
   res.json({ token: auth.newSession(u) });
 });
 
+// הגרסה שהשרת מגיש עכשיו (מתוך app.js). האפליקציה משווה לגרסה שרצה אצלה – ואם יש חדשה, מסמנת לרענן
+const SERVED_VERSION = (fs.readFileSync(path.join(PUBLIC, 'app.js'), 'utf8').match(/const APP_VERSION = '([^']+)'/) || [])[1] || '';
+app.get('/api/version', (req, res) => { res.set('Cache-Control', 'no-store'); res.json({ version: SERVED_VERSION }); });
+
 app.get('/api/setup', (req, res) => res.json({ firstRun: !db.users().length, emailLogin: mail.configured(), lang: i18n.DEFAULT_LANG, country: APP_COUNTRY }));
 
 // ---------- קישור הזמנה: מי שמקבל את הקישור נרשם בעצמו ----------

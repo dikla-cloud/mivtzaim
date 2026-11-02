@@ -2122,7 +2122,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.02b';
+const APP_VERSION = '2026.11.02c';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });
@@ -2177,6 +2177,22 @@ async function refreshApp() {
   location.reload();
 }
 $('#menuRefresh').addEventListener('click', () => { $('#menuRefresh').textContent = t('🔄 מרענן…'); refreshApp(); });
+
+// יש גרסה חדשה בשרת? נקודה אדומה על כפתור הרענון ובתפריט (בכניסה, כל 10 דקות, וכשחוזרים לאפליקציה)
+async function checkVersion() {
+  try {
+    const r = await fetch('/api/version', { cache: 'no-store' });
+    const { version } = await r.json();
+    const fresh = version && version !== APP_VERSION;
+    document.body.classList.toggle('update-ready', Boolean(fresh));
+    $('#refreshBtn').title = fresh ? t('יש גרסה חדשה – לחצו לרענון') : t('רענון האפליקציה');
+    $('#menuUpdateNote').hidden = !fresh;
+    if (fresh) $('#menuUpdateNote').textContent = t('יש גרסה חדשה ({v}) – לחצו ״רענון האפליקציה״', { v: version });
+  } catch { /* בלי חיבור */ }
+}
+checkVersion();
+setInterval(checkVersion, 10 * 60000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkVersion(); });
 $('#refreshBtn').addEventListener('click', () => { $('#refreshBtn').classList.add('spin'); refreshApp(); });
 
 // ---------- מסך פתיחה: לוגו והסבר קצר לשנייה וחצי ----------

@@ -598,6 +598,8 @@ const I18N = {
   "{n} פריטים נוספו ל״חסר בבית״": ["{n} Artikel zu „Fehlt zu Hause“ hinzugefügt", "{n} items added to “Missing at home”"],
   "המוצרים שאת/ה קונה באופן קבוע. האפליקציה מחפשת עליהם מבצעים ושולחת התראות, ומכאן אפשר לסמן מה להוסיף ל״חסר בבית״. הרשימה משתנה רק כשמוסיפים או מוחקים בה בעצמכם.": ["Produkte, die Sie regelmäßig kaufen. Die App sucht dafür Angebote und benachrichtigt Sie, und hier markieren Sie, was zu „Fehlt zu Hause“ soll. Die Liste ändert sich nur, wenn Sie selbst etwas hinzufügen oder löschen.", "The products you buy regularly. The app looks for deals on them and sends notifications, and here you can mark what to add to “Missing at home”. The list only changes when you add or delete items yourself."],
   "ניקוי הסימון": ["Auswahl aufheben", "Clear selection"],
+  "יש גרסה חדשה – לחצו לרענון": ["Neue Version – zum Aktualisieren tippen", "New version – tap to refresh"],
+  "יש גרסה חדשה ({v}) – לחצו ״רענון האפליקציה״": ["Neue Version ({v}) – tippen Sie auf „App aktualisieren“", "New version ({v}) – tap “Refresh the app”"],
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -1148,6 +1150,8 @@ const I18N_AR = {
   "{n} פריטים נוספו ל״חסר בבית״": "أُضيفت {n} أغراض إلى «ناقص في البيت»",
   "המוצרים שאת/ה קונה באופן קבוע. האפליקציה מחפשת עליהם מבצעים ושולחת התראות, ומכאן אפשר לסמן מה להוסיף ל״חסר בבית״. הרשימה משתנה רק כשמוסיפים או מוחקים בה בעצמכם.": "المنتجات التي تشتريها بانتظام. يبحث التطبيق عن عروض عليها ويرسل إشعارات، ومن هنا تحدد ما تضيفه إلى «ناقص في البيت». القائمة تتغير فقط عندما تضيف أو تحذف بنفسك.",
   "ניקוי הסימון": "إلغاء التحديد",
+  "יש גרסה חדשה – לחצו לרענון": "يوجد إصدار جديد – اضغط للتحديث",
+  "יש גרסה חדשה ({v}) – לחצו ״רענון האפליקציה״": "يوجد إصدار جديد ({v}) – اضغط «تحديث التطبيق»",
 };
 
 // t('נוספו {n} פריטים', { n: 3 })
