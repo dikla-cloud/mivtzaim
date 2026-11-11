@@ -699,9 +699,10 @@ app.put('/api/pins', (req, res) => {
     const key = compare.pinKey(p?.text || '');
     const code = String(p?.code || '').trim();
     if (!key) return res.status(400).json({ error: T(req, 'שגיאה') });
-    if (/^\d{4,14}$/.test(code) || ['any', 'auto', 'loose'].includes(code)) h.pins[key] = code; else delete h.pins[key];
+    const rule = code.startsWith('rule:') && code.length <= 600 && compare.parseRule(code);
+    if (/^\d{4,14}$/.test(code) || ['any', 'auto', 'loose'].includes(code) || rule) h.pins[key] = code; else delete h.pins[key];
     const name = String(p?.name || '').trim().slice(0, 100);
-    if (/^\d/.test(code) && name) h.pinNames[key] = name; else delete h.pinNames[key];
+    if ((/^\d/.test(code) || code.startsWith('rule:')) && name) h.pinNames[key] = name; else delete h.pinNames[key];
   }
   db.save();
   res.json({ pins: h.pins, pinNames: h.pinNames });

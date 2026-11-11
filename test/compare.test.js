@@ -66,14 +66,20 @@ test('cart compare: "what did you mean?" options and pinned choices (barcode / a
     const o = await options(['טחינה', 'אבוקדו'], stores, {});
     assert.equal(o.items.length, 1);
     assert.equal(o.items[0].text, 'טחינה');
-    assert.deepEqual(o.items[0].options.map((x) => [x.code, x.n]), [['1002', 2], ['1001', 2], ['1003', 1]]);
+    // ״סלט טחינה מוכן״ הוא מוצר אחר – לא מופיע כשמחפשים טחינה
+    assert.deepEqual(o.items[0].options.map((x) => [x.code, x.n]), [['1001', 2], ['1003', 1]]);
     // כבר נבחר מוצר – לא שואלים שוב (אלא אם מבקשים לשנות)
     assert.equal((await options(['טחינה'], stores, { 'טחינה': 'auto' })).items.length, 0);
     assert.equal((await options(['טחינה'], stores, { 'טחינה': '1001' }, { all: true })).items[0].pin, '1001');
     const pinned = await compare(['טחינה'], stores, { pins: { 'טחינה': '1001' } });
     assert.deepEqual(pinned.stores.map((s) => s.lines[0].price), [14, 15]);
     const any = await compare(['טחינה'], stores, { pins: { 'טחינה': 'any' } });
-    assert.deepEqual(any.stores.map((s) => [s.lines[0].code, s.lines[0].any]), [['1002', true], ['1002', true]]);
+    // הזול ל-100 גרם מבין הטחינות (בלי הסלט): בסניף 2 – 500 גרם ב-11
+    assert.deepEqual(any.stores.map((s) => [s.lines[0].code, s.lines[0].any]), [['1001', true], ['1003', true]]);
+    // מי שמחפש סלט טחינה – מקבל סלט
+    const salad = await compare(['סלט טחינה'], stores);
+    assert.deepEqual(salad.stores.map((s) => s.lines[0].code), ['1002', '1002']);
+    assert.deepEqual(any.stores[1].lines[0].unit, { value: 2.2, label: '100 גרם' });
   } finally {
     israel.chains.splice(israel.chains.indexOf(fake), 1);
   }
@@ -218,4 +224,53 @@ test('cart compare: choosing "loose" for an item compares by weight even when a 
   } finally {
     israel.chains.splice(israel.chains.indexOf(fake), 1);
   }
+});
+
+test('product types: raw tahini without salads, dry chickpeas, coffee without cakes, milk without chocolate', () => {
+  const { candidates } = require('../server/compare');
+  const d = (...its) => ({ items: its.map(([c, n, p]) => item(c, n, p)), byCode: new Map(), promoByCode: new Map() });
+  const keys = (q, data) => [...candidates(q, data).keys()].sort();
+  assert.deepEqual(keys('טחינה', d(['1', 'טחינה גולמית סלה 500 גרם', 10], ['2', 'סלט טחינה 400 גרם', 8], ['3', 'חלבה בטעם טחינה', 6])), ['1']);
+  assert.deepEqual(keys('גרגרי חומוס', d(['4', 'גרגרי חומוס סוגת 1 ק"ג', 9], ['5', 'חומוס מוכן צבר', 7], ['6', 'גרגירי חומוס יבשים', 8])), ['4', '6']);
+  assert.deepEqual(keys('קפה', d(['7', 'קפה טחון לוואצה 250 גרם', 25], ['8', 'קפה נמס עלית', 20], ['9', 'עוגת קפה', 15], ['10', 'קפה קר בטעם וניל', 6])), ['7', '8']);
+  assert.deepEqual(keys('חלב', d(['11', 'חלב טרי 3% 1 ליטר', 7], ['12', 'שוקולד חלב 100 גרם', 5])), ['11']);
+});
+
+test('cart compare: choose by rule – type, size and brands – cheapest per 100 g in each store', async () => {
+  const israel = require('../server/providers/israel');
+  const { compare, options } = require('../server/compare');
+  const xmlItems = (its) => Buffer.from(`<Root><Items>${its.map(([c, n, p, m]) => `<Item><ItemCode>${c}</ItemCode><ItemName>${n}</ItemName><ItemPrice>${p}</ItemPrice><ManufacturerName>${m}</ManufacturerName></Item>`).join('')}</Items></Root>`);
+  const files = {
+    a: [['71', 'קפסולות קפה לוואצה 10 יח\'', 20, 'לוואצה'], ['72', 'קפה טחון עלית 250 גרם', 15, 'עלית'], ['73', 'קפסולות קפה נטול קפאין 10 יח\'', 22, 'נספרסו']],
+    b: [['74', 'קפסולות קפה פרטי 20 יח\'', 30, 'פרטי'], ['72', 'קפה טחון עלית 250 גרם', 14, 'עלית']],
+  };
+  const fake = { id: 'faketest6', name: 'בדיקה', stores: async () => [], storeFiles: async (id) => ({ prices: xmlItems(files[id]), promos: Buffer.from('<Root/>') }) };
+  israel.chains.push(fake);
+  try {
+    const stores = [{ chain: 'faketest6', storeId: 'a' }, { chain: 'faketest6', storeId: 'b' }];
+    const o = await options(['קפה'], stores, {}, { all: true });
+    const f = o.items[0].facets;
+    assert.ok(f.subs.some((x) => x.id === 'caps' && x.n === 3));
+    assert.ok(f.brands.some((x) => x.label === 'עלית'));
+    // קפסולות, כל מותג: הזול ליחידה (בסניף b – 20 יח' ב-30 = 1.5 ליח')
+    const caps = await compare(['קפה'], stores, { pins: { 'קפה': 'rule:{"sub":"caps"}' } });
+    assert.deepEqual(caps.stores.map((s) => [s.lines[0].code, s.lines[0].rule]), [['71', true], ['74', true]]);
+    // רק לוואצה: בסניף b אין – מחיר משוער
+    const lav = await compare(['קפה'], stores, { pins: { 'קפה': 'rule:{"brands":["לוואצה"]}' } });
+    assert.deepEqual([lav.stores[0].lines[0].code, lav.stores[1].lines[0].estimated], ['71', true]);
+  } finally {
+    israel.chains.splice(israel.chains.indexOf(fake), 1);
+  }
+});
+
+test('units: package size and price per 100 g / liter / roll / meter', () => {
+  const u = require('../server/units');
+  assert.deepEqual(u.sizeOf({ name: 'טחינה סלה', qty: '500', unit: 'גרם' }), { amount: 0.5, base: 'kg' });
+  assert.deepEqual(u.sizeOf({ name: 'קולה 1.5 ל\'', qty: '1500', unit: 'מיליליטרים' }), { amount: 1.5, base: 'l' });
+  assert.deepEqual(u.sizeOf({ name: 'נייר טואלט 32 גלילים 25 מ\'', qty: '1', unit: 'יחידה' }), { amount: 32, base: 'roll', meters: 800 });
+  assert.deepEqual(u.perUnit(10, { amount: 0.5, base: 'kg' }), { value: 2, label: '100 גרם' });
+  // גלילים ארוכים יותר – זולים יותר למטר, גם אם יקרים יותר לגליל
+  const a = { price: 40, size: { amount: 32, base: 'roll', meters: 800 } };
+  const b = { price: 30, size: { amount: 32, base: 'roll', meters: 480 } };
+  assert.equal(u.cheaper(a, b), true);
 });

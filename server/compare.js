@@ -4,7 +4,9 @@
 const israel = require('./providers/israel');
 const xml = require('./xml');
 const geo = require('./geo');
-const { tokens, variantsOf, matchVariants, alternatives, stem } = require('./match');
+const { tokens, variantsOf, matchVariants, alternatives, stem, normalize } = require('./match');
+const units = require('./units');
+const types = require('./types');
 
 const TTL = 3 * 3600000; // קובצי סניף נשמרים בזיכרון 3 שעות
 const MAX_CACHED = 12;
@@ -43,7 +45,10 @@ async function storeData(chain, storeId) {
       const items = [];
       // לא מוצרים אמיתיים: פריטי קופון/מתנה במחיר סמלי (״ה.נ קופון … מתנה״ ב-0.01 ₪)
       const fake = (it) => it.price < 0.1 || /קופון|^ה\.נ\b/.test(it.name || '');
-      for (const [code, it] of prices) if (it.price && !fake(it)) items.push({ code, name: it.name, price: it.price, weighted: Boolean(it.weighted), variants: variantsOf(it.name) });
+      for (const [code, it] of prices) {
+        if (!it.price || fake(it)) continue;
+        items.push({ code, name: it.name, price: it.price, weighted: Boolean(it.weighted), manufacturer: it.manufacturer || '', size: units.sizeOf(it), variants: variantsOf(it.name) });
+      }
       const data = { at: Date.now(), items, byCode: new Map(items.map((i) => [i.code, i])), promoByCode, promos };
       cache.set(key, data);
       while (cache.size > MAX_CACHED) cache.delete(cache.keys().next().value);
@@ -84,7 +89,7 @@ function lineCost(it, data, { qty = 1, kg = null, club = true } = {}) {
     else {
       const total = multiTotal(p, regular, m);
       if (total == null) continue;
-      if (qty < m) { hint ||= p; continue; }
+      if (qty < m) { if (!hint) hint = { ...p, minQty: m, each: total / m }; continue; }
       const groups = Math.floor(qty / m);
       c = groups * total + (qty - groups * m) * regular;
     }
@@ -96,13 +101,17 @@ function lineCost(it, data, { qty = 1, kg = null, club = true } = {}) {
 // מחיר בפועל של מוצר בסניף (כולל מבצעים לפי הכמות)
 function priced(best, data, extra = {}, ctx = {}) {
   const c = lineCost(best, data, ctx);
-  const promoInfo = (p) => p && { clubOnly: p.clubOnly, description: p.description, end: p.end, minQty: p.minQty > 1 ? p.minQty : null };
+  const promoInfo = (p) => p && { clubOnly: p.clubOnly, description: p.description, end: p.end, minQty: p.minQty > 1 ? p.minQty : null, ...(p.each ? { each: round(p.each) } : {}) };
+  // מחיר ליחידת מידה (ל-100 גרם / ל-100 מ"ל / ליחידה / לגליל) – לפי המחיר בפועל לאריזה
+  const unit = best.weighted ? null : units.perUnit(c.price, best.size);
   return {
     code: best.code,
     name: best.name,
     regularPrice: best.price,
     price: round(c.price),
     cost: round(c.cost),
+    ...(unit ? { unit: { value: round(unit.value), label: unit.label, ...(unit.perMeter ? { perMeter: Math.round(unit.perMeter * 1000) / 1000 } : {}) } } : {}),
+    ...(best.size && !best.weighted ? { size: units.sizeLabel(best.size) } : {}),
     qty: c.qty,
     ...(c.weighted ? { weighted: true, kg: c.kg } : {}),
     promo: promoInfo(c.promo),
@@ -114,14 +123,20 @@ function priced(best, data, extra = {}, ctx = {}) {
 // כל המוצרים בסניף שמתאימים לפריט, עם „דרגת התאמה”: 0 = המילה הראשונה בשם היא בדיוק המילה שחיפשנו,
 // 1 = מתחילה בה, 2 = המילה באמצע השם
 function candidates(text, data) {
+  // סוג המוצר (״טחינה״ – בלי סלטים; ״גרגרי חומוס״ – יבשים)
+  const first = String(text).split('|').map((x) => x.trim()).find((x) => x && !/^\d+$/.test(x)) || '';
+  const type = types.typeOf(first);
   const find = (queries) => {
     const out = new Map();
     for (const qt of queries) {
       if (!qt.length) continue;
       for (const it of data.items) {
         if (!matchVariants(qt, it.variants)) continue;
+        if (type && !types.allowed(type, first, it.name)) continue;
         const [w0, w1] = it.variants;
-        const tier = w0 === qt[0] || w1 === qt[0] ? 0 : w0?.startsWith(qt[0]) || w1?.startsWith(qt[0]) ? 1 : 2;
+        let tier = w0 === qt[0] || w1 === qt[0] ? 0 : w0?.startsWith(qt[0]) || w1?.startsWith(qt[0]) ? 1 : 2;
+        // ״סלט טחינה״, ״שוקולד חלב״: השם מתחיל במוצר אחר – התאמה חלשה (אלא אם חיפשו את המוצר הזה)
+        if (tier < 2 && w0 !== qt[0] && types.PREPARED.includes(w0) && !qt.includes(w0)) tier = 2;
         if (!out.has(it.code) || out.get(it.code).tier > tier) out.set(it.code, { ...it, tier });
       }
     }
@@ -142,7 +157,8 @@ function pick(text, data, ctx = {}) {
   let best = code && data.byCode.get(code);
   // קודם מוצר שהמילה הראשונה בשמו היא בדיוק המילה שחיפשנו (״חלב טרי״), אחריו מוצר שמתחיל בה (״חלבה״),
   // ורק אחר כך מוצר שהמילה באמצע שמו (״שוקו בטעם חלב״). בתוך כל קבוצה – הזול
-  if (!best) for (const c of candidates(text, data).values()) if (!best || c.tier < best.tier || (c.tier === best.tier && c.price < best.price)) best = c;
+  // בתוך אותה דרגת התאמה – הזול ליחידת מידה (500 גרם מול 1 ק"ג), ואם אין גודל – הזול לאריזה
+  if (!best) for (const c of candidates(text, data).values()) if (!best || c.tier < best.tier || (c.tier === best.tier && units.cheaper(c, best))) best = c;
   if (!best) return null;
   return priced(best, data, {}, ctx);
 }
@@ -252,6 +268,7 @@ async function options(items, stores, pins = {}, { all = false, limit = 5 } = {}
     out.push({
       text: text.split('|')[0].trim(),
       pin: pin || null,
+      ...(all ? { facets: facets(text, datas) } : {}),
       loose,
       auto: loose ? null : commonCode(text, datas),
       stores: datas.length,
@@ -268,7 +285,7 @@ function aggregate(datas, found) {
     for (const c of found(d)) {
       const promo = d.promoByCode.get(c.code);
       const price = promo && promo.price < c.price ? promo.price : c.price;
-      const e = counts.get(c.code) || { code: c.code, name: c.name, n: 0, tier: c.tier ?? 0, sum: 0, min: price, max: price, weighted: c.weighted };
+      const e = counts.get(c.code) || { code: c.code, name: c.name, n: 0, tier: c.tier ?? 0, sum: 0, min: price, max: price, weighted: c.weighted, size: c.size, manufacturer: c.manufacturer };
       e.n += 1; e.sum += price; e.tier = Math.min(e.tier, c.tier ?? 0);
       e.min = Math.min(e.min, price); e.max = Math.max(e.max, price);
       counts.set(c.code, e);
@@ -276,7 +293,16 @@ function aggregate(datas, found) {
   }
   return [...counts.values()].sort(byFit);
 }
-const publicOption = ({ code, name, n, min, max, weighted }) => ({ code, name, n, min: round(min), max: round(max), ...(weighted ? { weighted: true } : {}) });
+const publicOption = ({ code, name, n, min, max, weighted, size, manufacturer }) => {
+  const unit = !weighted && units.perUnit(min, size);
+  return {
+    code, name, n, min: round(min), max: round(max),
+    ...(weighted ? { weighted: true } : {}),
+    ...(size && !weighted ? { size: units.sizeLabel(size) } : {}),
+    ...(unit ? { unit: { value: round(unit.value), label: unit.label } } : {}),
+    ...(manufacturer ? { manufacturer } : {}),
+  };
+};
 
 // חיפוש חופשי במסך „למה התכוונת?”: תחילת מילה (״פטרוז״) או ברקוד (גם מצילום)
 async function search(q, stores, { limit = 12 } = {}) {
@@ -329,6 +355,56 @@ function isLoose(text, datas, item = {}) {
   }
   return datas.length > 0 && n >= Math.ceil(datas.length / 2);
 }
+// בחירה לפי כלל (״קפסולות, כל מותג״, ״טחינה גולמית 500 גרם, סלה או הר ברכה״):
+// pin = 'rule:{"sub":"caps","size":"500 גרם","brands":["סלה"]}'
+function parseRule(pin) {
+  if (!String(pin || '').startsWith('rule:')) return null;
+  try {
+    const r = JSON.parse(pin.slice(5));
+    return { sub: r.sub ? String(r.sub) : null, size: r.size ? String(r.size) : null, brands: Array.isArray(r.brands) ? r.brands.map(String).filter(Boolean) : [] };
+  } catch { return null; }
+}
+const brandOf = (c) => String(c.manufacturer || '').trim();
+function ruleOk(rule, type, c) {
+  if (rule.sub) {
+    const sub = type?.subs.find((x) => x.id === rule.sub);
+    if (sub && !types.subMatches(sub, c.name)) return false;
+  }
+  if (rule.size && units.sizeLabel(c.size) !== rule.size) return false;
+  if (rule.brands.length && !rule.brands.some((b) => brandOf(c) === b || types.nameHas(c.name, normalize(b)))) return false;
+  return true;
+}
+// הזול (ליחידת מידה) מבין המוצרים בסניף שעונים על הכלל
+function pickRule(text, data, rule, ctx = {}) {
+  const first = String(text).split('|')[0].trim();
+  const type = types.typeOf(first);
+  let best = null;
+  for (const c of candidates(text, data).values()) {
+    if (!ruleOk(rule, type, c)) continue;
+    if (!best || c.tier < best.tier || (c.tier === best.tier && units.cheaper(c, best))) best = c;
+  }
+  return best ? priced(best, data, { rule: true }, ctx) : null;
+}
+// לבחירת כלל במסך „בחירת מוצר”: סוגים, גדלים ומותגים שנמצאו בסניפים
+function facets(text, datas) {
+  const first = String(text).split('|')[0].trim();
+  const type = types.typeOf(first);
+  const subs = new Map();
+  const sizes = new Map();
+  const brands = new Map();
+  for (const d of datas) {
+    for (const c of candidates(text, d).values()) {
+      for (const sub of type?.subs || []) if (types.subMatches(sub, c.name)) subs.set(sub.id, { id: sub.id, label: sub.label, n: (subs.get(sub.id)?.n || 0) + 1 });
+      const sz = c.weighted ? '' : units.sizeLabel(c.size);
+      if (sz) sizes.set(sz, (sizes.get(sz) || 0) + 1);
+      const b = brandOf(c);
+      if (b && b !== 'לא ידוע' && b !== 'כללי') brands.set(b, (brands.get(b) || 0) + 1);
+    }
+  }
+  const top = (m, k) => [...m].sort((a, b) => b[1] - a[1]).slice(0, k).map(([label, n]) => ({ label, n }));
+  return { subs: [...subs.values()], sizes: top(sizes, 8), brands: top(brands, 12) };
+}
+
 // המוצר במשקל הזול ביותר שמתאים לפריט בסניף
 function pickLoose(text, data, ctx = {}) {
   let best = null;
@@ -349,6 +425,8 @@ async function compare(items, stores, { pins = {}, clubs = null, shipping = {} }
     const pinned = pins[pinKey(t)];
     if (pinned === 'any') return [t, { code: null, pinned: false, any: true }];
     if (/^\d+$/.test(pinned || '')) return [t, { code: pinned, pinned: true }];
+    const rule = parseRule(pinned);
+    if (rule) return [t, { code: null, pinned: false, rule }];
     // בתפזורת: כשבחרו את זה במפורש, או אוטומטית (ראו isLoose)
     if (pinned === 'loose' || isLoose(t, datas, it)) return [t, { code: null, pinned: false, loose: true }];
     return [t, { code: commonCode(t, datas), pinned: false }];
@@ -358,7 +436,11 @@ async function compare(items, stores, { pins = {}, clubs = null, shipping = {} }
     const club = !Array.isArray(clubs) || clubs.includes(base.chain);
     const lines = cart.map(({ text, qty, kg }) => {
       const ctx = { qty, kg, club };
-      const { code, pinned, any, loose } = codes[text];
+      const { code, pinned, any, loose, rule } = codes[text];
+      if (rule) { // לפי כלל: הזול ליחידת מידה מבין מה שעונה על הכלל
+        const p = pickRule(text, data, rule, ctx);
+        return p ? { text, ...p } : { text, qty, missing: true };
+      }
       if (loose) { // בתפזורת: המוצר במשקל הזול ביותר שמתאים, לפי ק"ג
         const p = pickLoose(text, data, ctx);
         return p ? { text, ...p } : { text, qty, missing: true };
@@ -413,4 +495,4 @@ const pinKey = (t) => String(t).split('|')[0].trim().replace(/\s+/g, ' ').toLowe
 
 const round = (n) => Math.round(n * 100) / 100;
 
-module.exports = { compare, options, search, nearbyStores, pick, candidates, commonCode, pinKey, lineCost, MAX_STORES };
+module.exports = { compare, options, search, facets, parseRule, nearbyStores, pick, candidates, commonCode, pinKey, lineCost, MAX_STORES };

@@ -6,6 +6,9 @@ const d = (n) => new Date(Date.now() + n * day).toISOString().slice(0, 10);
 const prices = (n) => `<?xml version="1.0" encoding="utf-8"?>
 <root><ChainId>7290000000000</ChainId><Items>
 <Item><ItemCode>7290004131074</ItemCode><ItemName>חלב טרי 3% בקרטון 1 ליטר תנובה</ItemName><ItemPrice>${((7.12) * (0.94 + 0.04 * n)).toFixed(2)}</ItemPrice></Item>
+<Item><ItemCode>7290000000101</ItemCode><ItemName>טחינה גולמית סלה 500 גרם</ItemName><ManufacturerName>סלה</ManufacturerName><Quantity>500</Quantity><UnitQty>גרם</UnitQty><ItemPrice>${((12.90) * (0.94 + 0.04 * n)).toFixed(2)}</ItemPrice></Item>
+<Item><ItemCode>7290000000102</ItemCode><ItemName>טחינה גולמית הר ברכה 1 ק"ג</ItemName><ManufacturerName>הר ברכה</ManufacturerName><Quantity>1000</Quantity><UnitQty>גרם</UnitQty><ItemPrice>${((27.90) * (0.94 + 0.04 * n)).toFixed(2)}</ItemPrice></Item>
+<Item><ItemCode>7290000000103</ItemCode><ItemName>סלט טחינה מוכן 400 גרם</ItemName><ManufacturerName>צבר</ManufacturerName><Quantity>400</Quantity><UnitQty>גרם</UnitQty><ItemPrice>${((9.90) * (0.94 + 0.04 * n)).toFixed(2)}</ItemPrice></Item>
 <Item><ItemCode>7290004131081</ItemCode><ItemName>חלב טרי 1% בקרטון 1 ליטר תנובה</ItemName><ItemPrice>${((6.80) * (0.94 + 0.04 * n)).toFixed(2)}</ItemPrice></Item>
 <Item><ItemCode>7290000066318</ItemCode><ItemName>קוטג' 5% תנובה 250 גרם</ItemName><ItemPrice>${((6.90) * (0.94 + 0.04 * n)).toFixed(2)}</ItemPrice></Item>
 <Item><ItemCode>7290011194246</ItemCode><ItemName>במבה אסם 80 גרם</ItemName><ItemPrice>${((5.20) * (0.94 + 0.04 * n)).toFixed(2)}</ItemPrice></Item>
@@ -23,6 +26,7 @@ const promos = (n) => `<?xml version="1.0" encoding="utf-8"?>
 <PromotionStartDate>${d(0)}</PromotionStartDate><PromotionEndDate>${d(2 + n)}</PromotionEndDate>
 <MinQty>1</MinQty><DiscountedPrice>${n === 1 ? '3.90' : '4.50'}</DiscountedPrice><Clubs><ClubId>1</ClubId></Clubs>
 <PromotionItems><Item><ItemCode>7290011194246</ItemCode></Item></PromotionItems></Promotion>
+<Promotion><PromotionId>${n}04</PromotionId><PromotionDescription>טחינה סלה 2 ב-20</PromotionDescription><PromotionStartDate>2020-01-01</PromotionStartDate><PromotionEndDate>2099-12-31</PromotionEndDate><MinQty>2</MinQty><DiscountedPrice>20</DiscountedPrice><Clubs><ClubId>0</ClubId></Clubs><PromotionItems><Item><ItemCode>7290000000101</ItemCode></Item></PromotionItems></Promotion>
 <Promotion><PromotionId>${n}03</PromotionId><PromotionDescription>שמן קנולה 2 ב-20</PromotionDescription>
 <PromotionStartDate>${d(-3)}</PromotionStartDate><PromotionEndDate>${d(-1)}</PromotionEndDate>
 <MinQty>2</MinQty><DiscountedPrice>20</DiscountedPrice>

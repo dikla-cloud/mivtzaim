@@ -173,7 +173,7 @@
         <button id="clearDone">🧹 ניקוי פריטים שנקנו</button>
       </div>
       <div class="row il-only">
-        <button id="cartBtn">🧮 כמה תעלה הרשימה? להשוואת עגלות ‹</button>
+        <button id="cartBtn" class="compare-btn">🧮 כמה תעלה הרשימה? להשוואת עגלות ‹</button>
       </div>
       <p class="muted small">בסופר: לוחצים על פריט כשהוא נכנס לעגלה. ״ניקוי פריטים שנקנו״ משאיר ברשימה רק את מה שעוד לא נקנה. הרשימה הקבועה לא משתנה.</p>
     </section>
@@ -236,6 +236,8 @@
             <li><b>📌</b> מוצר שבחרתם להשוואה</li>
             <li><b>🔀</b> הכי זול מכל מותג</li>
             <li><b>⚖️</b> בתפזורת – הזול לק"ג בכל סניף</li>
+            <li><b>🧩</b> לפי כלל שבחרתם (סוג, גודל, מותגים)</li>
+            <li><b>₪ ל-100 גרם</b> מחיר ליחידת מידה – להשוואה בין גדלים</li>
             <li><b>🚚</b> דמי משלוח (אונליין)</li>
             <li><b>—</b> לא נמצא באף סניף</li>
           </ul>
@@ -271,13 +273,14 @@
         </span>
         <button class="primary">הוספה</button>
       </form>
+      <div class="row il-only"><button type="button" class="compare-btn listCompare">🧮 השוואת מחירים לרשימה הזו ‹</button></div>
       <p id="listHint" class="muted small"></p>
       <div id="listPickBar" class="list-pick-bar" hidden>
         <button type="button" id="listToHome" class="primary"></button>
         <button type="button" id="listPickClear" class="linkish small">ניקוי הסימון</button>
       </div>
       <ul id="items"></ul>
-      <div class="row il-only"><button type="button" id="listCompare">🧮 השוואת מחירים לרשימה הזו ‹</button></div>
+      <div class="row il-only"><button type="button" class="compare-btn listCompare">🧮 השוואת מחירים לרשימה הזו ‹</button></div>
       <div class="card">
         <h3>העלאת רשימה</h3>
         <p class="muted">מוצר בכל שורה (או מופרדים בפסיקים). אפשר להדביק טקסט או להעלות קובץ ‎.txt / .csv.</p>
@@ -597,6 +600,7 @@
       <button class="primary">חיפוש</button>
     </form>
     <p id="prodInfo" class="small muted"></p>
+    <div id="prodRule" class="rule-box" hidden></div>
     <div id="prodList" class="resolve-list"></div>
   </dialog>
 
