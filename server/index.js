@@ -714,8 +714,12 @@ async function compareInput(req, res) {
     .slice(0, compare.MAX_STORES)
     .map((s) => ({ chain: s.chain, storeId: String(s.storeId).slice(0, 20), name: String(s.name || '').slice(0, 80) }));
   if (!stores.length) return res.status(400).json({ error: T(req, 'בחרו לפחות סניף אחד') }), null;
-  let items = db.householdOf(req.user).home.filter((x) => !x.done).map((x) => ({ text: x.text, qty: x.qty, kg: x.kg }));
-  if (!items.length) return res.status(400).json({ error: T(req, 'רשימת ״חסר בבית״ ריקה') }), null;
+  // מה משווים: ״חסר בבית״ (ברירת מחדל) או הרשימה הקבועה האישית
+  const fromList = req.body?.source === 'list';
+  let items = fromList
+    ? req.user.list.map((x) => ({ text: x.text }))
+    : db.householdOf(req.user).home.filter((x) => !x.done).map((x) => ({ text: x.text, qty: x.qty, kg: x.kg }));
+  if (!items.length) return res.status(400).json({ error: T(req, fromList ? 'הרשימה הקבועה ריקה' : 'רשימת ״חסר בבית״ ריקה') }), null;
   // פריטים בערבית: קובצי המחירים בעברית, ולכן מוסיפים את התרגום לעברית לחיפוש
   const arabic = items.map((x) => x.text).filter((t) => translate.sourceLang(t) === 'ar');
   if (arabic.length) {
@@ -730,7 +734,7 @@ app.post('/api/compare/options', async (req, res) => {
   const input = await compareInput(req, res);
   if (!input) return;
   // text: רק פריט אחד (מסך „בחירת מוצר”)
-  const only = typeof req.body?.text === 'string' ? input.items.filter((x) => x.text.split('|')[0] === req.body.text) : input.items;
+  const only = typeof req.body?.text === 'string' ? input.items.filter((x) => x.text.split('|')[0].trim() === req.body.text) : input.items;
   res.json(await compare.options(only.length ? only : [{ text: String(req.body.text) }], input.stores, db.householdOf(req.user).pins || {}, { all: Boolean(req.body?.all) }));
 });
 
@@ -752,9 +756,9 @@ app.post('/api/compare', async (req, res) => {
   metrics.count('compare');
   const result = await compare.compare(items, stores, { pins: db.householdOf(u).pins || {}, clubs: u.clubs ?? null, shipping: u.shipping || {} });
   // מציגים את הפריט כפי שנכתב (בלי התרגום שנוסף לחיפוש)
-  for (const st of result.stores) for (const l of st.lines || []) l.text = l.text.split('|')[0];
-  result.items = result.items.map((t) => t.split('|')[0]);
-  for (const c of result.cart) c.text = c.text.split('|')[0];
+  for (const st of result.stores) for (const l of st.lines || []) l.text = l.text.split('|')[0].trim();
+  result.items = result.items.map((t) => t.split('|')[0].trim());
+  for (const c of result.cart) c.text = c.text.split('|')[0].trim();
   db.save();
   res.json(result);
 });

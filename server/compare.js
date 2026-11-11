@@ -250,7 +250,7 @@ async function options(items, stores, pins = {}, { all = false, limit = 5 } = {}
     // בתפזורת אין מה לשאול: משווים לפי ק"ג את הזול בכל סניף (אפשר לשנות במסך „בחירת מוצר”)
     if (loose && !all) continue;
     out.push({
-      text: text.split('|')[0],
+      text: text.split('|')[0].trim(),
       pin: pin || null,
       loose,
       auto: loose ? null : commonCode(text, datas),

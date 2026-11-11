@@ -535,3 +535,7 @@ body.update-ready #refreshBtn { border-color: #e11d48; }
 .menu-update { margin: 0 16px 6px; padding: 6px 10px; border-radius: 10px; background: #fde7ec; color: #9f1239; font-weight: 600; }
 @media (prefers-color-scheme: dark) { .menu-update { background: #3b1220; color: #fda4af; } }
 @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.25); opacity: .7; } }
+.ship-field { flex-wrap: wrap; }
+.ship-field button.primary { padding: 6px 14px; }
+.ship-field button.primary:disabled { opacity: .45; }
+.cart-src-seg { margin: 2px 0 8px; }

@@ -362,6 +362,7 @@ $('#listToHome').addEventListener('click', async () => {
   } catch (e) { alert(e.message); }
 });
 $('#listPickClear').addEventListener('click', () => { listSel = new Set(); renderList(); });
+$('#listCompare').addEventListener('click', () => { store.set('cartSource', 'list'); showTab('cart'); });
 
 function renderFamily() {
   $('#familyCard').hidden = false;
@@ -1429,7 +1430,9 @@ $('#storesClose').addEventListener('click', () => $('#storesDlg').close());
 // 1. סניפים (כולל דמי משלוח לאונליין) 2. העגלה: כמויות ובחירת מוצר מדויק 3. השוואה
 let cartLoaded = false;
 let cartLast = null; // תוצאת ההשוואה האחרונה (כדי לדעת אילו מוצרים נמכרים במשקל)
-const cartOpen = () => (S.home || []).filter((x) => !x.done);
+// מה משווים: ״חסר בבית״ (עם כמויות) או הרשימה הקבועה (יחידה אחת מכל מוצר) – נשמר במכשיר
+const cartSource = () => (store.get('cartSource') === 'list' ? 'list' : 'home');
+const cartOpen = () => (cartSource() === 'list' ? (S.list || []).map((x) => ({ text: x.text.split('|')[0].trim(), fixed: true })) : (S.home || []).filter((x) => !x.done));
 const pinOf = (text) => S.pins?.[pinKeyOf(text)];
 const pinKeyOf = (text) => String(text).split('|')[0].trim().replace(/\s+/g, ' ').toLowerCase();
 
@@ -1442,18 +1445,29 @@ function renderCartPick() {
 // אונליין: שדה „דמי משלוח” ליד הסניף (נשמר לכל משתמש)
 function shippingField(s, on, after = null) {
   if (!on || (s.km != null && !after)) return null;
-  const wrap = document.createElement('label');
+  // טופס קטן: סכום וכפתור ״שמירה״ (או Enter). הכפתור נדלק כשהסכום שונה מהשמור
+  const wrap = document.createElement('form');
   wrap.className = 'ship-field small';
   const key = storeKey(s);
-  const inp = Object.assign(document.createElement('input'), { type: 'number', min: 0, max: 999, step: 0.1, inputMode: 'decimal', value: S.shipping?.[key] ?? '', placeholder: '0' });
-  inp.addEventListener('change', async () => {
+  const saved = () => S.shipping?.[key] ?? '';
+  const inp = Object.assign(document.createElement('input'), { type: 'number', min: 0, max: 999, step: 0.1, inputMode: 'decimal', value: saved(), placeholder: '0' });
+  inp.setAttribute('aria-label', t('🚚 דמי משלוח שלי (₪):'));
+  const btn = Object.assign(document.createElement('button'), { className: 'primary', textContent: t('שמירה') });
+  const sync = () => { btn.disabled = String(inp.value) === String(saved()); };
+  inp.addEventListener('input', sync);
+  wrap.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    btn.disabled = true;
     try {
       S = await api('PUT', '/api/settings', { shipping: { [key]: Number(inp.value) || 0 } });
       toast(Number(inp.value) > 0 ? t('דמי המשלוח נשמרו ✔') : t('דמי המשלוח נמחקו'));
+      inp.blur();
       if (after) after();
-    } catch (e) { toast(e.message); }
+    } catch (ex) { toast(ex.message); }
+    sync();
   });
-  wrap.append(t('🚚 דמי משלוח שלי (₪):'), inp);
+  wrap.append(Object.assign(document.createElement('span'), { textContent: t('🚚 דמי משלוח שלי (₪):') }), inp, btn);
+  sync();
   return wrap;
 }
 
@@ -1483,6 +1497,10 @@ $('#cartClubsReset').addEventListener('click', async () => {
 // העגלה: כל פריט עם כמות (או ק"ג) ועם המוצר שנבחר להשוואה
 function renderCartItems() {
   const items = cartOpen();
+  const fromList = cartSource() === 'list';
+  $('#srcHome').setAttribute('aria-pressed', !fromList);
+  $('#srcList').setAttribute('aria-pressed', fromList);
+  $('#cartItemsEmpty').textContent = fromList ? t('הרשימה הקבועה ריקה – מוסיפים מוצרים בלשונית ״הרשימה הקבועה שלי״.') : t('רשימת ״חסר בבית״ ריקה – מוסיפים פריטים שם, והם מופיעים כאן.');
   $('#cartItemsEmpty').hidden = items.length > 0;
   $('#cartGo').disabled = !cartSel.length || !items.length;
   const head = document.createElement('li');
@@ -1499,6 +1517,8 @@ function renderCartItems() {
     const choose = Object.assign(document.createElement('button'), { type: 'button', className: 'linkish ci-pick', textContent: `${pinLabel} · ${t('בחירת מוצר ‹')}` });
     choose.addEventListener('click', () => openProductPicker(it.text));
     name.append(choose);
+    // ברשימה הקבועה אין כמויות – יחידה אחת (או חצי ק"ג בתפזורת) מכל מוצר
+    if (it.fixed) { li.append(name); return li; }
     // כמות: יחידות, או ק"ג (⚖️) למוצר שנמכר במשקל
     const byKg = it.kg != null;
     const amount = document.createElement('div');
@@ -1533,6 +1553,15 @@ function renderCartItems() {
     li.append(name, amount);
     return li;
   }));
+}
+
+for (const [id, src] of [['#srcHome', 'home'], ['#srcList', 'list']]) {
+  $(id).addEventListener('click', () => {
+    store.set('cartSource', src);
+    $('#cartResult').hidden = true;
+    $('#cartResolve').hidden = true;
+    renderCartItems();
+  });
 }
 
 // טעינת הסניפים באזור (בפעם הראשונה השרת עוד מאתר סניפים – מבקשים שוב עד שהכול מוכן)
@@ -1582,11 +1611,11 @@ async function runCompare({ resolve = true } = {}) {
   b.textContent = t('בודק מחירים בסניפים… (עד דקה)');
   try {
     if (resolve) {
-      const o = await api('POST', '/api/compare/options', { stores: cartSel });
+      const o = await api('POST', '/api/compare/options', { stores: cartSel, source: cartSource() });
       if (o.items.length) return renderResolve(o);
     }
     $('#cartResolve').hidden = true;
-    renderCart(await api('POST', '/api/compare', { stores: cartSel }));
+    renderCart(await api('POST', '/api/compare', { stores: cartSel, source: cartSource() }));
     track('cart_compare');
   } catch (e) { alert(e.message); } finally {
     b.disabled = !cartSel.length || !cartOpen().length;
@@ -1668,7 +1697,7 @@ async function openProductPicker(text, onDone = null) {
   $('#prodInfo').textContent = t('מחפש בסניפים שנבחרו…');
   $('#prodDlg').showModal();
   try {
-    const o = await api('POST', '/api/compare/options', { stores: cartSel, all: true, text });
+    const o = await api('POST', '/api/compare/options', { stores: cartSel, all: true, text, source: cartSource() });
     const it = o.items[0];
     showPickerOptions(it ? it.options : [], o.stores, it?.auto, it?.loose);
   } catch (e) { $('#prodInfo').textContent = e.message; }
@@ -2122,7 +2151,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.02c';
+const APP_VERSION = '2026.11.11';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });

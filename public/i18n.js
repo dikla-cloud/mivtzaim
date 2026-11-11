@@ -600,6 +600,12 @@ const I18N = {
   "ניקוי הסימון": ["Auswahl aufheben", "Clear selection"],
   "יש גרסה חדשה – לחצו לרענון": ["Neue Version – zum Aktualisieren tippen", "New version – tap to refresh"],
   "יש גרסה חדשה ({v}) – לחצו ״רענון האפליקציה״": ["Neue Version ({v}) – tippen Sie auf „App aktualisieren“", "New version ({v}) – tap “Refresh the app”"],
+  "הרשימה הקבועה ריקה – מוסיפים מוצרים בלשונית ״הרשימה הקבועה שלי״.": ["Die Stammliste ist leer – Produkte im Tab „Meine Stammliste“ hinzufügen.", "The regular list is empty – add products in the “My regular list” tab."],
+  "🏠 חסר בבית": ["🏠 Fehlt zu Hause", "🏠 Missing at home"],
+  "📋 הרשימה הקבועה": ["📋 Stammliste", "📋 Regular list"],
+  "אפשר לשנות כמות (ב״חסר בבית״), ולמוצר במשקל (ירקות, מעדנייה) – כמה ק\"ג. ״בחירת מוצר״ – כדי להשוות בדיוק אותו מוצר בכל הסניפים (גם בחיפוש לפי תחילת מילה או בצילום ברקוד).": ["Sie können die Menge ändern (bei „Fehlt zu Hause“), bei Ware nach Gewicht die kg. „Produkt wählen“ – um genau dasselbe Produkt in allen Filialen zu vergleichen (auch per Wortanfang oder Barcode-Foto).", "You can change quantities (in “Missing at home”), and for products sold by weight – the kg. “Choose product” compares exactly the same product in all stores (also by word start or barcode photo)."],
+  "🧮 השוואת מחירים לרשימה הזו ‹": ["🧮 Preise für diese Liste vergleichen ›", "🧮 Compare prices for this list ›"],
+  "מה להשוות": ["Was vergleichen", "What to compare"],
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -1152,6 +1158,12 @@ const I18N_AR = {
   "ניקוי הסימון": "إلغاء التحديد",
   "יש גרסה חדשה – לחצו לרענון": "يوجد إصدار جديد – اضغط للتحديث",
   "יש גרסה חדשה ({v}) – לחצו ״רענון האפליקציה״": "يوجد إصدار جديد ({v}) – اضغط «تحديث التطبيق»",
+  "הרשימה הקבועה ריקה – מוסיפים מוצרים בלשונית ״הרשימה הקבועה שלי״.": "القائمة الثابتة فارغة – أضف منتجات في تبويب «قائمتي الثابتة».",
+  "🏠 חסר בבית": "🏠 ناقص في البيت",
+  "📋 הרשימה הקבועה": "📋 القائمة الثابتة",
+  "אפשר לשנות כמות (ב״חסר בבית״), ולמוצר במשקל (ירקות, מעדנייה) – כמה ק\"ג. ״בחירת מוצר״ – כדי להשוות בדיוק אותו מוצר בכל הסניפים (גם בחיפוש לפי תחילת מילה או בצילום ברקוד).": "يمكن تغيير الكمية (في «ناقص في البيت»)، وللمنتجات بالوزن – عدد الكيلوغرامات. «اختيار منتج» – لمقارنة المنتج نفسه بالضبط في كل الفروع (أيضًا ببداية كلمة أو بتصوير باركود).",
+  "🧮 השוואת מחירים לרשימה הזו ‹": "🧮 مقارنة الأسعار لهذه القائمة ‹",
+  "מה להשוות": "ماذا نقارن",
 };
 
 // t('נוספו {n} פריטים', { n: 3 })

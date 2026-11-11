@@ -200,7 +200,11 @@
       </details>
       <div class="card">
         <h3>🛒 העגלה</h3>
-        <p class="muted small">הפריטים מ״חסר בבית״. אפשר לשנות כמות, ולמוצר במשקל (ירקות, מעדנייה) – כמה ק"ג. ״בחירת מוצר״ – כדי להשוות בדיוק אותו מוצר בכל הסניפים (גם בחיפוש לפי תחילת מילה או בצילום ברקוד).</p>
+        <div class="seg cart-src-seg" role="group" aria-label="מה להשוות">
+          <button type="button" id="srcHome" aria-pressed="true">🏠 חסר בבית</button>
+          <button type="button" id="srcList" aria-pressed="false">📋 הרשימה הקבועה</button>
+        </div>
+        <p class="muted small">אפשר לשנות כמות (ב״חסר בבית״), ולמוצר במשקל (ירקות, מעדנייה) – כמה ק"ג. ״בחירת מוצר״ – כדי להשוות בדיוק אותו מוצר בכל הסניפים (גם בחיפוש לפי תחילת מילה או בצילום ברקוד).</p>
         <ul id="cartItems" class="cart-items"></ul>
         <p id="cartItemsEmpty" class="muted" hidden>רשימת ״חסר בבית״ ריקה – מוסיפים פריטים שם, והם מופיעים כאן.</p>
       </div>
@@ -273,6 +277,7 @@
         <button type="button" id="listPickClear" class="linkish small">ניקוי הסימון</button>
       </div>
       <ul id="items"></ul>
+      <div class="row il-only"><button type="button" id="listCompare">🧮 השוואת מחירים לרשימה הזו ‹</button></div>
       <div class="card">
         <h3>העלאת רשימה</h3>
         <p class="muted">מוצר בכל שורה (או מופרדים בפסיקים). אפשר להדביק טקסט או להעלות קובץ ‎.txt / .csv.</p>

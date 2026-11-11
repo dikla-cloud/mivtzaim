@@ -98,6 +98,7 @@ const T = {
   "הקניות שלי – מייל בדיקה": { de: "Meine Einkäufe – Test-E-Mail", en: "My Shopping – test email" },
   "שליחת המיילים מהשרת עובדת ✔": { de: "Der E-Mail-Versand vom Server funktioniert ✔", en: "Sending email from the server works ✔" },
   "שליחת המייל נכשלה": { de: "Senden fehlgeschlagen", en: "Sending failed" },
+  "הרשימה הקבועה ריקה": { de: "Die Stammliste ist leer", en: "The regular list is empty" },
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -177,6 +178,7 @@ const T_AR = {
   "הקניות שלי – מייל בדיקה": "مشترياتي – بريد اختبار",
   "שליחת המיילים מהשרת עובדת ✔": "إرسال البريد من الخادم يعمل ✔",
   "שליחת המייל נכשלה": "فشل الإرسال",
+  "הרשימה הקבועה ריקה": "القائمة الثابتة فارغة",
 };
 
 const pick = (lang) => (LANGS.includes(lang) ? lang : DEFAULT_LANG);
