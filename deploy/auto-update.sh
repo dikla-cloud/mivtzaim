@@ -28,12 +28,17 @@ deploy() {
     systemctl restart "$name"
   done
 }
+# האפליקציה עלתה? מחכים עד דקה לכל התקנה (שרת איטי לא נחשב תקלה)
 healthy() {
-  sleep 5
   for unit in /etc/systemd/system/mivtzaim*.service; do
     port="$(sed -n 's/^Environment=PORT=//p' "$unit")"
     [ -z "$port" ] && continue
-    curl -fs "localhost:$port/api/setup" >/dev/null || return 1
+    ok=""
+    for _ in $(seq 1 30); do
+      sleep 2
+      if curl -fs "localhost:$port/api/setup" >/dev/null; then ok=1; break; fi
+    done
+    [ -n "$ok" ] || { echo "✘ $(basename "$unit") לא עונה בפורט $port"; return 1; }
   done
 }
 
