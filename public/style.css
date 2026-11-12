@@ -554,3 +554,16 @@ body.update-ready #refreshBtn { border-color: #e11d48; }
 .rule-title { font-weight: 700; font-size: .85rem; min-width: 3.5em; }
 .chip { padding: 4px 10px; border-radius: 999px; font-size: .85rem; background: var(--surface); }
 .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+
+/* ״חסר בבית״: אזור ההוספה בולט, ונשאר צמוד מתחת לסרגל העליון בזמן גלילה */
+.add-box { position: sticky; top: var(--top-h, 120px); z-index: 4; background: var(--bg); margin: 0 -16px; padding: 8px 16px 2px; border-bottom: 1px solid var(--border); box-shadow: 0 4px 8px -6px rgb(0 0 0 / .25); }
+.add-box #homeAdd { margin: 0 0 6px; }
+#homeItem { font-size: 1.1rem; padding: 12px 14px; border: 3px solid #e3a008; border-radius: 14px; background: #fffbea; box-shadow: 0 0 0 4px #e3a00826; }
+#homeItem::placeholder { color: #8a6d1f; font-weight: 600; }
+#homeItem:focus { outline: none; border-color: #c88a00; box-shadow: 0 0 0 5px #e3a00855; background: #fff; }
+@media (prefers-color-scheme: dark) {
+  #homeItem { background: #2b2410; color: var(--text); }
+  #homeItem::placeholder { color: #d9b45c; }
+  #homeItem:focus { background: #1f1a0b; }
+}
+.add-box .add-amt { margin: 0 0 6px; }

@@ -955,8 +955,16 @@ $('#homeAdd').addEventListener('submit', async (e) => {
   freshIds = new Set(r.home.filter((x) => !before.has(x.id)).map((x) => x.id));
   setTimeout(() => { freshIds = new Set(); }, 4000);
   renderHome();
+  // השדה נשאר במקום (צמוד למעלה) והסמן נשאר בו – אפשר להקליד מיד את הפריט הבא.
+  // מגלגלים לפריט החדש רק אם הוא לא נראה, ובלי להזיז את השדה
   const first = [...freshIds][0];
-  if (first) $(`#homeList [data-id="${CSS.escape(first)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const el = first && $(`#homeList [data-id="${CSS.escape(first)}"]`);
+  if (el) {
+    const r = el.getBoundingClientRect();
+    const top = $('#homeAddBox').getBoundingClientRect().bottom;
+    if (r.top < top || r.bottom > innerHeight) scrollBy({ top: r.top - top - 12, behavior: 'smooth' });
+  }
+  $('#homeItem').focus({ preventScroll: true });
   showDuplicates(r.duplicates || []);
   // כמות שלא נכנסה כי הפריט כבר ברשימה – מעדכנים את הפריט הקיים
   for (const it of items) {
@@ -2242,7 +2250,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.11d';
+const APP_VERSION = '2026.11.12';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });
@@ -2333,6 +2341,9 @@ document.querySelectorAll('#tab-settings > .card').forEach((card) => {
   d.append(sum, ...card.childNodes);
   card.append(d);
 });
+
+// גובה הסרגל העליון הקבוע – כדי שאזור ההוספה ב״חסר בבית״ ייצמד מתחתיו
+if ('ResizeObserver' in window) new ResizeObserver(() => document.documentElement.style.setProperty('--top-h', `${$('#stickyTop').offsetHeight}px`)).observe($('#stickyTop'));
 
 // ---------- הפעלה ----------
 translatePage();

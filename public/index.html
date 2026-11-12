@@ -137,27 +137,29 @@
 
     <section id="tab-home" hidden>
       <p id="homeShared" class="muted small"></p>
-      <form id="homeAdd" class="row">
-        <input id="homeItem" placeholder="מה חסר?" autocomplete="off">
-        <button type="button" id="mic" class="mic" aria-label="הכתבה" title="הכתבה" hidden>🎤</button>
-        <span class="photo-wrap">
-          <button type="button" class="mic photo-btn" aria-haspopup="true" aria-expanded="false" title="הוספה מצילום (ברקוד)" aria-label="הוספה מצילום (ברקוד)">📷</button>
-          <span class="photo-menu" hidden>
-            <label>📸 צילום עכשיו<input type="file" id="photoHomeCam" accept="image/*" capture="environment" hidden></label>
-            <label>🖼️ מהגלריה או מהמחשב<input type="file" id="photoHome" accept="image/*" hidden></label>
+      <div id="homeAddBox" class="add-box">
+        <form id="homeAdd" class="row">
+          <input id="homeItem" placeholder="מה חסר?" autocomplete="off">
+          <button type="button" id="mic" class="mic" aria-label="הכתבה" title="הכתבה" hidden>🎤</button>
+          <span class="photo-wrap">
+            <button type="button" class="mic photo-btn" aria-haspopup="true" aria-expanded="false" title="הוספה מצילום (ברקוד)" aria-label="הוספה מצילום (ברקוד)">📷</button>
+            <span class="photo-menu" hidden>
+              <label>📸 צילום עכשיו<input type="file" id="photoHomeCam" accept="image/*" capture="environment" hidden></label>
+              <label>🖼️ מהגלריה או מהמחשב<input type="file" id="photoHome" accept="image/*" hidden></label>
+            </span>
           </span>
-        </span>
-        <button class="primary">הוספה</button>
-      </form>
-      <div class="add-amt">
-        <span class="item-qty-label">כמות</span>
-        <span class="seg unit-seg" role="group" aria-label="יחידת מידה">
-          <button type="button" id="addUnitPcs" aria-pressed="true">יח'</button>
-          <button type="button" id="addUnitKg" aria-pressed="false">ק"ג</button>
-        </span>
-        <button type="button" id="addMinus" class="step" aria-label="פחות">−</button>
-        <b id="addQty" class="qty">1</b>
-        <button type="button" id="addPlus" class="step" aria-label="עוד">+</button>
+          <button class="primary">הוספה</button>
+        </form>
+        <div class="add-amt">
+          <span class="item-qty-label">כמות</span>
+          <span class="seg unit-seg" role="group" aria-label="יחידת מידה">
+            <button type="button" id="addUnitPcs" aria-pressed="true">יח'</button>
+            <button type="button" id="addUnitKg" aria-pressed="false">ק"ג</button>
+          </span>
+          <button type="button" id="addMinus" class="step" aria-label="פחות">−</button>
+          <b id="addQty" class="qty">1</b>
+          <button type="button" id="addPlus" class="step" aria-label="עוד">+</button>
+        </div>
       </div>
       <p id="dupHint" class="dup" hidden></p>
       <p id="voiceHint" class="muted small"></p>
