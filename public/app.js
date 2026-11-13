@@ -37,6 +37,8 @@ const loginErr = (msg) => { $('#loginError').textContent = msg || ''; $('#loginE
 // קישור הזמנה: ‎/?invite=…‎ – מי שאין לו עדיין חשבון נרשם בעצמו
 const inviteToken = new URLSearchParams(location.search).get('invite');
 const clearInvite = () => { if (inviteToken) history.replaceState(null, '', location.pathname); };
+// אחרי רענון מלא (‎?v=…‎) – כתובת נקייה
+if (new URLSearchParams(location.search).has('v')) history.replaceState(null, '', location.pathname + (inviteToken ? `?invite=${encodeURIComponent(inviteToken)}` : ''));
 async function showJoin() {
   try {
     const r = await fetch(`/api/invite/${encodeURIComponent(inviteToken)}`, { headers: { 'x-app-lang': LANG } });
@@ -2250,7 +2252,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.12';
+const APP_VERSION = '2026.11.13';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });
@@ -2296,13 +2298,14 @@ $('#aboutClose').addEventListener('click', () => $('#aboutDlg').close());
 $('#settingsVersion').textContent = t('גרסה {v}', { v: APP_VERSION });
 $('#menuVersion').textContent = t('גרסה {v}', { v: APP_VERSION });
 // רענון: מוחקים את העותק השמור של האפליקציה בטלפון וטוענים מחדש מהשרת
+// רענון מלא: מוחקים את הקבצים השמורים, מבטלים את ה-Service Worker (הוא יירשם מחדש בטעינה),
+// וטוענים את הדף בכתובת חדשה – כך הדפדפן לא יכול להציג עותק ישן
 async function refreshApp() {
   try {
     for (const k of (await caches?.keys?.()) || []) await caches.delete(k);
-    const reg = await navigator.serviceWorker?.getRegistration();
-    await reg?.update();
+    for (const reg of (await navigator.serviceWorker?.getRegistrations?.()) || []) await reg.unregister();
   } catch { /* */ }
-  location.reload();
+  location.replace(`${location.pathname}?v=${Date.now()}`);
 }
 $('#menuRefresh').addEventListener('click', () => { $('#menuRefresh').textContent = t('🔄 מרענן…'); refreshApp(); });
 
