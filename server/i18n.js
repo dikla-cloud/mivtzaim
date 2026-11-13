@@ -5,6 +5,7 @@ const DEFAULT_LANG = LANGS.includes(process.env.APP_LANG) ? process.env.APP_LANG
 const LOCALE = { he: 'he-IL', de: 'de-AT', en: 'en-GB', ar: 'ar-u-nu-latn' };
 
 const T = {
+  'שגיאה': { de: 'Fehler', en: 'Error' },
   'שם או סיסמה שגויים': { de: 'Name oder Passwort falsch', en: 'Wrong name or password' },
   'הסיסמה הראשונית שגויה': { de: 'Das Startpasswort ist falsch', en: 'The initial password is wrong' },
   'נדרשת כניסה': { de: 'Bitte anmelden', en: 'Please sign in' },
@@ -103,6 +104,7 @@ const T = {
 
 // ערבית (מפתח: הנוסח העברי)
 const T_AR = {
+  'שגיאה': 'خطأ',
   "בחירת סניפים והשוואת עגלה זמינות כרגע רק בישראל. המיקום שלך עכשיו: {place}. אפשר לעדכן אותו בכפתור ״עדכון מיקום״.": "اختيار الفروع ومقارنة العربة متاحان حاليًا في إسرائيل فقط. موقعك الآن: {place}. يمكن تحديثه بزر «تحديث الموقع».",
   "כניסה עם מייל עוד לא הוגדרה בשרת": "الدخول عبر البريد لم يُفعَّل بعد في الخادم",
   "המייל הזה לא רשום באפליקציה. בקשו ממי שהזמין אתכם להוסיף אותו.": "هذا البريد غير مسجّل في التطبيق. اطلب ممن دعاك إضافته.",

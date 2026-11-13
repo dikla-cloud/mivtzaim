@@ -228,7 +228,7 @@ function userInfo(x, u) {
   };
 }
 
-const state = (u) => ({
+const state = (u, lang = u.lang) => ({
   me: { name: u.name, admin: u.admin, household: db.householdOf(u).id, email: u.email || '' },
   emailLogin: mail.configured(),
   // המנהל רואה את כל המשתמשים (בפרטים מצומצמים – ראו userInfo); כל אחד אחר – את בני משק הבית שלו
@@ -240,7 +240,7 @@ const state = (u) => ({
   limits: { ...db.get().limits, count: db.users().length },
   needTerms: u.termsVersion !== TERMS_VERSION,
   list: u.list, location: u.location, radiusKm: u.radiusKm, deals: u.deals,
-  lastScan: u.lastScan, lastErrors: u.lastErrors, lastSources: u.lastSources || [], lastReport: u.lastReport || null,
+  lastScan: u.lastScan, lastErrors: u.lastErrors, lastSources: (u.lastSources || []).map((x) => i18n.tr(lang, x)), lastReport: u.lastReport ? { ...u.lastReport, providers: (u.lastReport.providers || []).map((x) => ({ ...x, name: i18n.tr(lang, x.name) })) } : null,
   lang: u.lang || null,
   myStores: u.myStores || [],
   // מוצרים שנבחרו להשוואה לכל פריט ב„חסר בבית” (משותף לבני הבית), ושמותיהם לתצוגה
@@ -294,7 +294,7 @@ app.post('/api/users', (req, res) => {
   });
   metrics.count('signup');
   db.save();
-  res.json(state(req.user));
+  res.json(state(req.user, req.lang));
 });
 
 // קישורי ההזמנה שלי. משתמש רגיל (אם מותר לו להזמין) – רק למשק הבית שלו
@@ -490,7 +490,7 @@ app.put('/api/users/:name/password', adminOnly, (req, res) => {
   u.pass = auth.hashPassword(req.body.password);
   auth.dropSessions(u, u === req.user ? req.token : undefined);
   db.save();
-  res.json(state(req.user));
+  res.json(state(req.user, req.lang));
 });
 
 // הגבלות הזמנה – מנהל בלבד
@@ -500,7 +500,7 @@ app.put('/api/limits', adminOnly, (req, res) => {
   if (Number.isFinite(max)) l.maxUsers = Math.min(Math.max(Math.round(max), 1), 500);
   if (typeof req.body?.membersCanInvite === 'boolean') l.membersCanInvite = req.body.membersCanInvite;
   db.save();
-  res.json(state(req.user));
+  res.json(state(req.user, req.lang));
 });
 
 // המנהל מעדכן מייל של משתמש (למשל למשתמשים ותיקים שנוצרו עם סיסמה)
@@ -512,7 +512,7 @@ app.put('/api/users/:name/email', adminOnly, (req, res) => {
   if (emailTaken(email, u)) return res.status(400).json({ error: T(req, 'המייל הזה כבר שייך למשתמש אחר') });
   u.email = email;
   db.save();
-  res.json(state(req.user));
+  res.json(state(req.user, req.lang));
 });
 
 // המנהל מצרף משתמש למשק הבית שלו, או מפריד אותו למשק בית משלו
@@ -526,7 +526,7 @@ app.put('/api/users/:name/household', adminOnly, (req, res) => {
     db.householdOf(u); // משק בית חדש וריק
   }
   db.save();
-  res.json(state(req.user));
+  res.json(state(req.user, req.lang));
 });
 
 app.delete('/api/users/:name', adminOnly, (req, res) => {
@@ -537,7 +537,7 @@ app.delete('/api/users/:name', adminOnly, (req, res) => {
   auth.dropSessions(u);
   delete db.get().users[key];
   db.save();
-  res.json(state(req.user));
+  res.json(state(req.user, req.lang));
 });
 
 // מחיקת החשבון שלי: החשבון, הרשימה הקבועה, המיקום וההתראות נמחקים.
@@ -561,7 +561,7 @@ app.put('/api/me/email', (req, res) => {
   if (!email && mail.configured()) return res.status(400).json({ error: T(req, 'בלי מייל לא תוכלו להיכנס שוב לאפליקציה') });
   if (email) req.user.email = email; else delete req.user.email;
   db.save();
-  res.json(state(req.user));
+  res.json(state(req.user, req.lang));
 });
 
 // ---------- תנאי שימוש ומדיניות פרטיות ----------
@@ -569,7 +569,7 @@ app.post('/api/terms/accept', (req, res) => {
   req.user.termsVersion = TERMS_VERSION;
   req.user.termsAcceptedAt = new Date().toISOString();
   db.save();
-  res.json(state(req.user));
+  res.json(state(req.user, req.lang));
 });
 
 // ---------- מדידה שומרת פרטיות ----------
@@ -584,7 +584,7 @@ app.get('/api/metrics.csv', adminOnly, (req, res) => {
 });
 
 // ---------- רשימה, מיקום והגדרות ----------
-app.get('/api/state', (req, res) => res.json(state(req.user)));
+app.get('/api/state', (req, res) => res.json(state(req.user, req.lang)));
 
 const timers = new Map();
 function rescanSoon(u, delay = 100) {
@@ -610,7 +610,7 @@ app.put('/api/list', (req, res) => {
     .map(({ x, text }) => ({ id: crypto.randomUUID(), text, ...amount(x, before.get(text)) }));
   db.save();
   rescanSoon(req.user, 60000); // בדיקה חוזרת דקה אחרי השינוי האחרון ברשימה
-  res.json(state(req.user));
+  res.json(state(req.user, req.lang));
 });
 
 app.put('/api/settings', async (req, res) => {
@@ -641,7 +641,7 @@ app.put('/api/settings', async (req, res) => {
     }
   }
   db.save();
-  res.json(state(u));
+  res.json(state(u, req.lang));
 });
 
 // שם מוצר לפי ברקוד (מצילום): מאגר המוצרים החופשי Open Food Facts, עם מטמון בשרת
@@ -694,7 +694,7 @@ app.put('/api/mystores', (req, res) => {
     .map((s) => ({ chain: s.chain, storeId: String(s.storeId).slice(0, 40), name: String(s.name || '').slice(0, 80), chainName: String(s.chainName || '').slice(0, 60) }));
   db.save();
   rescanSoon(u);
-  res.json(state(u));
+  res.json(state(u, req.lang));
 });
 
 // „תמיד להשוות את המוצר הזה”: ברקוד קבוע לפריט ב„חסר בבית” (משותף לבני הבית). code ריק = ביטול
@@ -805,7 +805,7 @@ app.post('/api/test-push', async (req, res) => {
 app.post('/api/scan', async (req, res) => {
   try {
     const r = await scanner.scan(req.user);
-    res.json({ ...r, state: state(req.user) });
+    res.json({ ...r, state: state(req.user, req.lang) });
   } catch (e) {
     res.status(400).json({ error: e.message });
   }

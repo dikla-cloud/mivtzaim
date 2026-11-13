@@ -53,11 +53,11 @@ async function scan(d) {
     for (const p of providers) {
       try {
         deals.push(...await p.scan(ctx));
-        sources.push(tr(lang, p.name));
-        report.providers.push({ name: tr(lang, p.name), error: null });
+        sources.push(p.name); // נשמר בעברית ומתורגם בכל הצגה לפי שפת המשתמש
+        report.providers.push({ name: p.name, error: null });
       } catch (e) {
         errors.push(`${tr(lang, p.name)}: ${e.message}`);
-        report.providers.push({ name: tr(lang, p.name), error: e.message });
+        report.providers.push({ name: p.name, error: e.message });
       }
     }
     report.items = list.map((x) => ({

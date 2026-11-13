@@ -637,6 +637,8 @@ const I18N = {
   "מרענן…": ["Wird aktualisiert…", "Refreshing…"],
   "עריכת פריט – שם, כמות ומחלקה: בכפתור העיפרון או בלחיצה ארוכה על הפריט. נשמר לכל בני הבית.": ["Artikel bearbeiten – Name, Menge und Abteilung: mit dem Stift oder lange auf den Artikel tippen. Gilt für den ganzen Haushalt.", "Edit an item – name, quantity and department: with the pencil button or a long press on the item. Saved for the whole household."],
   "התקנה על המכשיר": ["Auf dem Gerät installieren", "Install on this device"],
+  "🗣️ בישראל מדברים שפות רבות, ולכן האפליקציה זמינה בעברית, בערבית, באנגלית ובגרמנית.": ["🗣️ In Israel werden viele Sprachen gesprochen – deshalb gibt es die App auf Hebräisch, Arabisch, Englisch und Deutsch.", "🗣️ Many languages are spoken in Israel, so the app is available in Hebrew, Arabic, English and German."],
+  "🌍 פועלת בישראל, באוסטריה, בגרמניה ובאוסטרליה.": ["🌍 Verfügbar in Israel, Österreich, Deutschland und Australien.", "🌍 Works in Israel, Austria, Germany and Australia."],
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -1226,6 +1228,8 @@ const I18N_AR = {
   "מרענן…": "جارٍ التحديث…",
   "עריכת פריט – שם, כמות ומחלקה: בכפתור העיפרון או בלחיצה ארוכה על הפריט. נשמר לכל בני הבית.": "تعديل غرض – الاسم والكمية والقسم: بزر القلم أو بضغطة مطولة على الغرض. يُحفظ لكل أهل البيت.",
   "התקנה על המכשיר": "التثبيت على الجهاز",
+  "🗣️ בישראל מדברים שפות רבות, ולכן האפליקציה זמינה בעברית, בערבית, באנגלית ובגרמנית.": "🗣️ في إسرائيل يتحدثون لغات كثيرة، لذلك التطبيق متوفر بالعبرية والعربية والإنجليزية والألمانية.",
+  "🌍 פועלת בישראל, באוסטריה, בגרמניה ובאוסטרליה.": "🌍 يعمل في إسرائيل والنمسا وألمانيا وأستراليا.",
 };
 
 // t('נוספו {n} פריטים', { n: 3 })
