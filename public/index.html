@@ -168,7 +168,7 @@
         <button type="button" id="deptOrderBtn" class="linkish small">סדר המחלקות</button>
       </div>
       <ul id="homeList"></ul>
-      <p class="muted small">✏️ עריכת פריט – שם, כמות ומחלקה: בכפתור ✏️ או בלחיצה ארוכה על הפריט. נשמר לכל בני הבית.</p>
+      <p class="muted small edit-hint"><svg class="line-ico pencil-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg><span>עריכת פריט – שם, כמות ומחלקה: בכפתור העיפרון או בלחיצה ארוכה על הפריט. נשמר לכל בני הבית.</span></p>
       <p id="homeEmpty" class="empty muted" hidden>אין כרגע חוסרים 🎉</p>
       <div class="row" id="homeActions" hidden>
         <button id="clearDone">🧹 ניקוי פריטים שנקנו</button>
@@ -486,17 +486,17 @@
     </div>
     <div class="menu-list">
       <div class="menu-lang">
-        <span>🌐 שפה</span>
+        <span class="menu-row"><svg class="line-ico menu-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span>שפה</span></span>
         <div id="menuLangs" class="lang-chips"></div>
       </div>
       <button type="button" id="gear" data-tab="settings" aria-pressed="false"><svg class="line-ico menu-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>הגדרות</span></button>
-      <button type="button" id="menuAbout">ℹ️ אודות</button>
-      <a href="privacy.html" target="_blank">🔒 מדיניות פרטיות</a>
-      <a href="terms.html" target="_blank">📄 תנאי שימוש</a>
-      <button type="button" id="menuInstall">📲 התקנה על המכשיר</button>
+      <button type="button" id="menuAbout"><svg class="line-ico menu-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg><span>אודות</span></button>
+      <a href="privacy.html" target="_blank"><svg class="line-ico menu-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>מדיניות פרטיות</span></a>
+      <a href="terms.html" target="_blank"><svg class="line-ico menu-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><span>תנאי שימוש</span></a>
+      <button type="button" id="menuInstall"><svg class="line-ico menu-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M12 7v7M9.5 11.5 12 14l2.5-2.5M11 18.5h2"/></svg><span>התקנה על המכשיר</span></button>
       <p id="installHelp" class="menu-help small" hidden></p>
-      <button type="button" id="menuShare"><svg class="share-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="m8.3 10.7 7.4-4.3M8.3 13.3l7.4 4.3"/></svg> שיתוף האפליקציה</button>
-      <button type="button" id="menuRefresh">🔄 רענון האפליקציה</button>
+      <button type="button" id="menuShare"><svg class="line-ico menu-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="m8.3 10.7 7.4-4.3M8.3 13.3l7.4 4.3"/></svg><span>שיתוף האפליקציה</span></button>
+      <button type="button" id="menuRefresh"><svg class="line-ico menu-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg><span>רענון האפליקציה</span></button>
       <p id="menuUpdateNote" class="menu-update small" hidden></p>
       <p id="menuVersion" class="menu-version muted small"></p>
     </div>

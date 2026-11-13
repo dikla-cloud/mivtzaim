@@ -1,4 +1,7 @@
 const $ = (s) => document.querySelector(s);
+// עיפרון מצויר בשחור (במקום האימוג'י ✏️) – לכפתורי העריכה
+const PENCIL = '<svg class="line-ico pencil-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>';
+
 let S = null;
 const store = {
   get: (k) => { try { return localStorage.getItem(k) || ''; } catch { return ''; } },
@@ -340,7 +343,7 @@ function renderList() {
     const name = Object.assign(document.createElement('span'), { className: 'list-name', textContent: it.text });
     if (it.kg || it.qty > 1) name.append(Object.assign(document.createElement('span'), { className: 'amt', textContent: it.kg ? t('{kg} ק"ג', { kg: it.kg }) : t('{n} יח\'', { n: it.qty }) }));
     name.addEventListener('click', () => openListEditor(i));
-    const edit = Object.assign(document.createElement('button'), { type: 'button', textContent: '✏️', title: t('עריכה: שם וכמות') });
+    const edit = Object.assign(document.createElement('button'), { type: 'button', className: 'pencil-btn', innerHTML: PENCIL, title: t('עריכה: שם וכמות') });
     edit.setAttribute('aria-label', t('עריכה: שם וכמות'));
     edit.addEventListener('click', () => openListEditor(i));
     const del = Object.assign(document.createElement('button'), { textContent: '✕', title: t('מחיקה') });
@@ -805,7 +808,7 @@ function homeRow(it) {
       });
       li.append(star);
     }
-    const editBtn = Object.assign(document.createElement('button'), { className: 'mini', textContent: '✏️', title: t('עריכה: שם, כמות ומחלקה') });
+    const editBtn = Object.assign(document.createElement('button'), { className: 'mini pencil-btn', innerHTML: PENCIL, title: t('עריכה: שם, כמות ומחלקה') });
     editBtn.setAttribute('aria-label', t('עריכה: שם, כמות ומחלקה'));
     editBtn.addEventListener('click', () => openItemEditor(it));
     li.append(editBtn);
@@ -1570,7 +1573,7 @@ function renderCartItems() {
     const choose = Object.assign(document.createElement('button'), { type: 'button', className: 'linkish ci-pick', textContent: `${pinLabel} · ${t('בחירת מוצר ‹')}` });
     choose.addEventListener('click', () => openProductPicker(it.text));
     name.append(choose);
-    // ברשימה הקבועה הכמות נקבעת ב-✏️ שם; כאן רק מוצגת
+    // ברשימה הקבועה הכמות נקבעת בעיפרון שם; כאן רק מוצגת
     if (it.fixed) {
       li.append(name);
       if (it.kg || it.qty > 1) li.append(Object.assign(document.createElement('span'), { className: 'amt', textContent: it.kg ? t('{kg} ק"ג', { kg: it.kg }) : t('{n} יח\'', { n: it.qty }) }));
@@ -2325,7 +2328,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.13f';
+const APP_VERSION = '2026.11.13g';
 // במחשב התפריט פתוח תמיד בצד (CSS); בנייד – נפתח ב-☰
 const sideMenu = () => matchMedia('(min-width: 1000px)').matches;
 $('#menuBtn').addEventListener('click', () => { if (!sideMenu()) $('#menuDlg').showModal(); });
@@ -2386,7 +2389,7 @@ async function refreshApp() {
   await Promise.race([cleanup, new Promise((r) => setTimeout(r, 1500))]);
   location.replace(`${location.pathname}?v=${Date.now()}`);
 }
-$('#menuRefresh').addEventListener('click', () => { $('#menuRefresh').textContent = t('🔄 מרענן…'); refreshApp(); });
+$('#menuRefresh').addEventListener('click', () => { $('#menuRefresh span').textContent = t('מרענן…'); refreshApp(); });
 
 // יש גרסה חדשה בשרת? נקודה אדומה על כפתור הרענון ובתפריט (בכניסה, כל 10 דקות, וכשחוזרים לאפליקציה)
 async function checkVersion() {

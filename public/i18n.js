@@ -634,6 +634,9 @@ const I18N = {
   "ההתראות יגיעו בלי צליל": ["Benachrichtigungen kommen ohne Ton", "Notifications will be silent"],
   "ההתראות יגיעו עם צליל": ["Benachrichtigungen kommen mit Ton", "Notifications will make a sound"],
   "ביטול התראות במכשיר הזה": ["Benachrichtigungen auf diesem Gerät ausschalten", "Turn off notifications on this device"],
+  "מרענן…": ["Wird aktualisiert…", "Refreshing…"],
+  "עריכת פריט – שם, כמות ומחלקה: בכפתור העיפרון או בלחיצה ארוכה על הפריט. נשמר לכל בני הבית.": ["Artikel bearbeiten – Name, Menge und Abteilung: mit dem Stift oder lange auf den Artikel tippen. Gilt für den ganzen Haushalt.", "Edit an item – name, quantity and department: with the pencil button or a long press on the item. Saved for the whole household."],
+  "התקנה על המכשיר": ["Auf dem Gerät installieren", "Install on this device"],
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -1220,6 +1223,9 @@ const I18N_AR = {
   "ההתראות יגיעו בלי צליל": "ستصل الإشعارات بلا صوت",
   "ההתראות יגיעו עם צליל": "ستصل الإشعارات مع صوت",
   "ביטול התראות במכשיר הזה": "إيقاف الإشعارات على هذا الجهاز",
+  "מרענן…": "جارٍ التحديث…",
+  "עריכת פריט – שם, כמות ומחלקה: בכפתור העיפרון או בלחיצה ארוכה על הפריט. נשמר לכל בני הבית.": "تعديل غرض – الاسم والكمية والقسم: بزر القلم أو بضغطة مطولة على الغرض. يُحفظ لكل أهل البيت.",
+  "התקנה על המכשיר": "التثبيت على الجهاز",
 };
 
 // t('נוספו {n} פריטים', { n: 3 })
