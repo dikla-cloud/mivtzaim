@@ -37,8 +37,9 @@ const loginErr = (msg) => { $('#loginError').textContent = msg || ''; $('#loginE
 // קישור הזמנה: ‎/?invite=…‎ – מי שאין לו עדיין חשבון נרשם בעצמו
 const inviteToken = new URLSearchParams(location.search).get('invite');
 const clearInvite = () => { if (inviteToken) history.replaceState(null, '', location.pathname); };
-// אחרי רענון מלא (‎?v=…‎) – כתובת נקייה
-if (new URLSearchParams(location.search).has('v')) history.replaceState(null, '', location.pathname + (inviteToken ? `?invite=${encodeURIComponent(inviteToken)}` : ''));
+// אחרי רענון מלא (‎?v=…‎) – כתובת נקייה, ובלי מסך הפתיחה
+const afterRefresh = new URLSearchParams(location.search).has('v');
+if (afterRefresh) history.replaceState(null, '', location.pathname + (inviteToken ? `?invite=${encodeURIComponent(inviteToken)}` : ''));
 async function showJoin() {
   try {
     const r = await fetch(`/api/invite/${encodeURIComponent(inviteToken)}`, { headers: { 'x-app-lang': LANG } });
@@ -2252,7 +2253,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.13';
+const APP_VERSION = '2026.11.13b';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });
@@ -2301,10 +2302,12 @@ $('#menuVersion').textContent = t('גרסה {v}', { v: APP_VERSION });
 // רענון מלא: מוחקים את הקבצים השמורים, מבטלים את ה-Service Worker (הוא יירשם מחדש בטעינה),
 // וטוענים את הדף בכתובת חדשה – כך הדפדפן לא יכול להציג עותק ישן
 async function refreshApp() {
-  try {
-    for (const k of (await caches?.keys?.()) || []) await caches.delete(k);
-    for (const reg of (await navigator.serviceWorker?.getRegistrations?.()) || []) await reg.unregister();
-  } catch { /* */ }
+  // הניקוי רץ במקביל, ולכל היותר שנייה וחצי – יש מכשירים שבהם הוא נתקע; אחר כך טוענים בכל מקרה
+  const cleanup = Promise.all([
+    caches?.keys?.().then((ks) => Promise.all(ks.map((k) => caches.delete(k)))),
+    navigator.serviceWorker?.getRegistrations?.().then((rs) => Promise.all(rs.map((r) => r.unregister()))),
+  ]).catch(() => {});
+  await Promise.race([cleanup, new Promise((r) => setTimeout(r, 1500))]);
   location.replace(`${location.pathname}?v=${Date.now()}`);
 }
 $('#menuRefresh').addEventListener('click', () => { $('#menuRefresh').textContent = t('🔄 מרענן…'); refreshApp(); });
@@ -2326,11 +2329,11 @@ setInterval(checkVersion, 10 * 60000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkVersion(); });
 $('#refreshBtn').addEventListener('click', () => { $('#refreshBtn').classList.add('spin'); refreshApp(); });
 
-// ---------- מסך פתיחה: לוגו והסבר קצר לשנייה וחצי ----------
+// ---------- מסך פתיחה: לוגו והסבר קצר לשנייה וחצי (לא אחרי רענון) ----------
 setTimeout(() => {
   $('#splash').classList.add('out');
-  setTimeout(() => $('#splash').remove(), 400);
-}, 1500);
+  setTimeout(() => $('#splash').remove(), afterRefresh ? 0 : 400);
+}, afterRefresh ? 0 : 1500);
 
 // ---------- הגדרות מתקפלות: כל כרטיס נפתח בלחיצה על הכותרת ----------
 document.querySelectorAll('#tab-settings > .card').forEach((card) => {
