@@ -590,3 +590,8 @@ body.update-ready #refreshBtn { border-color: #e11d48; }
   #stickyTop .brand-ico { display: none; }
 }
 #gear[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); box-shadow: inset -4px 0 0 var(--accent); }
+/* ״הגדרות״ בתפריט: גלגל שיניים מצויר בשחור (האימוג׳י יוצא חיוור ב-Windows) */
+#gear { display: flex; align-items: center; gap: 8px; }
+#gear .menu-ico { width: 22px; height: 22px; color: #111; flex: none; }
+#gear[aria-pressed="true"] .menu-ico { color: var(--accent); }
+@media (prefers-color-scheme: dark) { #gear .menu-ico { color: var(--text); } }
