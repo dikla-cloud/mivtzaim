@@ -71,23 +71,20 @@
         <button type="button" id="menuBtn" aria-label="תפריט" title="תפריט" aria-haspopup="dialog">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         </button>
+        <img src="icon.svg" class="brand-ico" alt="">
         <h1>הקניות שלי</h1>
       </div>
       <div class="top-actions">
       <button type="button" id="refreshBtn" class="icon-btn" title="רענון האפליקציה" aria-label="רענון האפליקציה">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>
       </button>
-      <button id="gear" data-tab="settings" aria-pressed="false" title="הגדרות">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
-        <span>הגדרות</span>
-      </button>
       </div>
     </div>
     <nav role="tablist">
-      <button role="tab" data-tab="home" class="tab-home">חסר בבית <span id="homeCount" class="count" hidden></span></button>
+      <button role="tab" data-tab="home" class="tab-home" aria-selected="true">חסר בבית <span id="homeCount" class="count" hidden></span></button>
       <button role="tab" data-tab="cart" class="il-only">השוואת עגלות</button>
       <button role="tab" data-tab="list">הרשימה הקבועה שלי</button>
-      <button role="tab" data-tab="deals" aria-selected="true">מבצעים</button>
+      <button role="tab" data-tab="deals">מבצעים</button>
     </nav>
   </div>
   <header>
@@ -100,7 +97,7 @@
 
 
   <main>
-    <section id="tab-deals">
+    <section id="tab-deals" hidden>
       <div class="hero" aria-hidden="true">
         <svg viewBox="0 0 220 140" role="img">
           <ellipse cx="110" cy="128" rx="70" ry="7" class="h-shadow"/>
@@ -135,14 +132,14 @@
       <details id="errors" hidden><summary>הערות מהסריקה האחרונה</summary><ul></ul></details>
     </section>
 
-    <section id="tab-home" hidden>
+    <section id="tab-home">
       <p id="homeShared" class="muted small"></p>
       <div id="homeAddBox" class="add-box">
         <form id="homeAdd" class="row">
           <input id="homeItem" placeholder="מה חסר?" autocomplete="off">
-          <button type="button" id="mic" class="mic" aria-label="הכתבה" title="הכתבה" hidden>🎤</button>
+          <button type="button" id="mic" class="mic" aria-label="הכתבה" title="הכתבה" hidden><svg class="line-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg></button>
           <span class="photo-wrap">
-            <button type="button" class="mic photo-btn" aria-haspopup="true" aria-expanded="false" title="הוספה מצילום (ברקוד)" aria-label="הוספה מצילום (ברקוד)">📷</button>
+            <button type="button" class="mic photo-btn" aria-haspopup="true" aria-expanded="false" title="הוספה מצילום (ברקוד)" aria-label="הוספה מצילום (ברקוד)"><svg class="line-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.5-2.5h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
             <span class="photo-menu" hidden>
               <label>📸 צילום עכשיו<input type="file" id="photoHomeCam" accept="image/*" capture="environment" hidden></label>
               <label>🖼️ מהגלריה או מהמחשב<input type="file" id="photoHome" accept="image/*" hidden></label>
@@ -267,9 +264,9 @@
       <p class="muted small">המוצרים שאת/ה קונה באופן קבוע. האפליקציה מחפשת עליהם מבצעים ושולחת התראות, ומכאן אפשר לסמן מה להוסיף ל״חסר בבית״. הרשימה משתנה רק כשמוסיפים או מוחקים בה בעצמכם.</p>
       <form id="add" class="row">
         <input id="newItem" placeholder="הוספת מוצר (למשל: חלב 3%, קוטג', או ברקוד)" autocomplete="off">
-        <button type="button" id="micList" class="mic" aria-label="הכתבה" title="הכתבה" hidden>🎤</button>
+        <button type="button" id="micList" class="mic" aria-label="הכתבה" title="הכתבה" hidden><svg class="line-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg></button>
         <span class="photo-wrap">
-          <button type="button" class="mic photo-btn" aria-haspopup="true" aria-expanded="false" title="הוספה מצילום (ברקוד)" aria-label="הוספה מצילום (ברקוד)">📷</button>
+          <button type="button" class="mic photo-btn" aria-haspopup="true" aria-expanded="false" title="הוספה מצילום (ברקוד)" aria-label="הוספה מצילום (ברקוד)"><svg class="line-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.5-2.5h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
           <span class="photo-menu" hidden>
             <label>📸 צילום עכשיו<input type="file" id="photoListCam" accept="image/*" capture="environment" hidden></label>
             <label>🖼️ מהגלריה או מהמחשב<input type="file" id="photoList" accept="image/*" hidden></label>
@@ -456,8 +453,9 @@
         <p id="pushState" class="muted"></p>
         <div class="row">
           <button id="enablePush" class="primary">הפעלת התראות במכשיר הזה</button>
-          <button id="testPush">שליחת התראת בדיקה</button>
+          <button id="testPush" hidden>שליחת התראת בדיקה</button>
         </div>
+        <label class="toggle" id="pushSilentWrap" hidden><input type="checkbox" id="pushSilent"> התראות בלי צליל (רק הודעה על המסך)</label>
       </div>
       <div class="card">
         <h3>התקנה בטלפון</h3>
@@ -491,6 +489,7 @@
         <span>🌐 שפה</span>
         <div id="menuLangs" class="lang-chips"></div>
       </div>
+      <button type="button" id="gear" data-tab="settings" aria-pressed="false">⚙️ הגדרות</button>
       <button type="button" id="menuAbout">ℹ️ אודות</button>
       <a href="privacy.html" target="_blank">🔒 מדיניות פרטיות</a>
       <a href="terms.html" target="_blank">📄 תנאי שימוש</a>
@@ -536,6 +535,28 @@
     </div>
   </dialog>
 
+
+  <dialog id="listEditDlg">
+    <div class="sheet-head">
+      <h3 id="listEditTitle"></h3>
+      <button type="button" id="listEditClose" class="sheet-x" aria-label="סגירה">✕</button>
+    </div>
+    <form id="listEditForm">
+      <label>שם המוצר<input id="listEditName" maxlength="200" required></label>
+      <div class="item-qty">
+        <span class="item-qty-label">כמות</span>
+        <span class="seg unit-seg" role="group" aria-label="יחידת מידה">
+          <button type="button" id="leUnitPcs">יח'</button>
+          <button type="button" id="leUnitKg">ק"ג</button>
+        </span>
+        <button type="button" id="leMinus" class="step" aria-label="פחות">−</button>
+        <b id="leQty" class="qty"></b>
+        <button type="button" id="lePlus" class="step" aria-label="עוד">+</button>
+      </div>
+      <p class="muted small">הכמות עוברת ל״חסר בבית״ כשמסמנים את המוצר, ומשמשת בהשוואת המחירים לרשימה הקבועה.</p>
+      <div class="row"><button class="primary">שמירה</button></div>
+    </form>
+  </dialog>
 
   <dialog id="deptDlg">
     <div class="sheet-head">
@@ -595,7 +616,7 @@
     <form id="prodSearch" class="row">
       <input id="prodQ" placeholder="חיפוש: תחילת מילה או ברקוד" autocomplete="off">
       <span class="photo-wrap">
-        <button type="button" class="mic photo-btn" aria-haspopup="true" aria-expanded="false" title="צילום ברקוד" aria-label="צילום ברקוד">📷</button>
+        <button type="button" class="mic photo-btn" aria-haspopup="true" aria-expanded="false" title="צילום ברקוד" aria-label="צילום ברקוד"><svg class="line-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.5-2.5h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
         <span class="photo-menu" hidden>
           <label>📸 צילום עכשיו<input type="file" id="prodPhotoCam" accept="image/*" capture="environment" hidden></label>
           <label>🖼️ מהגלריה או מהמחשב<input type="file" id="prodPhoto" accept="image/*" hidden></label>

@@ -147,7 +147,8 @@ const daysLeft = (s) => Math.ceil((new Date(s) - Date.now()) / 86400000);
 // ---------- לשוניות ----------
 document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
 // כפתור גלגל השיניים פותח את ההגדרות, ולחיצה נוספת חוזרת למבצעים
-$('#gear').addEventListener('click', () => showTab($('#gear').getAttribute('aria-pressed') === 'true' ? 'deals' : 'settings'));
+// ההגדרות – מתוך התפריט (☰)
+$('#gear').addEventListener('click', () => { $('#menuDlg').close(); showTab('settings'); });
 function showTab(t) {
   document.querySelectorAll('nav button').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === t));
   $('#gear').setAttribute('aria-pressed', t === 'settings');
@@ -336,23 +337,62 @@ function renderList() {
     pick.addEventListener('change', () => { if (pick.checked) listSel.add(it.text); else listSel.delete(it.text); renderListPick(); });
     li.append(pick);
     const icon = Object.assign(document.createElement('span'), { className: 'food', textContent: foodIcon(it.text), ariaHidden: 'true' });
-    const inp = Object.assign(document.createElement('input'), { value: it.text, ariaLabel: t('מוצר') });
-    inp.addEventListener('input', () => (icon.textContent = foodIcon(inp.value)));
-    inp.addEventListener('change', () => {
-      const items = S.list.map((x) => x.text);
-      items[i] = inp.value;
-      saveList(items);
-    });
+    const name = Object.assign(document.createElement('span'), { className: 'list-name', textContent: it.text });
+    if (it.kg || it.qty > 1) name.append(Object.assign(document.createElement('span'), { className: 'amt', textContent: it.kg ? t('{kg} ק"ג', { kg: it.kg }) : t('{n} יח\'', { n: it.qty }) }));
+    name.addEventListener('click', () => openListEditor(i));
+    const edit = Object.assign(document.createElement('button'), { type: 'button', textContent: '✏️', title: t('עריכה: שם וכמות') });
+    edit.setAttribute('aria-label', t('עריכה: שם וכמות'));
+    edit.addEventListener('click', () => openListEditor(i));
     const del = Object.assign(document.createElement('button'), { textContent: '✕', title: t('מחיקה') });
     del.addEventListener('click', () => saveList(S.list.filter((_, j) => j !== i).map((x) => x.text)));
-    li.append(icon, inp);
+    li.append(icon, name);
     if (home) li.append(Object.assign(document.createElement('span'), { className: 'amt on-home', textContent: t('🏠 ב״חסר בבית״') }));
-    li.append(del);
+    li.append(edit, del);
     return li;
   }));
 }
+// עריכת פריט ברשימה הקבועה: שם וכמות (יחידות או ק"ג) – הכמות עוברת ל״חסר בבית״ ולהשוואה
+let listEdit = null; // { i, qty, kg }
+function openListEditor(i) {
+  const it = S.list[i];
+  listEdit = { i, qty: it.qty || 1, kg: it.kg ?? null };
+  $('#listEditTitle').textContent = t('עריכת ״{item}״', { item: it.text });
+  $('#listEditName').value = it.text;
+  renderListEditor();
+  $('#listEditDlg').showModal();
+}
+function renderListEditor() {
+  const byKg = listEdit.kg != null;
+  $('#leUnitPcs').setAttribute('aria-pressed', !byKg);
+  $('#leUnitKg').setAttribute('aria-pressed', byKg);
+  $('#leQty').textContent = byKg ? t('{kg} ק"ג', { kg: listEdit.kg }) : String(listEdit.qty);
+  $('#leMinus').disabled = byKg ? listEdit.kg <= 0.5 : listEdit.qty <= 1;
+  $('#lePlus').disabled = byKg ? listEdit.kg >= 50 : listEdit.qty >= 99;
+}
+$('#leUnitPcs').addEventListener('click', () => { listEdit.kg = null; renderListEditor(); });
+$('#leUnitKg').addEventListener('click', () => { if (listEdit.kg == null) listEdit.kg = 0.5; renderListEditor(); });
+$('#leMinus').addEventListener('click', () => { if (listEdit.kg != null) listEdit.kg = Math.max(0.5, listEdit.kg - 0.5); else listEdit.qty = Math.max(1, listEdit.qty - 1); renderListEditor(); });
+$('#lePlus').addEventListener('click', () => { if (listEdit.kg != null) listEdit.kg = Math.min(50, listEdit.kg + 0.5); else listEdit.qty = Math.min(99, listEdit.qty + 1); renderListEditor(); });
+$('#listEditClose').addEventListener('click', () => $('#listEditDlg').close());
+$('#listEditForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const text = $('#listEditName').value.trim();
+  if (!text) return;
+  const items = S.list.map((x, j) => (j === listEdit.i
+    ? { text, qty: listEdit.kg != null ? null : listEdit.qty, kg: listEdit.kg }
+    : { text: x.text, qty: x.qty ?? null, kg: x.kg ?? null }));
+  try {
+    S = await api('PUT', '/api/list', { items });
+    $('#listEditDlg').close();
+    render();
+  } catch (ex) { alert(ex.message); }
+});
+
 $('#listToHome').addEventListener('click', async () => {
-  const items = [...listSel];
+  const items = [...listSel].map((text) => {
+    const it = S.list.find((x) => x.text === text) || {};
+    return { text, ...(it.kg ? { kg: it.kg } : it.qty > 1 ? { qty: it.qty } : {}) };
+  });
   if (!items.length) return;
   try {
     const r = await api('POST', '/api/home', { items });
@@ -1443,7 +1483,7 @@ let cartLoaded = false;
 let cartLast = null; // תוצאת ההשוואה האחרונה (כדי לדעת אילו מוצרים נמכרים במשקל)
 // מה משווים: ״חסר בבית״ (עם כמויות) או הרשימה הקבועה (יחידה אחת מכל מוצר) – נשמר במכשיר
 const cartSource = () => (store.get('cartSource') === 'list' ? 'list' : 'home');
-const cartOpen = () => (cartSource() === 'list' ? (S.list || []).map((x) => ({ text: x.text.split('|')[0].trim(), fixed: true })) : (S.home || []).filter((x) => !x.done));
+const cartOpen = () => (cartSource() === 'list' ? (S.list || []).map((x) => ({ text: x.text.split('|')[0].trim(), fixed: true, qty: x.qty, kg: x.kg })) : (S.home || []).filter((x) => !x.done));
 const pinOf = (text) => S.pins?.[pinKeyOf(text)];
 const pinKeyOf = (text) => String(text).split('|')[0].trim().replace(/\s+/g, ' ').toLowerCase();
 
@@ -1530,8 +1570,12 @@ function renderCartItems() {
     const choose = Object.assign(document.createElement('button'), { type: 'button', className: 'linkish ci-pick', textContent: `${pinLabel} · ${t('בחירת מוצר ‹')}` });
     choose.addEventListener('click', () => openProductPicker(it.text));
     name.append(choose);
-    // ברשימה הקבועה אין כמויות – יחידה אחת (או חצי ק"ג בתפזורת) מכל מוצר
-    if (it.fixed) { li.append(name); return li; }
+    // ברשימה הקבועה הכמות נקבעת ב-✏️ שם; כאן רק מוצגת
+    if (it.fixed) {
+      li.append(name);
+      if (it.kg || it.qty > 1) li.append(Object.assign(document.createElement('span'), { className: 'amt', textContent: it.kg ? t('{kg} ק"ג', { kg: it.kg }) : t('{n} יח\'', { n: it.qty }) }));
+      return li;
+    }
     // כמות: יחידות, או ק"ג (⚖️) למוצר שנמכר במשקל
     const byKg = it.kg != null;
     const amount = document.createElement('div');
@@ -2221,22 +2265,50 @@ async function updatePushState() {
       ? 'באייפון: קודם מוסיפים את האפליקציה למסך הבית ופותחים אותה משם.'
       : 'הדפדפן הזה לא תומך בהתראות.');
     $('#enablePush').hidden = true;
+    $('#pushSilentWrap').hidden = true;
     return;
   }
   const reg = await navigator.serviceWorker.ready;
   const sub = await reg.pushManager.getSubscription();
   el.textContent = t(sub ? 'ההתראות פעילות במכשיר הזה ✔' : Notification.permission === 'denied' ? 'ההתראות נחסמו בהגדרות הדפדפן.' : 'ההתראות כבויות במכשיר הזה.');
+  // אותו כפתור מפעיל ומבטל
+  $('#enablePush').textContent = t(sub ? 'ביטול התראות במכשיר הזה' : 'הפעלת התראות במכשיר הזה');
+  $('#enablePush').classList.toggle('primary', !sub);
+  $('#testPush').hidden = !sub;
+  $('#pushSilentWrap').hidden = !sub;
+  $('#pushSilent').checked = store.get('pushSilent') === '1';
 }
 
 $('#enablePush').addEventListener('click', async () => {
+  const b = $('#enablePush');
+  b.disabled = true;
   try {
-    if ((await Notification.requestPermission()) !== 'granted') return updatePushState();
     const reg = await navigator.serviceWorker.ready;
-    const sub = (await reg.pushManager.getSubscription()) ||
-      (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(S.vapidKey) }));
-    await api('POST', '/api/subscribe', sub.toJSON());
+    const cur = await reg.pushManager.getSubscription();
+    if (cur) {
+      // ביטול: מהשרת ומהדפדפן
+      await api('DELETE', '/api/subscribe', { endpoint: cur.endpoint }).catch(() => {});
+      await cur.unsubscribe();
+      toast(t('ההתראות בוטלו במכשיר הזה'));
+    } else {
+      if ((await Notification.requestPermission()) !== 'granted') return updatePushState();
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(S.vapidKey) });
+      await api('POST', '/api/subscribe', { ...sub.toJSON(), silent: store.get('pushSilent') === '1' });
+      toast(t('ההתראות הופעלו ✔'));
+    }
+  } catch (e) { alert(t('הפעלת ההתראות נכשלה: ') + e.message); } finally {
+    b.disabled = false;
     updatePushState();
-  } catch (e) { alert(t('הפעלת ההתראות נכשלה: ') + e.message); }
+  }
+});
+// התראות בלי צליל – לכל מכשיר בנפרד
+$('#pushSilent').addEventListener('change', async (e) => {
+  store.set('pushSilent', e.target.checked ? '1' : '');
+  try {
+    const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+    if (sub) await api('PUT', '/api/subscribe/silent', { endpoint: sub.endpoint, silent: e.target.checked });
+    toast(t(e.target.checked ? 'ההתראות יגיעו בלי צליל' : 'ההתראות יגיעו עם צליל'));
+  } catch (ex) { toast(ex.message); }
 });
 $('#testPush').addEventListener('click', () => api('POST', '/api/test-push'));
 
@@ -2253,7 +2325,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.13b';
+const APP_VERSION = '2026.11.13c';
 $('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });
@@ -2362,8 +2434,8 @@ async function boot() {
   document.body.classList.remove('logged-out');
   render();
   if (S.needTerms && !$('#termsDlg').open) { $('#termsOk').checked = false; $('#termsAccept').disabled = true; $('#termsDlg').showModal(); }
-  if (!S.location) showTab('settings');
-  else if (!S.list.length) showTab('list');
+  // נפתחים על ״חסר בבית״ (ובלי מיקום – על ההגדרות, כדי להתחיל)
+  showTab(S.location ? 'home' : 'settings');
   updatePushState();
 }
 

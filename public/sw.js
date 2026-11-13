@@ -1,4 +1,4 @@
-const CACHE = 'mivtzaim-v75';
+const CACHE = 'mivtzaim-v76';
 const SHELL = ['./', 'index.html', 'style.css', 'i18n.js', 'foods.js', 'depts.js', 'app.js', 'icon.svg', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
@@ -26,6 +26,7 @@ self.addEventListener('push', (e) => {
   e.waitUntil(self.registration.showNotification(data.title, {
     body: data.body, icon: 'icon-192.png', badge: 'icon-192.png', dir: data.dir || 'auto', lang: data.lang || '',
     data: { url: data.url || '/' }, tag: 'deals',
+    silent: Boolean(data.silent), ...(data.silent ? {} : { vibrate: [120, 60, 120] }),
   }));
 });
 

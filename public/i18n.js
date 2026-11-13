@@ -625,6 +625,15 @@ const I18N = {
   "100 גרם": ["100 g", "100 g"],
   "100 מ\"ל": ["100 ml", "100 ml"],
   "גליל": ["Rolle", "roll"],
+  "עריכה: שם וכמות": ["Bearbeiten: Name und Menge", "Edit: name and quantity"],
+  "ההתראות בוטלו במכשיר הזה": ["Benachrichtigungen auf diesem Gerät deaktiviert", "Notifications turned off on this device"],
+  "ההתראות הופעלו ✔": ["Benachrichtigungen aktiviert ✔", "Notifications turned on ✔"],
+  "התראות בלי צליל (רק הודעה על המסך)": ["Benachrichtigungen ohne Ton (nur auf dem Bildschirm)", "Silent notifications (on screen only)"],
+  "שם המוצר": ["Produktname", "Product name"],
+  "הכמות עוברת ל״חסר בבית״ כשמסמנים את המוצר, ומשמשת בהשוואת המחירים לרשימה הקבועה.": ["Die Menge wird beim Markieren zu „Fehlt zu Hause“ übernommen und beim Preisvergleich der Stammliste verwendet.", "The quantity goes to “Missing at home” when you mark the product, and is used when comparing prices for the regular list."],
+  "ההתראות יגיעו בלי צליל": ["Benachrichtigungen kommen ohne Ton", "Notifications will be silent"],
+  "ההתראות יגיעו עם צליל": ["Benachrichtigungen kommen mit Ton", "Notifications will make a sound"],
+  "ביטול התראות במכשיר הזה": ["Benachrichtigungen auf diesem Gerät ausschalten", "Turn off notifications on this device"],
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -1202,6 +1211,15 @@ const I18N_AR = {
   "100 גרם": "100 غ",
   "100 מ\"ל": "100 مل",
   "גליל": "لفة",
+  "עריכה: שם וכמות": "تعديل: الاسم والكمية",
+  "ההתראות בוטלו במכשיר הזה": "تم إيقاف الإشعارات على هذا الجهاز",
+  "ההתראות הופעלו ✔": "تم تفعيل الإشعارات ✔",
+  "התראות בלי צליל (רק הודעה על המסך)": "إشعارات بلا صوت (على الشاشة فقط)",
+  "שם המוצר": "اسم المنتج",
+  "הכמות עוברת ל״חסר בבית״ כשמסמנים את המוצר, ומשמשת בהשוואת המחירים לרשימה הקבועה.": "تنتقل الكمية إلى «ناقص في البيت» عند تحديد المنتج، وتُستخدم في مقارنة أسعار القائمة الثابتة.",
+  "ההתראות יגיעו בלי צליל": "ستصل الإشعارات بلا صوت",
+  "ההתראות יגיעו עם צליל": "ستصل الإشعارات مع صوت",
+  "ביטול התראות במכשיר הזה": "إيقاف الإشعارات على هذا الجهاز",
 };
 
 // t('נוספו {n} פריטים', { n: 3 })

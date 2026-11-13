@@ -179,3 +179,26 @@ test('departments: a household can add and remove its own departments', async ()
   assert.equal(r.customDepts.some((x) => x.id === d.id), false);
   assert.equal(r.deptOf['נרות'], undefined); // הפריט חזר לשיוך האוטומטי
 });
+
+test('regular list: quantity per item is saved and kept when the list is saved as plain text', async () => {
+  const token = (await call('POST', '/api/login', { name: 'דיקלה', password: 'initial123' })).json.token;
+  let s = (await call('PUT', '/api/list', { items: [{ text: 'חלב', qty: 3 }, { text: 'עגבניות', kg: 1.5 }, 'במבה'] }, token)).json;
+  assert.deepEqual(s.list.map((x) => [x.text, x.qty ?? null, x.kg ?? null]), [['חלב', 3, null], ['עגבניות', null, 1.5], ['במבה', null, null]]);
+  s = (await call('PUT', '/api/list', { items: ['חלב', 'עגבניות', 'במבה', 'קפה'] }, token)).json;
+  assert.deepEqual(s.list.map((x) => [x.text, x.qty ?? null, x.kg ?? null]), [['חלב', 3, null], ['עגבניות', null, 1.5], ['במבה', null, null], ['קפה', null, null]]);
+  s = (await call('PUT', '/api/list', { items: [{ text: 'חלב', qty: null }] }, token)).json;
+  assert.equal(s.list[0].qty, undefined);
+});
+
+test('notifications: subscribe, silent per device, and turn off', async () => {
+  const token = (await call('POST', '/api/login', { name: 'דיקלה', password: 'initial123' })).json.token;
+  const sub = { endpoint: 'https://push.example.com/abc', keys: { p256dh: 'x', auth: 'y' } };
+  assert.equal((await call('POST', '/api/subscribe', { ...sub, silent: true }, token)).status, 200);
+  const db = require('../server/db');
+  const me = db.users().find((u) => u.name === 'דיקלה');
+  assert.equal(me.subscriptions.find((s) => s.endpoint === sub.endpoint).silent, true);
+  await call('PUT', '/api/subscribe/silent', { endpoint: sub.endpoint, silent: false }, token);
+  assert.equal(me.subscriptions.find((s) => s.endpoint === sub.endpoint).silent, false);
+  await call('DELETE', '/api/subscribe', { endpoint: sub.endpoint }, token);
+  assert.equal(me.subscriptions.some((s) => s.endpoint === sub.endpoint), false);
+});

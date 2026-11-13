@@ -44,7 +44,8 @@ async function send(d, payload) {
   const alive = [];
   for (const sub of d.subscriptions) {
     try {
-      await webpush.sendNotification(sub, JSON.stringify({ lang: pick(d.lang), dir: dir(d.lang), ...payload }));
+      // silent: התראה בלי צליל ורטט, כפי שנבחר במכשיר הזה
+      await webpush.sendNotification(sub, JSON.stringify({ lang: pick(d.lang), dir: dir(d.lang), ...payload, silent: Boolean(sub.silent) }));
       alive.push(sub);
     } catch (e) {
       if (![404, 410].includes(e.statusCode)) alive.push(sub); // מנוי שפג – מוסר

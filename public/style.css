@@ -113,14 +113,6 @@ form > button { margin-top: 8px; }
 .warn { color: var(--warn); }
 
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-#gear {
-  display: inline-flex; align-items: center; gap: 6px; flex: none;
-  padding: 8px 12px; border-radius: 999px; font-size: .95rem; color: var(--muted);
-}
-#gear svg { width: 20px; height: 20px; fill: currentColor; transition: transform .3s; }
-#gear:hover svg { transform: rotate(45deg); }
-#gear[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-@media (max-width: 360px) { #gear span { display: none; } }
 
 .count { display: inline-block; min-width: 1.4em; padding: 0 5px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: .75rem; line-height: 1.4em; }
 #homeList { list-style: none; padding: 0; margin: 8px 0; }
@@ -567,3 +559,12 @@ body.update-ready #refreshBtn { border-color: #e11d48; }
   #homeItem:focus { background: #1f1a0b; }
 }
 .add-box .add-amt { margin: 0 0 6px; }
+
+/* סרגל עליון: אייקון האפליקציה ליד השם; אייקונים מצוירים למיקרופון ולמצלמה */
+.brand-ico { width: 34px; height: 34px; border-radius: 9px; flex: none; }
+.line-ico { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; display: block; }
+.mic { color: #111; }
+@media (prefers-color-scheme: dark) { .mic { color: var(--text); } }
+#listEditDlg { width: min(520px, calc(100vw - 16px)); border: 1px solid var(--border); border-radius: 16px; padding: 16px; background: var(--bg); color: var(--text); }
+#listEditDlg::backdrop { background: rgb(0 0 0 / .45); }
+#items li .list-name { flex: 1; min-width: 0; padding: 6px 0; cursor: pointer; }

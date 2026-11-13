@@ -594,11 +594,20 @@ function rescanSoon(u, delay = 100) {
 
 app.put('/api/list', (req, res) => {
   const items = Array.isArray(req.body.items) ? req.body.items : [];
+  // פריט: טקסט, או { text, qty, kg } – כמות קבועה שעוברת ל״חסר בבית״ ולהשוואה.
+  // פריט שנשלח כטקסט בלבד שומר את הכמות שכבר הייתה לו
+  const before = new Map(req.user.list.map((x) => [x.text, x]));
+  const amount = (x, prev) => {
+    const src = typeof x === 'object' && x && ('qty' in x || 'kg' in x) ? x : prev || {};
+    const kg = Number(src.kg);
+    const qty = Math.round(Number(src.qty));
+    return kg > 0 && kg <= 50 ? { kg: Math.round(kg * 1000) / 1000 } : qty > 1 && qty <= 99 ? { qty } : {};
+  };
   req.user.list = items
-    .map((x) => String(typeof x === 'string' ? x : x.text || '').trim())
-    .filter(Boolean)
+    .map((x) => ({ x, text: String(typeof x === 'string' ? x : x?.text || '').trim() }))
+    .filter((e) => e.text)
     .slice(0, 300)
-    .map((text) => ({ id: crypto.randomUUID(), text }));
+    .map(({ x, text }) => ({ id: crypto.randomUUID(), text, ...amount(x, before.get(text)) }));
   db.save();
   rescanSoon(req.user, 60000); // בדיקה חוזרת דקה אחרי השינוי האחרון ברשימה
   res.json(state(req.user));
@@ -718,7 +727,7 @@ async function compareInput(req, res) {
   // מה משווים: ״חסר בבית״ (ברירת מחדל) או הרשימה הקבועה האישית
   const fromList = req.body?.source === 'list';
   let items = fromList
-    ? req.user.list.map((x) => ({ text: x.text }))
+    ? req.user.list.map((x) => ({ text: x.text, qty: x.qty, kg: x.kg }))
     : db.householdOf(req.user).home.filter((x) => !x.done).map((x) => ({ text: x.text, qty: x.qty, kg: x.kg }));
   if (!items.length) return res.status(400).json({ error: T(req, fromList ? 'הרשימה הקבועה ריקה' : 'רשימת ״חסר בבית״ ריקה') }), null;
   // פריטים בערבית: קובצי המחירים בעברית, ולכן מוסיפים את התרגום לעברית לחיפוש
@@ -769,9 +778,23 @@ app.post('/api/subscribe', (req, res) => {
   if (!sub?.endpoint) return res.status(400).json({ error: T(req, 'מנוי לא תקין') });
   // מכשיר שייך למשתמש אחד בלבד (למשל טלפון שעבר מיד ליד)
   for (const u of db.users()) u.subscriptions = u.subscriptions.filter((s) => s.endpoint !== sub.endpoint);
-  req.user.subscriptions.push(sub);
+  req.user.subscriptions.push({ endpoint: sub.endpoint, keys: sub.keys, expirationTime: sub.expirationTime ?? null, silent: Boolean(sub.silent) });
   db.save();
   res.json({ ok: true });
+});
+// ביטול ההתראות במכשיר הזה
+app.delete('/api/subscribe', (req, res) => {
+  const endpoint = String(req.body?.endpoint || '');
+  req.user.subscriptions = req.user.subscriptions.filter((s) => s.endpoint !== endpoint);
+  db.save();
+  res.json({ ok: true });
+});
+// התראות בלי צליל במכשיר הזה (לכל מכשיר בנפרד)
+app.put('/api/subscribe/silent', (req, res) => {
+  const sub = req.user.subscriptions.find((s) => s.endpoint === String(req.body?.endpoint || ''));
+  if (sub) sub.silent = Boolean(req.body?.silent);
+  db.save();
+  res.json({ ok: Boolean(sub) });
 });
 
 app.post('/api/test-push', async (req, res) => {
