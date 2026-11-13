@@ -568,3 +568,10 @@ body.update-ready #refreshBtn { border-color: #e11d48; }
 #listEditDlg { width: min(520px, calc(100vw - 16px)); border: 1px solid var(--border); border-radius: 16px; padding: 16px; background: var(--bg); color: var(--text); }
 #listEditDlg::backdrop { background: rgb(0 0 0 / .45); }
 #items li .list-name { flex: 1; min-width: 0; padding: 6px 0; cursor: pointer; }
+/* כפתורי המיקרופון והמצלמה: אותו גודל, האייקון במרכז, ומיושרים לשדה ההקלדה */
+.mic { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 46px; height: 46px; padding: 0; margin: 0; vertical-align: middle; }
+.mic.live { width: auto; padding: 0 12px; }
+.mic .line-ico { width: 24px; height: 24px; margin: 0; }
+.photo-wrap { align-items: center; align-self: center; }
+#homeAdd, #add, #prodSearch { align-items: center; }
+#homeAdd > *, #add > *, #prodSearch > * { margin-top: 0; margin-bottom: 0; }
