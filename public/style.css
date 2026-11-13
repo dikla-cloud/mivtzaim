@@ -575,3 +575,18 @@ body.update-ready #refreshBtn { border-color: #e11d48; }
 .photo-wrap { align-items: center; align-self: center; }
 #homeAdd, #add, #prodSearch { align-items: center; }
 #homeAdd > *, #add > *, #prodSearch > * { margin-top: 0; margin-bottom: 0; }
+
+/* מחשב (מסך רחב): התפריט פתוח תמיד בצד, בלי כפתור ☰. בנייד – תפריט המבורגר כרגיל */
+@media (min-width: 1000px) {
+  #menuDlg, #menuDlg:not([open]) {
+    display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; inset-inline-start: 0; inset-inline-end: auto;
+    width: 260px; height: 100vh; max-height: none; margin: 0; z-index: 6; overflow-y: auto;
+    border-inline-end: 1px solid var(--border); box-shadow: none; animation: none; transform: none;
+  }
+  #menuDlg::backdrop { display: none; }
+  #menuBtn, #menuClose { display: none; }
+  body { padding-inline-start: 260px; }
+  /* הלוגו והשם כבר בראש התפריט הצדדי */
+  #stickyTop .brand-ico { display: none; }
+}
+#gear[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); box-shadow: inset -4px 0 0 var(--accent); }

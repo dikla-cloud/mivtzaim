@@ -2325,8 +2325,12 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.13d';
-$('#menuBtn').addEventListener('click', () => $('#menuDlg').showModal());
+const APP_VERSION = '2026.11.13e';
+// במחשב התפריט פתוח תמיד בצד (CSS); בנייד – נפתח ב-☰
+const sideMenu = () => matchMedia('(min-width: 1000px)').matches;
+$('#menuBtn').addEventListener('click', () => { if (!sideMenu()) $('#menuDlg').showModal(); });
+// מעבר מנייד למחשב (סיבוב/הגדלת חלון) כשהתפריט פתוח כחלון – סוגרים, והוא נשאר בצד
+matchMedia('(min-width: 1000px)').addEventListener?.('change', (e) => { if (e.matches && $('#menuDlg').open) $('#menuDlg').close(); });
 $('#menuClose').addEventListener('click', () => $('#menuDlg').close());
 $('#menuDlg').addEventListener('click', (e) => { if (e.target === $('#menuDlg')) $('#menuDlg').close(); });
 $('#menuLangs').replaceChildren(...Object.entries(LANGS).map(([k, name]) => {
