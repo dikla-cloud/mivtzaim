@@ -639,6 +639,7 @@ const I18N = {
   "התקנה על המכשיר": ["Auf dem Gerät installieren", "Install on this device"],
   "🗣️ בישראל מדברים שפות רבות, ולכן האפליקציה זמינה בעברית, בערבית, באנגלית ובגרמנית.": ["🗣️ In Israel werden viele Sprachen gesprochen – deshalb gibt es die App auf Hebräisch, Arabisch, Englisch und Deutsch.", "🗣️ Many languages are spoken in Israel, so the app is available in Hebrew, Arabic, English and German."],
   "🌍 פועלת בישראל, באוסטריה, בגרמניה ובאוסטרליה.": ["🌍 Verfügbar in Israel, Österreich, Deutschland und Australien.", "🌍 Works in Israel, Austria, Germany and Australia."],
+  "🕒 לפי סדר ההקלדה": ["🕒 In Eingabe-Reihenfolge", "🕒 In the order typed"],
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -1230,6 +1231,7 @@ const I18N_AR = {
   "התקנה על המכשיר": "التثبيت على الجهاز",
   "🗣️ בישראל מדברים שפות רבות, ולכן האפליקציה זמינה בעברית, בערבית, באנגלית ובגרמנית.": "🗣️ في إسرائيل يتحدثون لغات كثيرة، لذلك التطبيق متوفر بالعبرية والعربية والإنجليزية والألمانية.",
   "🌍 פועלת בישראל, באוסטריה, בגרמניה ובאוסטרליה.": "🌍 يعمل في إسرائيل والنمسا وألمانيا وأستراليا.",
+  "🕒 לפי סדר ההקלדה": "🕒 حسب ترتيب الكتابة",
 };
 
 // t('נוספו {n} פריטים', { n: 3 })

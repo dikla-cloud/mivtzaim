@@ -329,9 +329,16 @@ function renderListPick() {
   $('#listPickBar').hidden = !listSel.size;
   $('#listToHome').textContent = t('🏠 הוספה ל״חסר בבית״ ({n})', { n: listSel.size });
 }
+// סידור הרשימה הקבועה: לפי סדר ההקלדה (ברירת מחדל) או לפי מחלקות – נשמר במכשיר.
+// המחלקה של כל מוצר משותפת ל״חסר בבית״ (אותו סדר מחלקות ואותה בחירת מחלקה למוצר)
+const listView = () => store.get('listView') || 'added';
 function renderList() {
   renderListPick();
-  $('#items').replaceChildren(...S.list.map((it, i) => {
+  const byDept = listView() === 'dept';
+  $('#listViewDept').setAttribute('aria-pressed', byDept);
+  $('#listViewAdded').setAttribute('aria-pressed', !byDept);
+  $('#listDeptOrderBtn').hidden = !byDept || !S.list.length;
+  const row = (it, i) => {
     const li = document.createElement('li');
     // סימון להוספה ל״חסר בבית״ – או תגית אם המוצר כבר שם
     const home = onHome(it.text);
@@ -352,8 +359,20 @@ function renderList() {
     if (home) li.append(Object.assign(document.createElement('span'), { className: 'amt on-home', textContent: t('🏠 ב״חסר בבית״') }));
     li.append(edit, del);
     return li;
-  }));
+  };
+  const rows = [];
+  if (byDept) {
+    for (const id of deptOrder()) {
+      const group = S.list.map((it, i) => [it, i]).filter(([it]) => deptOfItem(it.text) === id);
+      if (!group.length) continue;
+      const d = deptById(id);
+      rows.push(Object.assign(document.createElement('li'), { className: 'dept-head', textContent: `${d.icon} ${deptName(d)}` }), ...group.map(([it, i]) => row(it, i)));
+    }
+  } else rows.push(...S.list.map(row));
+  $('#items').replaceChildren(...rows);
 }
+$('#listViewDept').addEventListener('click', () => { store.set('listView', 'dept'); renderList(); });
+$('#listViewAdded').addEventListener('click', () => { store.set('listView', 'added'); renderList(); });
 // עריכת פריט ברשימה הקבועה: שם וכמות (יחידות או ק"ג) – הכמות עוברת ל״חסר בבית״ ולהשוואה
 let listEdit = null; // { i, qty, kg }
 function openListEditor(i) {
@@ -955,9 +974,10 @@ $('#deptAddForm').addEventListener('submit', async (e) => {
   orderDraft.splice(Math.max(orderDraft.indexOf('other'), 0), 0, d.id);
   renderOrder();
 });
+$('#listDeptOrderBtn').addEventListener('click', () => $('#deptOrderBtn').click());
 $('#deptOrderBtn').addEventListener('click', () => { orderDraft = [...deptOrder()]; renderOrder(); $('#orderDlg').showModal(); });
 $('#orderSave').addEventListener('click', async () => {
-  try { Object.assign(S, await api('PUT', '/api/home/dept-order', { order: orderDraft })); $('#orderDlg').close(); renderHome(); toast(t('סדר המחלקות נשמר ✔')); } catch (e) { alert(e.message); }
+  try { Object.assign(S, await api('PUT', '/api/home/dept-order', { order: orderDraft })); $('#orderDlg').close(); renderHome(); renderList(); toast(t('סדר המחלקות נשמר ✔')); } catch (e) { alert(e.message); }
 });
 $('#orderReset').addEventListener('click', () => { orderDraft = allDepts().map((d) => d.id); renderOrder(); });
 $('#orderClose').addEventListener('click', () => $('#orderDlg').close());
@@ -2331,7 +2351,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.14a';
+const APP_VERSION = '2026.11.14b';
 // במחשב התפריט פתוח תמיד בצד (CSS); בנייד – נפתח ב-☰
 const sideMenu = () => matchMedia('(min-width: 1000px)').matches;
 $('#menuBtn').addEventListener('click', () => { if (!sideMenu()) $('#menuDlg').showModal(); });

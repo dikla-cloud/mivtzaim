@@ -604,3 +604,6 @@ body.update-ready #refreshBtn { border-color: #e11d48; }
 .edit-hint { display: flex; align-items: flex-start; gap: 6px; }
 .edit-hint .pencil-ico { width: 16px; height: 16px; flex: none; margin-top: 2px; color: currentColor; }
 @media (prefers-color-scheme: dark) { .pencil-ico { color: var(--text); } }
+/* כותרות מחלקה ברשימה הקבועה – בלי מסגרת של שורת מוצר */
+#items li.dept-head { display: block; border: 0; background: none; padding: 0 4px; margin: 14px 0 4px; }
+#items > li.dept-head:first-child { margin-top: 4px; }
