@@ -628,3 +628,4 @@ body.update-ready #refreshBtn { border-color: #e11d48; }
   /* ״בחירה אוטומטית · בחירת מוצר‹״ – שורה אחת, ובקצה שלוש נקודות אם אין מקום */
   #tab-cart .ci-name .ci-pick { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
+#cartMissing { white-space: pre-line; }

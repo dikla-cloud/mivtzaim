@@ -640,6 +640,8 @@ const I18N = {
   "🗣️ בישראל מדברים שפות רבות, ולכן האפליקציה זמינה בעברית, בערבית, באנגלית ובגרמנית.": ["🗣️ In Israel werden viele Sprachen gesprochen – deshalb gibt es die App auf Hebräisch, Arabisch, Englisch und Deutsch.", "🗣️ Many languages are spoken in Israel, so the app is available in Hebrew, Arabic, English and German."],
   "🌍 פועלת בישראל, באוסטריה, בגרמניה ובאוסטרליה.": ["🌍 Verfügbar in Israel, Österreich, Deutschland und Australien.", "🌍 Works in Israel, Austria, Germany and Australia."],
   "🕒 לפי סדר ההקלדה": ["🕒 In Eingabe-Reihenfolge", "🕒 In the order typed"],
+  "לא נמצאו סניפים ברדיוס {km} ק\"מ של: {chains}. אפשר להגדיל את הרדיוס בהגדרות ← ״מיקום ורדיוס חיפוש״.": ["Keine Filialen im Umkreis von {km} km gefunden für: {chains}. Du kannst den Umkreis in den Einstellungen → „Standort und Suchradius“ vergrößern.", "No branches found within {km} km for: {chains}. You can increase the radius in Settings → “Location and search radius”."],
+  "⚠️ תקלה בחיבור: {err}": ["⚠️ Verbindungsproblem: {err}", "⚠️ Connection problem: {err}"],
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -1232,6 +1234,8 @@ const I18N_AR = {
   "🗣️ בישראל מדברים שפות רבות, ולכן האפליקציה זמינה בעברית, בערבית, באנגלית ובגרמנית.": "🗣️ في إسرائيل يتحدثون لغات كثيرة، لذلك التطبيق متوفر بالعبرية والعربية والإنجليزية والألمانية.",
   "🌍 פועלת בישראל, באוסטריה, בגרמניה ובאוסטרליה.": "🌍 يعمل في إسرائيل والنمسا وألمانيا وأستراليا.",
   "🕒 לפי סדר ההקלדה": "🕒 حسب ترتيب الكتابة",
+  "לא נמצאו סניפים ברדיוס {km} ק\"מ של: {chains}. אפשר להגדיל את הרדיוס בהגדרות ← ״מיקום ורדיוס חיפוש״.": "لم يتم العثور على فروع ضمن {km} كم لـ: {chains}. يمكن زيادة النطاق في الإعدادات ← «الموقع ونطاق البحث».",
+  "⚠️ תקלה בחיבור: {err}": "⚠️ مشكلة في الاتصال: {err}",
 };
 
 // t('נוספו {n} פריטים', { n: 3 })

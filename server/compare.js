@@ -120,12 +120,29 @@ function priced(best, data, extra = {}, ctx = {}) {
   };
 }
 
+// המחלקה של כל פריט (כמו ב״חסר בבית״ – אוטומטית או מה שבני הבית בחרו). נקבעת בתחילת כל חישוב,
+// אחרי טעינת הקבצים, וכל החישוב שאחריה סינכרוני – כך שבקשות במקביל לא מתערבבות
+let DEPTS = new Map();
+const setDepts = (depts) => { DEPTS = new Map(Object.entries(depts || {}).map(([k, v]) => [pinKey(k), String(v)])); };
+const deptOf = (text) => DEPTS.get(pinKey(text)) || null;
+
+// ירקות, פירות ועשבי תיבול: ״נענע״ היא הצמח – לא תה נענע, לא נענע מיובשת ולא סירופ.
+// מילה שכתובה בפריט עצמו לא מוציאה (״נענע מיובשת״ ימצא מיובשת)
+const PROCESSED = ['תה', 'חליטה', 'חליטת', 'תבלין', 'מיובש', 'מיובשת', 'מיובשים', 'מיובשות', 'יבש', 'יבשה', 'יבשים', 'אבקת', 'גרוס', 'טחון', 'טחונה',
+  'קפוא', 'קפואה', 'קפואים', 'קפואות', 'רסק', 'ממרח', 'סלט', 'מרק', 'רוטב', 'מיץ', 'משקה', 'שקיק', 'שקיקים', 'כבוש', 'כבושה', 'כבושים', 'חמוץ', 'חמוצים',
+  'שימורים', 'בשימור', 'תמצית', 'סירופ', 'ריבה', 'צ\'יפס', 'חטיף', 'שוקולד', 'סוכריות', 'מסטיק', 'גלידה', 'עוגה', 'עוגת', 'פשטידה', 'קרקר', 'שמן', 'סבון', 'שמפו', 'בושם', 'מטהר'].map(normalize);
+const processedName = (query, name) => {
+  const q = ` ${normalize(query)} `;
+  return PROCESSED.some((k) => !q.includes(` ${k}`) && types.nameHas(name, k));
+};
+
 // כל המוצרים בסניף שמתאימים לפריט, עם „דרגת התאמה”: 0 = המילה הראשונה בשם היא בדיוק המילה שחיפשנו,
 // 1 = מתחילה בה, 2 = המילה באמצע השם
 function candidates(text, data) {
   // סוג המוצר (״טחינה״ – בלי סלטים; ״גרגרי חומוס״ – יבשים)
   const first = String(text).split('|').map((x) => x.trim()).find((x) => x && !/^\d+$/.test(x)) || '';
   const type = types.typeOf(first);
+  const produce = deptOf(text) === 'produce';
   const find = (queries) => {
     const out = new Map();
     for (const qt of queries) {
@@ -133,6 +150,7 @@ function candidates(text, data) {
       for (const it of data.items) {
         if (!matchVariants(qt, it.variants)) continue;
         if (type && !types.allowed(type, first, it.name)) continue;
+        if (produce && processedName(first, it.name)) continue;
         const [w0, w1] = it.variants;
         let tier = w0 === qt[0] || w1 === qt[0] ? 0 : w0?.startsWith(qt[0]) || w1?.startsWith(qt[0]) ? 1 : 2;
         // ״סלט טחינה״, ״שוקולד חלב״: השם מתחיל במוצר אחר – התאמה חלשה (אלא אם חיפשו את המוצר הזה)
@@ -180,7 +198,10 @@ function commonCode(text, datas) {
   // קודם התאמה טובה יותר („חלב” ולא „חלבה”), אחר כך כמה שיותר סניפים, ואז הזול בממוצע
   const need = Math.min(2, datas.length);
   const best = [...counts.values()].filter((e) => e.n >= need).sort(byFit)[0];
-  return best ? best.code : null;
+  // ברקוד משותף רק אם הוא התאמה טובה כמו הטובה ביותר שנמצאה: ״נענע״ – כשבכל רשת הצמח בקוד פנימי משלה,
+  // תה נענע (ברקוד משותף לכל הרשתות) לא ״מנצח״. במקרה כזה משווים בכל סניף את ההתאמה הטובה והזולה
+  const top = Math.min(...[...counts.values()].map((e) => e.tier));
+  return best && best.tier <= top ? best.code : null;
 }
 
 // הסניפים באזור שאפשר להשוות ביניהם
@@ -233,6 +254,13 @@ async function nearbyStores(user, errors = [], { wait = Infinity } = {}) {
   return { stores: [...job.list].sort((a, b) => (a.km ?? -1) - (b.km ?? -1)).slice(0, 250), loading: !job.done };
 }
 
+// רשתות עם מחירון מלא שסומנו בהגדרות ואין להן סניף ברשימה
+function missingChains(user, stores) {
+  if (!Array.isArray(user.chains)) return []; // לא סומנו רשתות – לא מציגים רשימה ארוכה של כל הרשתות הרחוקות
+  const have = new Set(stores.map((s) => s.chain));
+  return comparableChains().filter((c) => user.chains.includes(c.id) && !have.has(c.id)).map((c) => c.name);
+}
+
 const uniqTexts = (items) => [...new Set(items.map((t) => String(typeof t === 'string' ? t : t?.text || '').trim()).filter(Boolean))].slice(0, 100);
 const hasBarcode = (text) => String(text).split('|').some((a) => /^\d{7,14}$/.test(a.trim()));
 
@@ -252,8 +280,9 @@ async function loadStores(stores) {
 
 // „למה התכוונת?” – לכל פריט בלי ברקוד ובלי בחירה קודמת: המוצרים האפשריים בסניפים שנבחרו.
 // all: גם פריטים שכבר נבחר להם מוצר (כדי לשנות את הבחירה)
-async function options(items, stores, pins = {}, { all = false, limit = 5 } = {}) {
+async function options(items, stores, pins = {}, { all = false, limit = 5, depts = {} } = {}) {
   const datas = (await loadStores(stores)).filter((x) => x.data).map((x) => x.data);
+  setDepts(depts);
   const out = [];
   for (const text of uniqTexts(items)) {
     const pin = pins[pinKey(text)];
@@ -305,8 +334,9 @@ const publicOption = ({ code, name, n, min, max, weighted, size, manufacturer })
 };
 
 // חיפוש חופשי במסך „למה התכוונת?”: תחילת מילה (״פטרוז״) או ברקוד (גם מצילום)
-async function search(q, stores, { limit = 12 } = {}) {
+async function search(q, stores, { limit = 12, depts = {} } = {}) {
   const datas = (await loadStores(stores)).filter((x) => x.data).map((x) => x.data);
+  setDepts(depts);
   const query = String(q || '').trim();
   if (!query) return { options: [], stores: datas.length };
   const list = /^\d{4,14}$/.test(query)
@@ -353,6 +383,9 @@ function isLoose(text, datas, item = {}) {
     const best = Math.min(...c.map((x) => x.tier));
     if (c.some((x) => x.weighted && x.tier === best)) n++;
   }
+  // מעדנייה (פסטרמה, סלמי, סלטים, גבינות מהדלפק): כל רשת שוקלת בקוד פנימי משלה, ואין ברקוד משותף –
+  // מספיק שסניף אחד מוכר במשקל כדי להשוות לפי ק"ג
+  if (deptOf(text) === 'deli' && n > 0) return true;
   return datas.length > 0 && n >= Math.ceil(datas.length / 2);
 }
 // בחירה לפי כלל (״קפסולות, כל מותג״, ״טחינה גולמית 500 גרם, סלה או הר ברכה״):
@@ -414,10 +447,11 @@ function pickLoose(text, data, ctx = {}) {
   return best ? priced(best, data, { loose: true }, ctx) : null;
 }
 
-async function compare(items, stores, { pins = {}, clubs = null, shipping = {} } = {}) {
+async function compare(items, stores, { pins = {}, clubs = null, shipping = {}, depts = {} } = {}) {
   const cart = cartItems(items);
   const texts = cart.map((c) => c.text);
   const loaded = await loadStores(stores);
+  setDepts(depts);
   const datas = loaded.filter((x) => x.data).map((x) => x.data);
   // לכל פריט: הברקוד שמשווים (שנקבע ידנית, או המשותף לכמה שיותר סניפים)
   const codes = Object.fromEntries(cart.map((it) => {
@@ -495,4 +529,4 @@ const pinKey = (t) => String(t).split('|')[0].trim().replace(/\s+/g, ' ').toLowe
 
 const round = (n) => Math.round(n * 100) / 100;
 
-module.exports = { compare, options, search, facets, parseRule, nearbyStores, pick, candidates, commonCode, pinKey, lineCost, MAX_STORES };
+module.exports = { missingChains, setDepts, compare, options, search, facets, parseRule, nearbyStores, pick, candidates, commonCode, pinKey, lineCost, MAX_STORES };

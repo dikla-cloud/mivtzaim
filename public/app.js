@@ -1672,6 +1672,14 @@ async function initCart() {
       renderCartPick();
       renderClubs();
       $('#cartStoresLoading').hidden = !r.loading;
+      // רשת שסימנת ולא מופיעה: למה (אין סניף ברדיוס, או שהחיבור לרשת נכשל)
+      const miss = r.missing || [];
+      const errs = (r.errors || []).filter((e) => miss.some((m) => e.startsWith(m)));
+      $('#cartMissing').hidden = !miss.length;
+      $('#cartMissing').textContent = miss.length ? [
+        t('לא נמצאו סניפים ברדיוס {km} ק"מ של: {chains}. אפשר להגדיל את הרדיוס בהגדרות ← ״מיקום ורדיוס חיפוש״.', { km: r.radiusKm, chains: miss.join(', ') }),
+        ...errs.map((e) => t('⚠️ תקלה בחיבור: {err}', { err: e })),
+      ].join('\n') : '';
       if (!r.loading) {
         if (!cartStores.length) $('#cartPickInfo').textContent = t('לא נמצאו סניפים ברדיוס החיפוש. אפשר להגדיל את הרדיוס בהגדרות.');
         return;
@@ -1687,6 +1695,8 @@ async function initCart() {
   cartLoaded = false; // יצאו מהמסך באמצע הטעינה – ננסה שוב בכניסה הבאה
 }
 
+// המחלקה של כל פריט ברשימה שמשווים – השרת מסנן לפיה (ירקות: רק הצמח הטרי; מעדנייה: לפי ק"ג)
+const cartDepts = () => Object.fromEntries((cartSource() === 'list' ? S.list : (S.home || []).filter((x) => !x.done)).map((x) => [x.text, deptOfItem(x.text)]));
 // resolve: קודם „למה התכוונת?” לפריטים שאפשר לפרש בכמה דרכים
 async function runCompare({ resolve = true } = {}) {
   const b = $('#cartGo');
@@ -1694,11 +1704,11 @@ async function runCompare({ resolve = true } = {}) {
   b.textContent = t('בודק מחירים בסניפים… (עד דקה)');
   try {
     if (resolve) {
-      const o = await api('POST', '/api/compare/options', { stores: cartSel, source: cartSource() });
+      const o = await api('POST', '/api/compare/options', { stores: cartSel, source: cartSource(), depts: cartDepts() });
       if (o.items.length) return renderResolve(o);
     }
     $('#cartResolve').hidden = true;
-    renderCart(await api('POST', '/api/compare', { stores: cartSel, source: cartSource() }));
+    renderCart(await api('POST', '/api/compare', { stores: cartSel, source: cartSource(), depts: cartDepts() }));
     track('cart_compare');
   } catch (e) { alert(e.message); } finally {
     b.disabled = !cartSel.length || !cartOpen().length;
@@ -1780,7 +1790,7 @@ async function openProductPicker(text, onDone = null) {
   $('#prodInfo').textContent = t('מחפש בסניפים שנבחרו…');
   $('#prodDlg').showModal();
   try {
-    const o = await api('POST', '/api/compare/options', { stores: cartSel, all: true, text, source: cartSource() });
+    const o = await api('POST', '/api/compare/options', { stores: cartSel, all: true, text, source: cartSource(), depts: cartDepts() });
     const it = o.items[0];
     showPickerOptions(it ? it.options : [], o.stores, it?.auto, it?.loose);
     renderRuleBox(it?.facets);
@@ -2351,7 +2361,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.14c';
+const APP_VERSION = '2026.11.14d';
 // במחשב התפריט פתוח תמיד בצד (CSS); בנייד – נפתח ב-☰
 const sideMenu = () => matchMedia('(min-width: 1000px)').matches;
 $('#menuBtn').addEventListener('click', () => { if (!sideMenu()) $('#menuDlg').showModal(); });

@@ -274,3 +274,59 @@ test('units: package size and price per 100 g / liter / roll / meter', () => {
   const b = { price: 30, size: { amount: 32, base: 'roll', meters: 480 } };
   assert.equal(u.cheaper(a, b), true);
 });
+
+test('cart compare: "נענע" (herb) – not mint tea with a shared barcode; produce department skips processed products', async () => {
+  // תה נענע משותף לכל הרשתות, והצמח בקוד פנימי שונה בכל רשת – הצמח מנצח
+  const a = store(item('7290000000001', 'תה נענע ויסוצקי 25 שקיקים', 12), item('n1', 'נענע', 4));
+  const b = store(item('7290000000001', 'תה נענע ויסוצקי 25 שקיקים', 13), item('n2', 'נענע ארוזה', 5));
+  assert.equal(commonCode('נענע', [a, b]), null);
+  // בחנות שאין בה את הצמח: במחלקת ירקות לא נבחר תה / נענע מיובשת
+  const { setDepts } = require('../server/compare');
+  const c = store(item('7290000000001', 'תה נענע ויסוצקי 25 שקיקים', 12), item('d1', 'נענע מיובשת 20 גרם', 8));
+  try {
+    setDepts({ 'נענע': 'produce' });
+    assert.equal(pick('נענע', c), null);
+    assert.equal(pick('נענע', a).code, 'n1');
+    assert.equal(pick('נענע מיובשת', c).code, 'd1'); // מה שכתוב בפריט עצמו לא מוציא
+    setDepts({});
+    assert.ok(pick('נענע', c)); // בלי מחלקת ירקות – כמו קודם
+  } finally { setDepts({}); }
+});
+
+test('cart compare: deli counter items are compared per kg when any store sells them by weight', async () => {
+  const israel = require('../server/providers/israel');
+  const { compare } = require('../server/compare');
+  const xmlItems = (its) => Buffer.from(`<Root><Items>${its.map(([c, n, p, w]) => `<Item><ItemCode>${c}</ItemCode><ItemName>${n}</ItemName><ItemPrice>${p}</ItemPrice><bIsWeighted>${w ? 1 : 0}</bIsWeighted></Item>`).join('')}</Items></Root>`);
+  const files = {
+    a: [['7290000000777', 'פסטרמה מעושנת 200 גרם', 18, false], ['p1', 'פסטרמה מעושנת במשקל', 89, true]],
+    b: [['7290000000777', 'פסטרמה מעושנת 200 גרם', 19, false]],
+    c: [['7290000000777', 'פסטרמה מעושנת 200 גרם', 17, false]],
+  };
+  const fake = { id: 'fakedeli', name: 'בדיקה', stores: async () => [], storeFiles: async (id) => ({ prices: xmlItems(files[id]), promos: Buffer.from('<Root/>') }) };
+  israel.chains.push(fake);
+  try {
+    const stores = ['a', 'b', 'c'].map((storeId) => ({ chain: 'fakedeli', storeId }));
+    const deli = await compare(['פסטרמה'], stores, { depts: { 'פסטרמה': 'deli' } });
+    assert.equal(deli.stores[0].lines[0].code, 'p1');
+    assert.equal(deli.stores[0].lines[0].loose, true);
+    // בלי מחלקה: רק סניף אחד מתוך שלושה שוקל – אריזה עם ברקוד משותף, כמו קודם
+    const plain = await compare(['פסטרמה'], stores);
+    assert.deepEqual(plain.stores.map((s) => s.lines[0].code), ['7290000000777', '7290000000777', '7290000000777']);
+  } finally {
+    israel.chains.splice(israel.chains.indexOf(fake), 1);
+  }
+});
+
+test('cart compare: chains marked in settings with no branch nearby are reported', () => {
+  const { missingChains } = require('../server/compare');
+  const israel = require('../server/providers/israel');
+  const fake = { id: 'fakemiss', name: 'רשת רחוקה', stores: async () => [], storeFiles: async () => ({}) };
+  israel.chains.push(fake);
+  try {
+    assert.deepEqual(missingChains({ chains: ['fakemiss'] }, []), ['רשת רחוקה']);
+    assert.deepEqual(missingChains({ chains: ['fakemiss'] }, [{ chain: 'fakemiss' }]), []);
+    assert.deepEqual(missingChains({ chains: null }, []), []); // לא סומנו רשתות – לא מציגים
+  } finally {
+    israel.chains.splice(israel.chains.indexOf(fake), 1);
+  }
+});

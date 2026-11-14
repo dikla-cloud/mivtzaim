@@ -683,7 +683,9 @@ app.get('/api/compare/stores', async (req, res) => {
   if (!(await inIsrael(u))) return res.status(400).json({ error: T(req, 'בחירת סניפים והשוואת עגלה זמינות כרגע רק בישראל. המיקום שלך עכשיו: {place}. אפשר לעדכן אותו בכפתור ״עדכון מיקום״.', { place: u.location.label || '' }) });
   const errors = [];
   const { stores, loading } = await compare.nearbyStores(u, errors, { wait: 8000 });
-  res.json({ stores, loading, selected: u.compareStores || [], mine: u.myStores || [], max: compare.MAX_STORES, errors });
+  // רשתות שסומנו בהגדרות ולא נמצא להן אף סניף באזור (או שהחיבור אליהן נכשל) – כדי שיהיה ברור למה הן חסרות
+  const missing = loading ? [] : compare.missingChains(u, stores);
+  res.json({ stores, loading, selected: u.compareStores || [], mine: u.myStores || [], max: compare.MAX_STORES, errors, missing, radiusKm: u.radiusKm || 10 });
 });
 // „הסניפים שלי”: הסניפים שבהם נבדקים מבצעים (ריק = הסניפים הקרובים מכל רשת)
 app.put('/api/mystores', (req, res) => {
@@ -736,7 +738,12 @@ async function compareInput(req, res) {
     const tr = await translate(arabic, 'he', 'IL');
     items = items.map((x) => (tr[x.text] ? { ...x, text: `${x.text}|${tr[x.text].term}` } : x));
   }
-  return { stores, items };
+  // המחלקה של כל פריט (מהאפליקציה): ירקות – רק הצמח הטרי; מעדנייה – השוואה לפי ק"ג
+  const depts = {};
+  if (req.body?.depts && typeof req.body.depts === 'object') {
+    for (const [k, v] of Object.entries(req.body.depts).slice(0, 200)) if (typeof v === 'string' && /^[\w-]{1,30}$/.test(v)) depts[String(k).slice(0, 100)] = v;
+  }
+  return { stores, items, depts };
 }
 
 // „למה התכוונת?” לפני ההשוואה. all: גם פריטים שכבר נבחר להם מוצר
@@ -745,7 +752,7 @@ app.post('/api/compare/options', async (req, res) => {
   if (!input) return;
   // text: רק פריט אחד (מסך „בחירת מוצר”)
   const only = typeof req.body?.text === 'string' ? input.items.filter((x) => x.text.split('|')[0].trim() === req.body.text) : input.items;
-  res.json(await compare.options(only.length ? only : [{ text: String(req.body.text) }], input.stores, db.householdOf(req.user).pins || {}, { all: Boolean(req.body?.all) }));
+  res.json(await compare.options(only.length ? only : [{ text: String(req.body.text) }], input.stores, db.householdOf(req.user).pins || {}, { all: Boolean(req.body?.all), depts: input.depts }));
 });
 
 // חיפוש מוצר להשוואה (תחילת מילה או ברקוד) בסניפים שנבחרו
@@ -761,10 +768,10 @@ app.post('/api/compare', async (req, res) => {
   const u = req.user;
   const input = await compareInput(req, res);
   if (!input) return;
-  const { stores, items } = input;
+  const { stores, items, depts } = input;
   u.compareStores = stores;
   metrics.count('compare');
-  const result = await compare.compare(items, stores, { pins: db.householdOf(u).pins || {}, clubs: u.clubs ?? null, shipping: u.shipping || {} });
+  const result = await compare.compare(items, stores, { pins: db.householdOf(u).pins || {}, clubs: u.clubs ?? null, shipping: u.shipping || {}, depts });
   // מציגים את הפריט כפי שנכתב (בלי התרגום שנוסף לחיפוש)
   for (const st of result.stores) for (const l of st.lines || []) l.text = l.text.split('|')[0].trim();
   result.items = result.items.map((t) => t.split('|')[0].trim());
