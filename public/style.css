@@ -157,7 +157,6 @@ button.onsale { display: block; text-align: start; border: 0; background: none; 
 #locBtn { padding: 6px 12px; border-radius: 999px; font-size: .85rem; flex: none; }
 
 .mic { flex: none; width: 36px; padding: 8px 0; font-size: .95rem; line-height: 1; }
-.mic.live { width: auto; padding: 10px 12px; }
 #voiceHint:empty { display: none; }
 
 #toast { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -570,7 +569,6 @@ body.update-ready #refreshBtn { border-color: #e11d48; }
 #items li .list-name { flex: 1; min-width: 0; padding: 6px 0; cursor: pointer; }
 /* כפתורי המיקרופון והמצלמה: אותו גודל, האייקון במרכז, ומיושרים לשדה ההקלדה */
 .mic { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 46px; height: 46px; padding: 0; margin: 0; vertical-align: middle; }
-.mic.live { width: auto; padding: 0 12px; }
 .mic .line-ico { width: 24px; height: 24px; margin: 0; }
 .photo-wrap { align-items: center; align-self: center; }
 #homeAdd, #add, #prodSearch { align-items: center; }

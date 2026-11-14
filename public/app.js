@@ -1219,6 +1219,9 @@ function dictation(btn, input, hintEl, example) {
   if (!SR) return;
   btn.hidden = false;
   let rec = null;
+  // שומרים את ציור המיקרופון ומחזירים אותו בסוף ההקלטה (ולא אימוג'י)
+  const MIC_ICON = btn.innerHTML;
+  const STOP_ICON = '<svg class="line-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg>';
   btn.addEventListener('click', () => {
     if (rec) return rec.stop();
     rec = new SR();
@@ -1228,7 +1231,7 @@ function dictation(btn, input, hintEl, example) {
     rec.continuous = false;
     const before = input.value.trim();
     btn.classList.add('live');
-    btn.textContent = '⏹';
+    btn.innerHTML = STOP_ICON;
     hintEl.textContent = t(example);
     rec.onresult = (e) => {
       const said = [...e.results].map((r) => r[0].transcript).join(' ');
@@ -1238,7 +1241,7 @@ function dictation(btn, input, hintEl, example) {
     rec.onend = () => {
       rec = null;
       btn.classList.remove('live');
-      btn.textContent = '🎤';
+      btn.innerHTML = MIC_ICON;
       if (input.value.trim() !== before) {
         hintEl.textContent = t('בדקו את הפריטים ותקנו אם צריך, ואז ״הוספה״');
         input.focus();
@@ -2328,7 +2331,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.13h';
+const APP_VERSION = '2026.11.14a';
 // במחשב התפריט פתוח תמיד בצד (CSS); בנייד – נפתח ב-☰
 const sideMenu = () => matchMedia('(min-width: 1000px)').matches;
 $('#menuBtn').addEventListener('click', () => { if (!sideMenu()) $('#menuDlg').showModal(); });
