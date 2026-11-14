@@ -2351,7 +2351,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.14b';
+const APP_VERSION = '2026.11.14c';
 // במחשב התפריט פתוח תמיד בצד (CSS); בנייד – נפתח ב-☰
 const sideMenu = () => matchMedia('(min-width: 1000px)').matches;
 $('#menuBtn').addEventListener('click', () => { if (!sideMenu()) $('#menuDlg').showModal(); });

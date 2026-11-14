@@ -607,3 +607,24 @@ body.update-ready #refreshBtn { border-color: #e11d48; }
 /* כותרות מחלקה ברשימה הקבועה – בלי מסגרת של שורת מוצר */
 #items li.dept-head { display: block; border: 0; background: none; padding: 0 4px; margin: 14px 0 4px; }
 #items > li.dept-head:first-child { margin-top: 4px; }
+/* השוואת עגלות בנייד: כפתורים נמוכים יותר, והכמות באותה שורה עם שם המוצר – רואים יותר פריטים במסך */
+@media (max-width: 600px) {
+  #tab-cart .cart-items { gap: 0; }
+  #tab-cart .cart-item { padding: 5px 0; gap: 6px; flex-wrap: nowrap; }
+  #tab-cart .ci-name { flex: 1 1 110px; }
+  #tab-cart .ci-name .ci-pick { font-size: .78rem; padding: 0; line-height: 1.3; }
+  #tab-cart .ci-amount { gap: 3px; flex-wrap: nowrap; flex: none; }
+  #tab-cart .ci-amount .step { width: 28px; height: 28px; font-size: 1rem; }
+  #tab-cart .ci-amount .qty { min-width: 1.9em; font-size: .9rem; }
+  #tab-cart .unit-seg button { padding: 3px 7px; font-size: .78rem; }
+  #tab-cart .ci-head span:last-child { min-width: 0; }
+  #tab-cart details.fold > summary { padding: 9px 12px; font-size: .98rem; }
+  #tab-cart details.fold > :not(summary) { margin-inline: 12px; }
+  #tab-cart .cart-src-seg button { padding: 5px 10px; font-size: .88rem; }
+  #tab-cart .card { padding-block: 10px; margin: 10px 0; }
+  #tab-cart details.fold.card { padding: 0; }
+  #tab-cart details.fold > summary { white-space: nowrap; }
+  #tab-cart details.fold > summary small { white-space: normal; font-size: .76rem; font-weight: 500; line-height: 1.25; text-align: end; flex: 1; }
+  /* ״בחירה אוטומטית · בחירת מוצר‹״ – שורה אחת, ובקצה שלוש נקודות אם אין מקום */
+  #tab-cart .ci-name .ci-pick { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
