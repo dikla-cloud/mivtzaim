@@ -254,6 +254,15 @@ async function nearbyStores(user, errors = [], { wait = Infinity } = {}) {
   return { stores: [...job.list].sort((a, b) => (a.km ?? -1) - (b.km ?? -1)).slice(0, 250), loading: !job.done };
 }
 
+// שם המוצר בעברית לפי ברקוד – מקובצי המחירים של הסניפים (מה שכבר בזיכרון, ואם צריך – הורדה)
+async function nameByCode(code, stores) {
+  for (const { data } of await loadStores(stores)) {
+    const it = data?.byCode.get(code);
+    if (it?.name) return it.name;
+  }
+  return null;
+}
+
 // רשתות עם מחירון מלא שסומנו בהגדרות ואין להן סניף ברשימה
 function missingChains(user, stores) {
   if (!Array.isArray(user.chains)) return []; // לא סומנו רשתות – לא מציגים רשימה ארוכה של כל הרשתות הרחוקות
@@ -457,6 +466,9 @@ async function compare(items, stores, { pins = {}, clubs = null, shipping = {}, 
   const codes = Object.fromEntries(cart.map((it) => {
     const t = it.text;
     const pinned = pins[pinKey(t)];
+    // ברקוד שנשמר עם הפריט (מצילום, או שנכתב אחרי |) – משווים את המוצר הזה בדיוק, גם אם השם שונה
+    const own = String(t).split('|').map((a) => a.trim()).find((a) => /^\d{7,14}$/.test(a));
+    if (own && !pinned) return [t, { code: own, pinned: true }];
     if (pinned === 'any') return [t, { code: null, pinned: false, any: true }];
     if (/^\d+$/.test(pinned || '')) return [t, { code: pinned, pinned: true }];
     const rule = parseRule(pinned);
@@ -529,4 +541,4 @@ const pinKey = (t) => String(t).split('|')[0].trim().replace(/\s+/g, ' ').toLowe
 
 const round = (n) => Math.round(n * 100) / 100;
 
-module.exports = { missingChains, setDepts, compare, options, search, facets, parseRule, nearbyStores, pick, candidates, commonCode, pinKey, lineCost, MAX_STORES };
+module.exports = { nameByCode, missingChains, setDepts, compare, options, search, facets, parseRule, nearbyStores, pick, candidates, commonCode, pinKey, lineCost, MAX_STORES };

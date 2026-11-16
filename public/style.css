@@ -629,3 +629,5 @@ body.update-ready #refreshBtn { border-color: #e11d48; }
   #tab-cart .ci-name .ci-pick { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
 #cartMissing { white-space: pre-line; }
+.code-tag { font-size: .72rem; }
+.code-note { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 4px 0 0; }

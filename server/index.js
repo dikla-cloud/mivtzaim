@@ -651,15 +651,36 @@ app.get('/api/product/:code', async (req, res) => {
   if (!/^\d{6,14}$/.test(code)) return res.status(400).json({ error: T(req, 'ברקוד לא תקין') });
   const d = db.get();
   const cache = (d.products ||= {});
-  const key = `${code}:${req.lang}`;
+  const key = `${code}:${req.lang}:2`; // :2 – אחרי שהוספנו שמות מקובצי המחירים (שמות ישנים באיטלקית וכו׳ לא נשמרים)
   const hit = cache[key];
   if (hit && Date.now() - hit.at < PRODUCT_TTL) return res.json({ code, name: hit.name });
+  // בישראל: קודם השם כפי שהרשתות קוראות לו (בעברית), מקובצי המחירים של הסניפים שלך.
+  // Open Food Facts הוא מאגר עולמי – לפעמים השם שם באיטלקית או באנגלית
+  const u = req.user;
+  const stores = [...(u.compareStores || []), ...(u.myStores || [])].slice(0, 4);
+  if (stores.length && ['he', 'ar'].includes(req.lang)) {
+    const local = await Promise.race([compare.nameByCode(code, stores).catch(() => null), new Promise((r) => setTimeout(() => r(null), 15000))]);
+    if (local) {
+      cache[key] = { name: local.slice(0, 80), at: Date.now() };
+      db.save();
+      return res.json({ code, name: local.slice(0, 80) });
+    }
+  }
   let name = null;
   try {
     const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,product_name_he,product_name_de,product_name_en,brands`, {
       headers: { 'User-Agent': process.env.GEOCODER_UA || 'MivtzaimApp/1.0' }, signal: AbortSignal.timeout(10000),
     });
-    const p = (await r.json()).product || {};
+    let p = (await r.json()).product || {};
+    // מוצרים שאינם מזון (מגבות נייר, ניקיון) – במאגר האחות Open Products Facts
+    if (!p.product_name) {
+      try {
+        const r2 = await fetch(`https://world.openproductsfacts.org/api/v2/product/${code}.json?fields=product_name,product_name_he,product_name_de,product_name_en,brands`, {
+          headers: { 'User-Agent': process.env.GEOCODER_UA || 'MivtzaimApp/1.0' }, signal: AbortSignal.timeout(8000),
+        });
+        p = (await r2.json()).product || p;
+      } catch { /* לא חובה */ }
+    }
     const base = p[`product_name_${req.lang}`] || p.product_name || p.product_name_en || '';
     const brand = String(p.brands || '').split(',')[0].trim();
     name = base ? (brand && !base.toLowerCase().includes(brand.toLowerCase()) ? `${base} ${brand}` : base).trim().slice(0, 80) : null;

@@ -642,6 +642,11 @@ const I18N = {
   "🕒 לפי סדר ההקלדה": ["🕒 In Eingabe-Reihenfolge", "🕒 In the order typed"],
   "לא נמצאו סניפים ברדיוס {km} ק\"מ של: {chains}. אפשר להגדיל את הרדיוס בהגדרות ← ״מיקום ורדיוס חיפוש״.": ["Keine Filialen im Umkreis von {km} km gefunden für: {chains}. Du kannst den Umkreis in den Einstellungen → „Standort und Suchradius“ vergrößern.", "No branches found within {km} km for: {chains}. You can increase the radius in Settings → “Location and search radius”."],
   "⚠️ תקלה בחיבור: {err}": ["⚠️ Verbindungsproblem: {err}", "⚠️ Connection problem: {err}"],
+  "🏷️ ברקוד {code} – ההשוואה לפי המוצר הזה בדיוק, גם אם משנים את השם": ["🏷️ Barcode {code} – verglichen wird genau dieses Produkt, auch wenn du den Namen änderst", "🏷️ Barcode {code} – this exact product is compared, even if you change the name"],
+  "🏷️ ברקוד": ["🏷️ Barcode", "🏷️ Barcode"],
+  "הסרת הברקוד": ["Barcode entfernen", "Remove barcode"],
+  "מוצר לפי ברקוד": ["Produkt per Barcode", "Product by barcode"],
+  "📷 נמצא ברקוד {code}, אבל שם המוצר לא ידוע. כתבו את השם לפני הקו (למשל: ״מגבות נייר | {code}״) ואז ״הוספה״. ההשוואה תהיה לפי הברקוד.": ["📷 Barcode {code} gefunden, aber der Produktname ist unbekannt. Schreib den Namen vor den Strich (z. B. „Küchenrolle | {code}“) und dann „Hinzufügen“. Verglichen wird nach dem Barcode.", "📷 Found barcode {code}, but the product name is unknown. Type the name before the bar (e.g. “Paper towels | {code}”), then “Add”. It will be compared by the barcode."],
 };
 
 // ערבית (מפתח: הנוסח העברי)
@@ -1236,6 +1241,13 @@ const I18N_AR = {
   "🕒 לפי סדר ההקלדה": "🕒 حسب ترتيب الكتابة",
   "לא נמצאו סניפים ברדיוס {km} ק\"מ של: {chains}. אפשר להגדיל את הרדיוס בהגדרות ← ״מיקום ורדיוס חיפוש״.": "لم يتم العثور على فروع ضمن {km} كم لـ: {chains}. يمكن زيادة النطاق في الإعدادات ← «الموقع ونطاق البحث».",
   "⚠️ תקלה בחיבור: {err}": "⚠️ مشكلة في الاتصال: {err}",
+  "🏷️ ברקוד {code} – ההשוואה לפי המוצר הזה בדיוק, גם אם משנים את השם": "🏷️ باركود {code} – تتم المقارنة لهذا المنتج بالضبط حتى لو غيّرت الاسم",
+  "🏷️ ברקוד": "🏷️ باركود",
+  "הסרת הברקוד": "إزالة الباركود",
+  "מוצר לפי ברקוד": "منتج حسب الباركود",
+  "📷 נמצא ברקוד {code}, אבל שם המוצר לא ידוע. כתבו את השם לפני הקו (למשל: ״מגבות נייר | {code}״) ואז ״הוספה״. ההשוואה תהיה לפי הברקוד.": "📷 تم العثور على الباركود {code} لكن اسم المنتج غير معروف. اكتبوا الاسم قبل الخط (مثلًا: «مناشف ورقية | {code}») ثم «إضافة». ستتم المقارنة حسب الباركود.",
+  "בחו\"ל נתמכות כרגע אוסטריה וגרמניה (כל הרשתות הגדולות, לפי עלוני המבצעים) ואוסטרליה (Coles,‏ Woolworths,‏ ALDI ועוד).": "في الخارج مدعومة حاليًا النمسا وألمانيا (كل السلاسل الكبيرة، حسب نشرات العروض) وأستراليا (Coles،‏ Woolworths،‏ ALDI وغيرها).",
+  "סדרו את המחלקות לפי מסלול ההליכה בסופר שלכם. משותף לכל בני הבית.": "رتّبوا الأقسام حسب مسار تجوّلكم في السوبرماركت. مشترك لكل أهل البيت.",
 };
 
 // t('נוספו {n} פריטים', { n: 3 })

@@ -330,3 +330,25 @@ test('cart compare: chains marked in settings with no branch nearby are reported
     israel.chains.splice(israel.chains.indexOf(fake), 1);
   }
 });
+
+test('cart compare: a barcode saved with the item is compared exactly, whatever the name says', async () => {
+  const israel = require('../server/providers/israel');
+  const { compare } = require('../server/compare');
+  const xmlItems = (its) => Buffer.from(`<Root><Items>${its.map(([c, n, p]) => `<Item><ItemCode>${c}</ItemCode><ItemName>${n}</ItemName><ItemPrice>${p}</ItemPrice></Item>`).join('')}</Items></Root>`);
+  const files = {
+    a: [['8001234567890', 'טונה בשמן זית ריו מרה 3 יח', 24], ['7290000000111', 'טונה בשמן זית פרטי', 12]],
+    b: [['8001234567890', 'טונה בשמן זית ריו מרה 3 יח', 26], ['7290000000111', 'טונה בשמן זית פרטי', 11]],
+  };
+  const fake = { id: 'fakecode', name: 'בדיקה', stores: async () => [], storeFiles: async (id) => ({ prices: xmlItems(files[id]), promos: Buffer.from('<Root/>') }) };
+  israel.chains.push(fake);
+  try {
+    const stores = ['a', 'b'].map((storeId) => ({ chain: 'fakecode', storeId }));
+    // השם שונה לגמרי (שינוי שם בעיפרון) – עדיין הברקוד קובע
+    const r = await compare(['טונה שלי | 8001234567890'], stores);
+    assert.deepEqual(r.stores.map((s) => [s.lines[0].code, s.lines[0].similar || false]), [['8001234567890', false], ['8001234567890', false]]);
+    const { nameByCode } = require('../server/compare');
+    assert.equal(await nameByCode('8001234567890', stores), 'טונה בשמן זית ריו מרה 3 יח');
+  } finally {
+    israel.chains.splice(israel.chains.indexOf(fake), 1);
+  }
+});

@@ -347,7 +347,8 @@ function renderList() {
     pick.addEventListener('change', () => { if (pick.checked) listSel.add(it.text); else listSel.delete(it.text); renderListPick(); });
     li.append(pick);
     const icon = Object.assign(document.createElement('span'), { className: 'food', textContent: foodIcon(it.text), ariaHidden: 'true' });
-    const name = Object.assign(document.createElement('span'), { className: 'list-name', textContent: it.text });
+    const name = Object.assign(document.createElement('span'), { className: 'list-name', textContent: nameOf(it.text) || t('מוצר לפי ברקוד') });
+    if (codeOf(it.text)) name.append(Object.assign(document.createElement('span'), { className: 'amt code-tag', textContent: t('🏷️ ברקוד'), title: codeOf(it.text) }));
     if (it.kg || it.qty > 1) name.append(Object.assign(document.createElement('span'), { className: 'amt', textContent: it.kg ? t('{kg} ק"ג', { kg: it.kg }) : t('{n} יח\'', { n: it.qty }) }));
     name.addEventListener('click', () => openListEditor(i));
     const edit = Object.assign(document.createElement('button'), { type: 'button', className: 'pencil-btn', innerHTML: PENCIL, title: t('עריכה: שם וכמות') });
@@ -377,9 +378,10 @@ $('#listViewAdded').addEventListener('click', () => { store.set('listView', 'add
 let listEdit = null; // { i, qty, kg }
 function openListEditor(i) {
   const it = S.list[i];
-  listEdit = { i, qty: it.qty || 1, kg: it.kg ?? null };
-  $('#listEditTitle').textContent = t('עריכת ״{item}״', { item: it.text });
-  $('#listEditName').value = it.text;
+  listEdit = { i, qty: it.qty || 1, kg: it.kg ?? null, code: codeOf(it.text) };
+  $('#listEditTitle').textContent = t('עריכת ״{item}״', { item: nameOf(it.text) });
+  $('#listEditName').value = nameOf(it.text);
+  codeNote($('#listEditCode'), listEdit.code, () => { listEdit.code = null; $('#listEditCode').hidden = true; });
   renderListEditor();
   $('#listEditDlg').showModal();
 }
@@ -398,8 +400,9 @@ $('#lePlus').addEventListener('click', () => { if (listEdit.kg != null) listEdit
 $('#listEditClose').addEventListener('click', () => $('#listEditDlg').close());
 $('#listEditForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const text = $('#listEditName').value.trim();
-  if (!text) return;
+  const name = $('#listEditName').value.replace(/,/g, ' ').trim();
+  if (!name) return;
+  const text = withCode(name, listEdit.code);
   const items = S.list.map((x, j) => (j === listEdit.i
     ? { text, qty: listEdit.kg != null ? null : listEdit.qty, kg: listEdit.kg }
     : { text: x.text, qty: x.qty ?? null, kg: x.kg ?? null }));
@@ -695,6 +698,16 @@ $('#termsForm').addEventListener('submit', async (e) => {
 });
 
 // ---------- חסר בבית (משותף לבני הבית) ----------
+// ברקוד שנשמר עם הפריט (״טונה בשמן זית | 8001234567890״): ההשוואה לפיו, והוא נשאר גם כשמשנים את השם
+const codeOf = (text) => String(text).split('|').map((x) => x.trim()).find((x) => /^\d{7,14}$/.test(x)) || null;
+const nameOf = (text) => String(text).split('|').map((x) => x.trim()).filter((x) => x && !/^\d{7,14}$/.test(x)).join(' | ');
+const withCode = (name, code) => (code && !codeOf(name) ? `${name} | ${code}` : name);
+function codeNote(el, code, onRemove) {
+  el.hidden = !code;
+  if (!code) return;
+  el.querySelector('span').textContent = t('🏷️ ברקוד {code} – ההשוואה לפי המוצר הזה בדיוק, גם אם משנים את השם', { code });
+  el.querySelector('button').onclick = onRemove;
+}
 const plain = (s) => String(s).split('|')[0].replace(/[׳'"״]/g, '').trim().toLowerCase();
 
 // מבצע מהסריקה האחרונה שמתאים לפריט (לפי הרשימה הקבועה)
@@ -792,7 +805,8 @@ function homeRow(it) {
     const body = Object.assign(document.createElement('span'), { className: 'hbody' });
     body.append(Object.assign(document.createElement('span'), { className: 'food', textContent: foodIcon(it.text) }));
     const txt = Object.assign(document.createElement('span'), { className: 'htext' });
-    const name = Object.assign(document.createElement('span'), { textContent: it.text });
+    const name = Object.assign(document.createElement('span'), { textContent: nameOf(it.text) || t('מוצר לפי ברקוד') });
+    if (codeOf(it.text)) name.append(Object.assign(document.createElement('span'), { className: 'amt code-tag', textContent: t('🏷️ ברקוד'), title: codeOf(it.text) }));
     // כמות (אם שונתה): תגית קטנה ליד השם
     if (it.kg || it.qty > 1) name.append(Object.assign(document.createElement('span'), { className: 'amt', textContent: it.kg ? t('{kg} ק"ג', { kg: it.kg }) : t('{n} יח\'', { n: it.qty }) }));
     txt.append(name);
@@ -854,9 +868,10 @@ function homeRow(it) {
 // עריכת פריט: שם, כמות (יחידות או ק"ג) ומחלקה – נשמר בלחיצה על ״שמירה״, לכל בני הבית
 let edit = null; // { it, text, kg, qty, dept }
 function openItemEditor(it) {
-  edit = { it, kg: it.kg ?? null, qty: it.qty || 1, dept: S.deptOf?.[deptKey(it.text)] || null };
-  $('#deptTitle').textContent = t('עריכת ״{item}״', { item: it.text });
-  $('#itemEditName').value = it.text;
+  edit = { it, kg: it.kg ?? null, qty: it.qty || 1, dept: S.deptOf?.[deptKey(it.text)] || null, code: codeOf(it.text) };
+  $('#deptTitle').textContent = t('עריכת ״{item}״', { item: nameOf(it.text) });
+  $('#itemEditName').value = nameOf(it.text);
+  codeNote($('#itemEditCode'), edit.code, () => { edit.code = null; $('#itemEditCode').hidden = true; });
   renderItemEditor();
   $('#deptDlg').showModal();
 }
@@ -897,8 +912,9 @@ $('#deptAuto').addEventListener('click', () => { edit.dept = null; renderItemEdi
 $('#itemEditForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const { it } = edit;
-  const text = $('#itemEditName').value.trim();
-  if (!text) return;
+  const name = $('#itemEditName').value.replace(/,/g, ' ').trim();
+  if (!name) return;
+  const text = withCode(name, edit.code);
   try {
     const body = {};
     if (text !== it.text) body.text = text;
@@ -1337,16 +1353,21 @@ function photoInput(fileInput, input, hintEl, forList) {
     let name = null;
     try { ({ name } = await api('GET', `/api/product/${code}`)); } catch { /* */ }
     const add = (v) => { input.value = [input.value.trim(), v].filter(Boolean).join(', '); };
+    if (name) name = name.replace(/[,|]/g, ' ').replace(/\s+/g, ' ').trim();
     if (name) {
-      add(forList ? `${name} | ${code}` : name);
+      add(`${name} | ${code}`);
       hintEl.textContent = t('📷 נמצא: {name}. בדקו ותקנו אם צריך, ואז ״הוספה״', { name });
-    } else if (forList) {
-      add(code);
-      hintEl.textContent = t('📷 נמצא ברקוד {code}, אבל שם המוצר לא ידוע. אפשר להוסיף שם לפני הברקוד, למשל: ״קפה | {code}״', { code });
+      input.focus();
     } else {
-      hintEl.textContent = t('📷 נמצא ברקוד {code}, אבל שם המוצר לא ידוע. כתבו את השם בשדה.', { code });
+      // השם לא ידוע: לא מוסיפים מספר כ״שם״ – הסמן מחכה לשם, והברקוד נשמר אחריו
+      add(`| ${code}`);
+      hintEl.textContent = t('📷 נמצא ברקוד {code}, אבל שם המוצר לא ידוע. כתבו את השם לפני הקו (למשל: ״מגבות נייר | {code}״) ואז ״הוספה״. ההשוואה תהיה לפי הברקוד.', { code });
+      input.focus();
+      const at = input.value.lastIndexOf(`| ${code}`);
+      input.value = `${input.value.slice(0, at)} ${input.value.slice(at)}`.replace(/^\s+/, ' ');
+      const caret = input.value.lastIndexOf(`| ${code}`) - 1;
+      input.setSelectionRange(Math.max(caret, 0), Math.max(caret, 0));
     }
-    input.focus();
   });
 }
 for (const [id, input, hint, forList] of [['photoHome', '#homeItem', '#voiceHint', false], ['photoList', '#newItem', '#listHint', true]]) {
@@ -1588,7 +1609,7 @@ function renderCartItems() {
     li.className = 'cart-item';
     const name = document.createElement('div');
     name.className = 'ci-name';
-    name.append(Object.assign(document.createElement('b'), { textContent: `${foodIcon(it.text)} ${it.text}` }));
+    name.append(Object.assign(document.createElement('b'), { textContent: `${foodIcon(it.text)} ${nameOf(it.text) || it.text}${codeOf(it.text) ? ' 🏷️' : ''}` }));
     const pin = pinOf(it.text);
     const pinLabel = pin === 'any' ? t('🔀 הכי זול מכל מותג') : pin === 'loose' ? t('⚖️ בתפזורת')
       : String(pin || '').startsWith('rule:') ? S.pinNames?.[pinKeyOf(it.text)] || t('🧩 לפי כלל')
@@ -2361,7 +2382,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.14d';
+const APP_VERSION = '2026.11.16b';
 // במחשב התפריט פתוח תמיד בצד (CSS); בנייד – נפתח ב-☰
 const sideMenu = () => matchMedia('(min-width: 1000px)').matches;
 $('#menuBtn').addEventListener('click', () => { if (!sideMenu()) $('#menuDlg').showModal(); });
