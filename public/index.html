@@ -303,6 +303,38 @@
       </div>
     </section>
 
+    <section id="tab-receipts" hidden>
+      <h2 class="page-title">🧾 קבלות והוצאות</h2>
+      <p class="muted small">מצלמים את הקבלה מהקופה (או מעלים צילום מסך של קבלה דיגיטלית), והאפליקציה קוראת ממנה את הסכום, ההנחות והקופונים והמוצרים. הטקסט מזוהה בטלפון עצמו – הצילום לא נשלח לשום מקום. בודקים, מתקנים אם צריך, ושומרים. משותף לבני הבית.</p>
+      <div class="row receipt-add">
+        <label class="primary file-btn">📸 צילום קבלה<input type="file" id="receiptCam" accept="image/*" capture="environment" hidden></label>
+        <label class="file-btn">🖼️ צילום מסך / מהגלריה<input type="file" id="receiptFile" accept="image/*" hidden></label>
+        <button type="button" id="receiptManual" class="linkish small">הוספה ידנית</button>
+      </div>
+      <p id="receiptStatus" class="small loading-note" hidden></p>
+
+      <div id="spendBox" class="card" hidden>
+        <div class="spend-head">
+          <h3 id="spendTitle">הוצאות לפי חודש</h3>
+          <div class="seg" role="group" aria-label="תקופה">
+            <button type="button" data-range="3" aria-pressed="false">3 חודשים</button>
+            <button type="button" data-range="6" aria-pressed="true">חצי שנה</button>
+            <button type="button" data-range="12" aria-pressed="false">שנה</button>
+          </div>
+        </div>
+        <div id="spendTiles" class="spend-tiles"></div>
+        <div id="spendChart" class="spend-chart"></div>
+        <details class="spend-table-wrap">
+          <summary class="small">טבלה</summary>
+          <table id="spendTable" class="stats"></table>
+        </details>
+      </div>
+
+      <h3 id="receiptsHead" hidden>הקבלות</h3>
+      <ul id="receiptList" class="receipt-list"></ul>
+      <p id="receiptsEmpty" class="empty muted">עוד אין קבלות. צלמו את הקבלה מהקנייה הבאה 🧾</p>
+    </section>
+
     <section id="tab-settings" hidden>
       <h2 class="page-title">⚙️ הגדרות</h2>
       <p id="settingsVersion" class="settings-version muted small"></p>
@@ -498,6 +530,7 @@
         <div id="menuLangs" class="lang-chips"></div>
       </div>
       <button type="button" id="gear" data-tab="settings" aria-pressed="false"><svg class="line-ico menu-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>הגדרות</span></button>
+      <button type="button" id="menuReceipts" data-tab="receipts" aria-pressed="false"><svg class="line-ico menu-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span>קבלות והוצאות</span></button>
       <button type="button" id="menuAbout"><svg class="line-ico menu-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg><span>אודות</span></button>
       <a href="privacy.html" target="_blank"><svg class="line-ico menu-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>מדיניות פרטיות</span></a>
       <a href="terms.html" target="_blank"><svg class="line-ico menu-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><span>תנאי שימוש</span></a>
@@ -508,6 +541,34 @@
       <p id="menuUpdateNote" class="menu-update small" hidden></p>
       <p id="menuVersion" class="menu-version muted small"></p>
     </div>
+  </dialog>
+
+  <dialog id="receiptDlg" class="receipt-dlg">
+    <form id="receiptForm" method="dialog">
+      <div class="sheet-head">
+        <h3 id="receiptDlgTitle">🧾 קבלה</h3>
+        <button type="button" id="receiptClose" class="sheet-x" aria-label="סגירה">✕</button>
+      </div>
+      <p id="receiptReadNote" class="muted small" hidden>זה מה שזוהה בצילום – כדאי לבדוק את הסכומים מול הקבלה ולתקן אם צריך.</p>
+      <div class="receipt-grid">
+        <label>תאריך<input type="date" id="rcDate" required></label>
+        <label>רשת / חנות<input id="rcStore" maxlength="60" list="rcStores"></label>
+        <label>סכום הקבלה (לתשלום) ₪<input type="number" id="rcTotal" min="0" step="0.01" inputmode="decimal" required></label>
+        <label>מזה הנחות וקופונים ₪<input type="number" id="rcDiscount" min="0" step="0.01" inputmode="decimal"></label>
+        <label>שולם בשובר / תו קנייה ₪<input type="number" id="rcVoucher" min="0" step="0.01" inputmode="decimal"></label>
+      </div>
+      <datalist id="rcStores"></datalist>
+      <p id="rcPaid" class="rc-paid"></p>
+      <details id="rcItemsBox" class="rc-items">
+        <summary>מוצרים בקבלה <span id="rcItemsCount" class="muted small"></span></summary>
+        <ul id="rcItems"></ul>
+        <button type="button" id="rcAddItem" class="linkish small">➕ הוספת מוצר</button>
+      </details>
+      <div class="row">
+        <button class="primary" id="rcSave">שמירה</button>
+        <button type="button" id="rcDelete" class="linkish small del-link" hidden>מחיקת הקבלה</button>
+      </div>
+    </form>
   </dialog>
 
   <dialog id="aboutDlg">
@@ -669,6 +730,7 @@
   <script src="i18n.js"></script>
   <script src="foods.js"></script>
   <script src="depts.js"></script>
+  <script src="receipt.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

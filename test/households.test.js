@@ -89,3 +89,32 @@ test('adding an item that is already on the list reports it instead of duplicati
     server.close();
   }
 });
+
+test('receipts: saved per household, cleaned, edited and deleted; the tesseract files are served', async () => {
+  const app = require('../server/index.js');
+  const auth = require('../server/auth');
+  const server = app.listen(0);
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const call = (method, url, body, token) => fetch(base + url, { method, headers: { 'Content-Type': 'application/json', 'x-app-token': token }, body: body && JSON.stringify(body) }).then((r) => r.json());
+  try {
+    const t = auth.newSession(db.get().users['דיקלה']);
+    assert.ok((await call('POST', '/api/receipts', { date: '2026-11-10', total: 0, items: [] }, t)).error); // בלי סכום ובלי מוצרים
+    let r = (await call('POST', '/api/receipts', { date: '2026-11-10', store: 'שופרסל', total: 245.3, discount: 12.5, voucher: 50, items: [{ name: 'חלב 3%', price: 6.9 }, { name: '', price: 3 }], evil: '<x>' }, t)).receipts;
+    assert.equal(r.length, 1);
+    assert.deepEqual([r[0].store, r[0].total, r[0].discount, r[0].voucher, r[0].items.length, r[0].by, r[0].evil], ['שופרסל', 245.3, 12.5, 50, 1, 'דיקלה', undefined]);
+    r = (await call('PUT', `/api/receipts/${r[0].id}`, { voucher: 0, date: 'bad' }, t)).receipts;
+    assert.deepEqual([r[0].voucher, r[0].date, r[0].total], [0, '2026-11-10', 245.3]);
+    // משק בית אחר לא רואה
+    const other = auth.newSession(db.get().users['רותי']);
+    const mine = db.get().users['רותי'].household === db.get().users['דיקלה'].household;
+    if (!mine) assert.equal((await call('GET', '/api/receipts', null, other)).receipts.length, 0);
+    r = (await call('DELETE', `/api/receipts/${r[0].id}`, null, t)).receipts;
+    assert.equal(r.length, 0);
+    for (const f of ['/vendor/tesseract/tesseract.min.js', '/vendor/tesseract/worker.min.js', '/vendor/tesseract/core/tesseract-core-simd-lstm.wasm.js', '/vendor/tesseract/lang/heb.traineddata.gz']) {
+      assert.equal((await fetch(base + f)).status, 200, f);
+    }
+    assert.equal((await fetch(`${base}/vendor/tesseract/lang/xxx.traineddata.gz`)).status, 404);
+  } finally {
+    server.close();
+  }
+});

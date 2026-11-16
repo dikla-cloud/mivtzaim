@@ -12,10 +12,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@tesseract.js-data/eng": "1.0.0",
+    "@tesseract.js-data/heb": "1.0.0",
     "@zxing/library": "0.21.3",
     "express": "^5.3.0",
     "fast-xml-parser": "^5.11.2",
     "nodemailer": "6.9.16",
+    "tesseract.js": "5.1.1",
     "web-push": "^3.6.7"
   }
 }

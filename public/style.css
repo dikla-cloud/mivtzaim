@@ -631,3 +631,55 @@ body.update-ready #refreshBtn { border-color: #e11d48; }
 #cartMissing { white-space: pre-line; }
 .code-tag { font-size: .72rem; }
 .code-note { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 4px 0 0; }
+
+/* ---------- קבלות והוצאות ---------- */
+:root { --chart: #0d9488; --chart-grid: #e6ebe9; }
+@media (prefers-color-scheme: dark) { :root { --chart: #0d9488; --chart-grid: #2a3331; } }
+.receipt-add { gap: 8px; flex-wrap: wrap; align-items: center; }
+.file-btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-weight: 600; }
+.file-btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.spend-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.spend-head h3 { margin: 0; }
+.spend-head .seg button { padding: 5px 10px; font-size: .82rem; }
+.spend-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 6px; }
+.spend-tile { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; min-width: 0; }
+.spend-tile b { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.spend-tile small { font-size: .74rem; line-height: 1.25; }
+.spend-chart { position: relative; }
+.spend-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.spend-svg .sp-grid { stroke: var(--chart-grid); stroke-width: 1; }
+.spend-svg .sp-base { stroke: var(--muted); stroke-width: 1; opacity: .5; }
+.spend-svg .sp-col { fill: var(--chart); }
+.spend-svg .sp-hit { fill: transparent; cursor: pointer; }
+.spend-svg .sp-bar:focus { outline: none; }
+.spend-svg .sp-bar.on .sp-col, .spend-svg .sp-bar:focus .sp-col { opacity: .8; }
+.spend-svg .sp-bar.on .sp-hit, .spend-svg .sp-bar:focus .sp-hit { fill: var(--accent-soft); opacity: .5; }
+.spend-svg text { fill: var(--muted); font-size: 9px; font-family: inherit; }
+.spend-svg .sp-val { fill: var(--text); font-weight: 700; font-size: 9.5px; }
+.spend-tip { min-height: 2.6em; padding: 4px 2px; font-size: .8rem; line-height: 1.35; color: var(--muted); }
+.spend-tip.on { color: var(--text); }
+.spend-table-wrap { margin-top: 6px; }
+.spend-table-wrap summary { cursor: pointer; color: var(--muted); }
+.receipt-list { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
+.receipt-list li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; }
+.rc-main, .rc-sum { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rc-sum { align-items: flex-end; text-align: end; }
+.rc-sum b { font-variant-numeric: tabular-nums; }
+.rc-save { color: var(--accent); font-size: .75rem; }
+.receipt-dlg { max-width: 520px; }
+.receipt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+.receipt-grid label { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; font-weight: 600; }
+.receipt-grid label:nth-child(3) { grid-column: 1 / -1; }
+.rc-paid { font-weight: 700; color: var(--accent); margin: 10px 0 4px; }
+.rc-items summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
+#rcItems { list-style: none; padding: 0; margin: 4px 0; display: flex; flex-direction: column; gap: 4px; }
+#rcItems li { display: grid; grid-template-columns: 1fr 84px 32px; gap: 6px; align-items: center; }
+#rcItems li input { padding: 6px 8px; min-width: 0; }
+#rcItems li button { border: 0; background: none; color: var(--muted); }
+#rcItems .rc-prev { grid-column: 1 / -1; margin-top: -2px; font-size: .74rem; color: var(--muted); }
+#rcItems .rc-prev.up { color: #b91c1c; }
+#rcItems .rc-prev.down { color: var(--accent); }
+@media (prefers-color-scheme: dark) { #rcItems .rc-prev.up { color: #fca5a5; } }
+.del-link { color: #b91c1c; }
+.rc-last { margin: -2px 0 6px; }
+@media (max-width: 420px) { .spend-tiles { grid-template-columns: 1fr 1fr; } .spend-tiles .spend-tile:first-child { grid-column: 1 / -1; } }

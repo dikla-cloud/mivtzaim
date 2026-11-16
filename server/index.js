@@ -43,6 +43,16 @@ app.get('/manifest.webmanifest', (req, res) => {
 app.use(express.static(PUBLIC));
 // ספריית קריאת ברקודים (ZXing) – מוגשת מהשרת עצמו, בלי שירות חיצוני
 app.get('/vendor/zxing.min.js', (req, res) => res.sendFile(require.resolve('@zxing/library/umd/index.min.js')));
+// זיהוי טקסט בצילום קבלה (Tesseract): רץ בטלפון עצמו – הצילום לא נשלח לשרת. הקבצים מוגשים מכאן (חינם, בלי שירות חיצוני)
+app.get('/vendor/tesseract/tesseract.min.js', (req, res) => res.sendFile(require.resolve('tesseract.js/dist/tesseract.min.js')));
+app.get('/vendor/tesseract/worker.min.js', (req, res) => res.sendFile(require.resolve('tesseract.js/dist/worker.min.js')));
+app.use('/vendor/tesseract/core', express.static(require('path').dirname(require.resolve('tesseract.js-core/package.json')), { maxAge: '30d' }));
+app.get('/vendor/tesseract/lang/:lang.traineddata.gz', (req, res) => {
+  if (!['heb', 'eng'].includes(req.params.lang)) return res.status(404).end();
+  const dir = require('path').dirname(require.resolve(`@tesseract.js-data/${req.params.lang}/package.json`));
+  res.set('Cache-Control', 'public, max-age=2592000');
+  res.sendFile(require('path').join(dir, '4.0.0_best_int', `${req.params.lang}.traineddata.gz`));
+});
 // שפת ההודעות: מה שהאפליקציה שולחת, אחרת השפה שנבחרה בחשבון, אחרת ברירת המחדל של ההתקנה
 app.use('/api', (req, res, next) => { req.lang = i18n.pick(req.get('x-app-lang')); next(); });
 
@@ -473,6 +483,54 @@ app.delete('/api/home/:id', (req, res) => {
   h.home = h.home.filter((x) => x.id !== req.params.id);
   db.save();
   res.json(homeState(req));
+});
+
+// ---------- קבלות והוצאות (משותף לבני הבית) ----------
+// קבלה: תאריך, רשת, סכום לתשלום, הנחות וקופונים, תשלום בשובר / תו קנייה (לא מהכיס), ושורות המוצרים.
+// הטקסט מהצילום מזוהה בטלפון; לשרת מגיעים רק הנתונים שהמשתמש אישר.
+const MAX_RECEIPTS = 1000;
+const money2 = (v) => { const n = Number(v); return Number.isFinite(n) && n >= 0 && n < 100000 ? Math.round(n * 100) / 100 : 0; };
+function cleanReceipt(b, old = {}) {
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(b?.date || '') ? b.date : old.date || new Date().toISOString().slice(0, 10);
+  const items = (Array.isArray(b?.items) ? b.items : old.items || []).slice(0, 200)
+    .map((x) => ({ name: String(x?.name || '').trim().slice(0, 80), price: money2(x?.price), qty: Math.min(Math.max(Number(x?.qty) || 1, 0.01), 999) }))
+    .filter((x) => x.name);
+  return {
+    date,
+    store: String(b?.store ?? old.store ?? '').trim().slice(0, 60),
+    total: money2(b?.total ?? old.total),
+    discount: money2(b?.discount ?? old.discount),
+    voucher: money2(b?.voucher ?? old.voucher),
+    note: String(b?.note ?? old.note ?? '').trim().slice(0, 200),
+    items,
+  };
+}
+const receiptsOf = (req) => (db.householdOf(req.user).receipts ||= []);
+const receiptsState = (req) => ({ receipts: [...receiptsOf(req)].sort((a, b) => b.date.localeCompare(a.date) || b.created - a.created) });
+app.get('/api/receipts', (req, res) => res.json(receiptsState(req)));
+app.post('/api/receipts', (req, res) => {
+  const r = cleanReceipt(req.body);
+  if (!r.total && !r.items.length) return res.status(400).json({ error: T(req, 'חסר סכום לתשלום') });
+  const list = receiptsOf(req);
+  list.push({ id: crypto.randomBytes(6).toString('hex'), ...r, by: req.user.name, created: Date.now() });
+  if (list.length > MAX_RECEIPTS) list.sort((a, b) => a.date.localeCompare(b.date)).splice(0, list.length - MAX_RECEIPTS);
+  db.save();
+  metrics.count('receipt');
+  res.json(receiptsState(req));
+});
+app.put('/api/receipts/:id', (req, res) => {
+  const list = receiptsOf(req);
+  const i = list.findIndex((x) => x.id === req.params.id);
+  if (i < 0) return res.status(404).json({ error: T(req, 'שגיאה') });
+  list[i] = { ...list[i], ...cleanReceipt(req.body, list[i]) };
+  db.save();
+  res.json(receiptsState(req));
+});
+app.delete('/api/receipts/:id', (req, res) => {
+  const h = db.householdOf(req.user);
+  h.receipts = (h.receipts || []).filter((x) => x.id !== req.params.id);
+  db.save();
+  res.json(receiptsState(req));
 });
 
 // ״ניקוי פריטים שנקנו״: נשארים רק מה שעוד לא נקנה. רשימת המבצעים לא מושפעת.

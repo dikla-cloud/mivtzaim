@@ -155,6 +155,7 @@ $('#gear').addEventListener('click', () => { $('#menuDlg').close(); showTab('set
 function showTab(t) {
   document.querySelectorAll('nav button').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === t));
   $('#gear').setAttribute('aria-pressed', t === 'settings');
+  $('#menuReceipts')?.setAttribute('aria-pressed', t === 'receipts');
   if (t === 'settings' && S?.me.admin) { loadStats(); renderDiagChains(); }
   if (t === 'settings' && S) loadInvites();
   document.querySelectorAll('main > section').forEach((s) => (s.hidden = s.id !== `tab-${t}`));
@@ -2079,6 +2080,8 @@ function renderCartByItem(r, ok) {
     title.append(Object.assign(document.createElement('b'), { textContent: `${foodIcon(item)} ${item}` }));
     if (amountOf(first?.l)) title.append(Object.assign(document.createElement('span'), { className: 'muted', textContent: ` ${amountOf(first.l)}` }));
     card.append(title);
+    const last = RC.length ? lastPaidFor(item, first?.l?.name) : null;
+    if (last) card.append(Object.assign(document.createElement('div'), { className: 'muted small rc-last', textContent: t('🧾 בקנייה האחרונה: {price} ({store}, {date})', { price: money(last.price), store: last.store || '—', date: new Date(`${last.date}T12:00:00`).toLocaleDateString(LOCALE, { day: 'numeric', month: 'numeric' }) }) }));
     if (entries.every((e) => e.l.excluded)) {
       card.append(Object.assign(document.createElement('div'), { className: 'muted small', textContent: t('לא נמצא באף סניף') }));
       return card;
@@ -2382,7 +2385,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.16b';
+const APP_VERSION = '2026.11.16c';
 // במחשב התפריט פתוח תמיד בצד (CSS); בנייד – נפתח ב-☰
 const sideMenu = () => matchMedia('(min-width: 1000px)').matches;
 $('#menuBtn').addEventListener('click', () => { if (!sideMenu()) $('#menuDlg').showModal(); });
@@ -2484,6 +2487,301 @@ document.querySelectorAll('#tab-settings > .card').forEach((card) => {
 // גובה הסרגל העליון הקבוע – כדי שאזור ההוספה ב״חסר בבית״ ייצמד מתחתיו
 if ('ResizeObserver' in window) new ResizeObserver(() => document.documentElement.style.setProperty('--top-h', `${$('#stickyTop').offsetHeight}px`)).observe($('#stickyTop'));
 
+
+// ---------- קבלות והוצאות ----------
+// צילום קבלה / צילום מסך ← זיהוי טקסט בטלפון (Tesseract, עברית ואנגלית) ← טיוטה לבדיקה ← שמירה (משותף לבני הבית).
+// ״כמה באמת עלה״: סכום הקבלה פחות מה ששולם בשובר / תו קנייה. ההנחות והקופונים מוצגים כחיסכון.
+let RC = []; // הקבלות של משק הבית
+let rcEdit = null; // הקבלה שבעריכה: { id?, items }
+let rcRange = Number(store.get('spendRange')) || 6;
+const rcPaidOf = (r) => Math.max(0, (r.total || 0) - (r.voucher || 0));
+async function loadReceipts() {
+  try { RC = (await api('GET', '/api/receipts')).receipts || []; } catch { /* בלי חיבור */ }
+  if (!$('#tab-receipts').hidden) renderReceipts();
+}
+
+// שני ״קוראים״: עברית לשמות המוצרים (המודל המשולב הופך חלק מהעברית לאותיות לטיניות), ומודל מספרים/אנגלית –
+// רק כשבעברית לא נמצאו תאריך או סכום (המודל העברי מפספס תאריכים כמו 14/11/26)
+const ocrWorkers = {};
+let ocrProgress = null;
+async function ocrWorker(lang) {
+  await loadScript('/vendor/tesseract/tesseract.min.js');
+  ocrWorkers[lang] ||= window.Tesseract.createWorker(lang, 1, {
+    workerPath: '/vendor/tesseract/worker.min.js', corePath: '/vendor/tesseract/core', langPath: '/vendor/tesseract/lang', gzip: true,
+    logger: (m) => ocrProgress?.(m),
+  }).then(async (w) => { await w.setParameters({ preserve_interword_spaces: '1' }); return w; });
+  return ocrWorkers[lang];
+}
+// הכנה: גווני אפור ומתיחת ניגודיות – קבלות מודפסות בהיר על נייר דק
+async function receiptCanvas(file) {
+  const c = await imageToCanvas(file, 2200);
+  const g = c.getContext('2d', { willReadFrequently: true });
+  const img = g.getImageData(0, 0, c.width, c.height);
+  const d = img.data;
+  let lo = 255, hi = 0;
+  for (let i = 0; i < d.length; i += 4) { const v = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; d[i] = v; if (v < lo) lo = v; if (v > hi) hi = v; }
+  const k = hi > lo ? 255 / (hi - lo) : 1;
+  for (let i = 0; i < d.length; i += 4) { const v = (d[i] - lo) * k; d[i] = d[i + 1] = d[i + 2] = v; }
+  g.putImageData(img, 0, 0);
+  return c;
+}
+async function ocrReceipt(file) {
+  const c = await receiptCanvas(file);
+  const heb = (await (await ocrWorker('heb')).recognize(c)).data.text || '';
+  const r = window.parseReceipt(heb);
+  if (!r.date || r.total == null) {
+    const eng = window.parseReceipt((await (await ocrWorker('eng')).recognize(c)).data.text || '');
+    r.date ||= eng.date;
+    if (r.total == null) Object.assign(r, { total: eng.total, discount: r.discount || eng.discount, voucher: r.voucher || eng.voucher });
+  }
+  return r;
+}
+
+async function readReceipt(file) {
+  const st = $('#receiptStatus');
+  st.hidden = false;
+  st.textContent = t('⏳ קורא את הקבלה… (בפעם הראשונה נטען רכיב הזיהוי, כמה שניות)');
+  ocrProgress = (m) => { if (m.status === 'recognizing text' && !st.hidden) st.textContent = t('⏳ קורא את הקבלה… {p}%', { p: Math.round((m.progress || 0) * 100) }); };
+  track('receipt_photo');
+  try {
+    const r = await ocrReceipt(file);
+    st.hidden = true;
+    if (!r.total && !r.items.length) {
+      st.hidden = false;
+      st.textContent = t('לא הצלחנו לקרוא סכומים מהצילום. אפשר לצלם שוב (ישר, באור טוב, כל הקבלה בתמונה) – או למלא ידנית.');
+    }
+    openReceipt({ ...r, date: r.date || new Date().toISOString().slice(0, 10) }, { read: true });
+  } catch (e) {
+    st.textContent = t('זיהוי הטקסט נכשל ({err}). אפשר למלא ידנית.', { err: e.message || e });
+    openReceipt({ date: new Date().toISOString().slice(0, 10), items: [] });
+  } finally { ocrProgress = null; }
+}
+for (const id of ['#receiptCam', '#receiptFile']) {
+  $(id).addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) readReceipt(f); });
+}
+$('#receiptManual').addEventListener('click', () => openReceipt({ date: new Date().toISOString().slice(0, 10), items: [] }));
+
+// המחיר שמשלמים על אותו מוצר בקבלה הקודמת (לפני התאריך הזה) – להשוואה בין קניות
+const rcKey = (name) => String(name).replace(/[׳'"״.,]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+function prevPrice(name, beforeDate, exceptId) {
+  const k = rcKey(name);
+  let best = null;
+  for (const r of RC) {
+    if (r.id === exceptId || !(r.date < beforeDate)) continue;
+    const it = r.items.find((x) => rcKey(x.name) === k);
+    if (it && (!best || r.date > best.date)) best = { date: r.date, store: r.store, price: it.price / (it.qty || 1) };
+  }
+  return best;
+}
+
+function openReceipt(r, { read = false } = {}) {
+  rcEdit = { id: r.id || null, date: r.date, items: (r.items || []).map((x) => ({ ...x })) };
+  $('#receiptDlgTitle').textContent = r.id ? t('🧾 קבלה – {store}', { store: r.store || r.date }) : t('🧾 קבלה חדשה');
+  $('#receiptReadNote').hidden = !read;
+  $('#rcDate').value = r.date || '';
+  $('#rcStore').value = r.store || '';
+  $('#rcTotal').value = r.total ?? '';
+  $('#rcDiscount').value = r.discount || '';
+  $('#rcVoucher').value = r.voucher || '';
+  $('#rcStores').replaceChildren(...[...new Set(RC.map((x) => x.store).filter(Boolean))].map((v) => Object.assign(document.createElement('option'), { value: v })));
+  $('#rcDelete').hidden = !r.id;
+  $('#rcItemsBox').open = read && rcEdit.items.length > 0;
+  renderRcItems();
+  renderRcPaid();
+  $('#receiptDlg').showModal();
+}
+function renderRcPaid() {
+  const total = Number($('#rcTotal').value) || 0;
+  const voucher = Number($('#rcVoucher').value) || 0;
+  const disc = Number($('#rcDiscount').value) || 0;
+  const parts = [t('💳 עלה לך בפועל: {paid}', { paid: money(Math.max(0, total - voucher)) })];
+  if (voucher) parts.push(t('({v} בשובר / תו)', { v: money(voucher) }));
+  if (disc) parts.push(t('· חסכת {d} בהנחות וקופונים', { d: money(disc) }));
+  $('#rcPaid').textContent = total ? parts.join(' ') : '';
+}
+for (const id of ['#rcTotal', '#rcVoucher', '#rcDiscount']) $(id).addEventListener('input', renderRcPaid);
+function renderRcItems() {
+  const date = $('#rcDate').value || rcEdit.date;
+  $('#rcItemsCount').textContent = rcEdit.items.length ? `(${rcEdit.items.length})` : '';
+  $('#rcItems').replaceChildren(...rcEdit.items.map((it, i) => {
+    const li = document.createElement('li');
+    const name = Object.assign(document.createElement('input'), { value: it.name, maxLength: 80, ariaLabel: t('שם המוצר') });
+    name.addEventListener('input', () => { it.name = name.value; });
+    const price = Object.assign(document.createElement('input'), { type: 'number', min: 0, step: 0.01, inputMode: 'decimal', value: it.price ?? '', ariaLabel: t('מחיר') });
+    price.addEventListener('input', () => { it.price = Number(price.value) || 0; });
+    const del = Object.assign(document.createElement('button'), { type: 'button', textContent: '✕', title: t('מחיקה') });
+    del.addEventListener('click', () => { rcEdit.items.splice(i, 1); renderRcItems(); });
+    li.append(name, price, del);
+    // השוואה לקנייה הקודמת של אותו מוצר
+    const prev = it.name && it.price ? prevPrice(it.name, date, rcEdit.id) : null;
+    if (prev) {
+      const now = it.price / (it.qty || 1);
+      const diff = Math.round((now - prev.price) * 100) / 100;
+      li.append(Object.assign(document.createElement('small'), {
+        className: 'rc-prev ' + (diff > 0 ? 'up' : diff < 0 ? 'down' : ''),
+        textContent: diff > 0 ? t('▲ {d} מהקנייה הקודמת ({p})', { d: money(diff), p: money(prev.price) }) : diff < 0 ? t('▼ {d} מהקנייה הקודמת ({p})', { d: money(-diff), p: money(prev.price) }) : t('= כמו בקנייה הקודמת'),
+      }));
+    }
+    return li;
+  }));
+}
+$('#rcAddItem').addEventListener('click', () => { rcEdit.items.push({ name: '', price: 0, qty: 1 }); renderRcItems(); $('#rcItems li:last-child input')?.focus(); });
+$('#receiptClose').addEventListener('click', () => $('#receiptDlg').close());
+$('#receiptForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const body = {
+    date: $('#rcDate').value, store: $('#rcStore').value.trim(),
+    total: Number($('#rcTotal').value) || 0, discount: Number($('#rcDiscount').value) || 0, voucher: Number($('#rcVoucher').value) || 0,
+    items: rcEdit.items.filter((x) => x.name.trim()),
+  };
+  try {
+    RC = (await api(rcEdit.id ? 'PUT' : 'POST', rcEdit.id ? `/api/receipts/${rcEdit.id}` : '/api/receipts', body)).receipts;
+    $('#receiptDlg').close();
+    renderReceipts();
+    toast(t('הקבלה נשמרה ✔'));
+  } catch (ex) { alert(ex.message); }
+});
+$('#rcDelete').addEventListener('click', async () => {
+  if (!rcEdit.id || !confirm(t('למחוק את הקבלה?'))) return;
+  try { RC = (await api('DELETE', `/api/receipts/${rcEdit.id}`)).receipts; $('#receiptDlg').close(); renderReceipts(); } catch (ex) { alert(ex.message); }
+});
+
+function renderReceipts() {
+  $('#receiptsEmpty').hidden = RC.length > 0;
+  $('#receiptsHead').hidden = !RC.length;
+  $('#spendBox').hidden = !RC.length;
+  const fmtDate = (d) => new Date(`${d}T12:00:00`).toLocaleDateString(LOCALE, { day: 'numeric', month: 'numeric', year: '2-digit' });
+  $('#receiptList').replaceChildren(...RC.map((r) => {
+    const li = document.createElement('li');
+    li.tabIndex = 0;
+    const main = document.createElement('div');
+    main.className = 'rc-main';
+    main.append(Object.assign(document.createElement('b'), { textContent: r.store || t('קנייה') }),
+      Object.assign(document.createElement('small'), { className: 'muted', textContent: [fmtDate(r.date), r.items.length ? t('{n} מוצרים', { n: r.items.length }) : '', r.by].filter(Boolean).join(' · ') }));
+    const sum = document.createElement('div');
+    sum.className = 'rc-sum';
+    sum.append(Object.assign(document.createElement('b'), { textContent: money(rcPaidOf(r)) }));
+    const save = (r.discount || 0) + (r.voucher || 0);
+    if (save) sum.append(Object.assign(document.createElement('small'), { className: 'rc-save', textContent: [r.discount ? t('הנחות {d}', { d: money(r.discount) }) : '', r.voucher ? t('שובר {v}', { v: money(r.voucher) }) : ''].filter(Boolean).join(' · ') }));
+    li.append(main, sum);
+    const open = () => openReceipt(r);
+    li.addEventListener('click', open);
+    li.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
+    return li;
+  }));
+  if (RC.length) renderSpend();
+}
+
+// גרף הוצאות לפי חודש: עמודה לכל חודש (עמודה אחת – צבע אחד, בלי מקרא), ערך על העמודה האחרונה והגבוהה,
+// ריחוף / פוקוס מציג את פרטי החודש, וטבלה עם אותם מספרים
+function renderSpend() {
+  document.querySelectorAll('#spendBox [data-range]').forEach((b) => b.setAttribute('aria-pressed', Number(b.dataset.range) === rcRange));
+  const now = new Date();
+  const months = [];
+  for (let i = rcRange - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, d, paid: 0, disc: 0, voucher: 0, n: 0 });
+  }
+  const byKey = Object.fromEntries(months.map((m) => [m.key, m]));
+  for (const r of RC) {
+    const m = byKey[r.date.slice(0, 7)];
+    if (!m) continue;
+    m.paid += rcPaidOf(r); m.disc += r.discount || 0; m.voucher += r.voucher || 0; m.n++;
+  }
+  const sum = (f) => months.reduce((a, m) => a + m[f], 0);
+  const active = months.filter((m) => m.n).length || 1;
+  const tile = (label, value, sub) => {
+    const d = document.createElement('div');
+    d.className = 'spend-tile';
+    d.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: label }), Object.assign(document.createElement('b'), { textContent: value }));
+    if (sub) d.append(Object.assign(document.createElement('small'), { className: 'muted', textContent: sub }));
+    return d;
+  };
+  $('#spendTiles').replaceChildren(
+    tile(t('הוצאה בתקופה'), money(sum('paid')), t('{n} קבלות', { n: sum('n') })),
+    tile(t('ממוצע לחודש'), money(sum('paid') / active)),
+    tile(t('חיסכון בהנחות וקופונים'), money(sum('disc')), sum('voucher') ? t('ועוד {v} בשוברים', { v: money(sum('voucher')) }) : ''),
+  );
+  const monthName = (m, long) => m.d.toLocaleDateString(LOCALE, long ? { month: 'long', year: 'numeric' } : { month: 'short' });
+  // הגרף
+  const rtl = document.documentElement.dir === 'rtl';
+  // הציר בצד שבו הזמן ״מסתיים״: בעברית ובערבית החודש הישן מימין והחדש משמאל, והמספרים משמאל
+  const W = 340, H = 170, top = 22, bottom = 24, left = rtl ? 36 : 8, right = rtl ? 8 : 36;
+  const max = Math.max(...months.map((m) => m.paid), 1);
+  const step = [50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000].find((s) => max / s <= 3) || 20000;
+  const yMax = Math.ceil(max / step) * step;
+  const y = (v) => top + (H - top - bottom) * (1 - v / yMax);
+  const band = (W - left - right) / months.length;
+  const bw = Math.min(24, band * 0.6);
+  const xAt = (i) => (rtl ? W - right - (i + 0.5) * band : left + (i + 0.5) * band);
+  const ns = 'http://www.w3.org/2000/svg';
+  const mk = (tag, attrs, text) => { const e = document.createElementNS(ns, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); if (text != null) e.textContent = text; return e; };
+  const svg = mk('svg', { viewBox: `0 0 ${W} ${H}`, class: 'spend-svg', role: 'img', 'aria-label': t('הוצאות לפי חודש') });
+  for (let v = 0; v <= yMax; v += step) {
+    svg.append(mk('line', { x1: left, x2: W - right, y1: y(v), y2: y(v), class: 'sp-grid' }));
+    svg.append(mk('text', { x: rtl ? left - 4 : W - right + 4, y: y(v) + 3, class: 'sp-tick', 'text-anchor': rtl ? 'end' : 'start', direction: 'ltr' }, v >= 1000 ? `${v / 1000}K` : String(v)));
+  }
+  // שורת פרטים מעל הגרף (במקום חלונית שמסתירה עמודות): ריחוף / לחיצה / פוקוס על עמודה
+  const tip = Object.assign(document.createElement('div'), { id: 'spendTip', className: 'spend-tip' });
+  const idle = () => { tip.textContent = t('לחצו על עמודה לפרטי החודש'); tip.classList.remove('on'); };
+  idle();
+  const latest = months.length - 1;
+  const peak = months.reduce((b, m, i) => (m.paid > months[b].paid ? i : b), 0);
+  months.forEach((m, i) => {
+    const x = xAt(i);
+    const h = Math.max(0, y(0) - y(m.paid));
+    const g = mk('g', { class: 'sp-bar', tabindex: '0', 'aria-label': `${monthName(m, true)}: ${money(m.paid)}` });
+    // עמודה: 4px עגול בקצה, ישר בבסיס
+    if (h > 0) {
+      const r = Math.min(4, h, bw / 2);
+      const x0 = x - bw / 2, y0 = y(m.paid), yb = y(0);
+      g.append(mk('path', { d: `M${x0},${yb} V${y0 + r} Q${x0},${y0} ${x0 + r},${y0} H${x0 + bw - r} Q${x0 + bw},${y0} ${x0 + bw},${y0 + r} V${yb} Z`, class: 'sp-col' }));
+    }
+    g.append(mk('rect', { x: x - band / 2, y: top - 10, width: band, height: H - top - bottom + 10, class: 'sp-hit' }));
+    if ((i === latest || i === peak) && m.paid > 0) g.append(mk('text', { x, y: y(m.paid) - 5, class: 'sp-val', 'text-anchor': 'middle' }, money(m.paid).replace(/\.\d\d/, '')));
+    g.append(mk('text', { x, y: H - 8, class: 'sp-month', 'text-anchor': 'middle' }, monthName(m)));
+    const show = () => {
+      svg.querySelectorAll('.sp-bar.on').forEach((x) => x.classList.remove('on'));
+      tip.replaceChildren(Object.assign(document.createElement('b'), { textContent: `${monthName(m, true)}: ${money(m.paid)}` }),
+        ` · ${[m.n ? t('{n} קבלות', { n: m.n }) : t('אין קבלות'), m.disc ? t('חיסכון {d}', { d: money(m.disc) }) : '', m.voucher ? t('שובר {v}', { v: money(m.voucher) }) : ''].filter(Boolean).join(' · ')}`);
+      tip.classList.add('on');
+      g.classList.add('on');
+    };
+    const hide = () => { g.classList.remove('on'); idle(); };
+    g.addEventListener('pointerenter', show); g.addEventListener('pointerleave', hide);
+    g.addEventListener('focus', show); g.addEventListener('blur', hide);
+    g.addEventListener('click', show);
+    svg.append(g);
+  });
+  svg.append(mk('line', { x1: left, x2: W - right, y1: y(0), y2: y(0), class: 'sp-base' }));
+  $('#spendChart').replaceChildren(tip, svg);
+  // טבלה
+  const head = document.createElement('tr');
+  for (const h of [t('חודש'), t('הוצאה'), t('קבלות'), t('הנחות וקופונים'), t('שוברים')]) head.append(Object.assign(document.createElement('th'), { textContent: h }));
+  $('#spendTable').replaceChildren(head, ...[...months].reverse().map((m) => {
+    const tr = document.createElement('tr');
+    for (const v of [monthName(m, true), money(m.paid), String(m.n), money(m.disc), money(m.voucher)]) tr.append(Object.assign(document.createElement('td'), { textContent: v }));
+    return tr;
+  }));
+}
+document.querySelectorAll('#spendBox [data-range]').forEach((b) => b.addEventListener('click', () => { rcRange = Number(b.dataset.range); store.set('spendRange', rcRange); renderSpend(); }));
+$('#menuReceipts').addEventListener('click', () => { $('#menuDlg').close(); showTab('receipts'); renderReceipts(); loadReceipts(); });
+
+// בהשוואת עגלות: כמה שילמת על המוצר בקנייה האחרונה (מהקבלות)
+function lastPaidFor(item, productName) {
+  const words = (s) => rcKey(s).split(' ').filter((w) => w.length > 1);
+  const want = [words(item), words(productName || '').slice(0, 2)].filter((w) => w.length);
+  let best = null;
+  for (const r of RC) {
+    for (const it of r.items) {
+      const have = words(it.name);
+      const hit = want.some((ws) => ws.every((w) => have.some((h) => h.startsWith(w) || w.startsWith(h))));
+      if (hit && (!best || r.date > best.date)) best = { date: r.date, store: r.store, price: it.price / (it.qty || 1) };
+    }
+  }
+  return best;
+}
+
 // ---------- הפעלה ----------
 translatePage();
 document.body.classList.toggle('not-il', COUNTRY !== 'IL');
@@ -2498,6 +2796,7 @@ async function boot() {
   // נפתחים על ״חסר בבית״ (ובלי מיקום – על ההגדרות, כדי להתחיל)
   showTab(S.location ? 'home' : 'settings');
   updatePushState();
+  loadReceipts();
 }
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
