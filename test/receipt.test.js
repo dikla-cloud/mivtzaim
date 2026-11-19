@@ -42,3 +42,16 @@ test('receipt: no "to pay" line – the largest subtotal, or the items minus dis
   assert.equal(parseReceipt('לחם 9.90\nחלב 6.10\nהנחה 1.00-').total, 15);
   assert.equal(parseReceipt('שלום').total, null);
 });
+
+test('receipt: barcodes on item lines are kept, and codes from the digits pass are matched by price', () => {
+  const { codesWithPrices, attachCodes } = require('../public/receipt');
+  const r = parseReceipt('חלב תנובה 7290004131074 6.90\nלחם אחיד 9.90\nסה"כ לתשלום 16.80');
+  assert.deepEqual(r.items.map((x) => [x.name, x.code || null]), [['חלב תנובה', '7290004131074'], ['לחם אחיד', null]]);
+  const found = codesWithPrices('Hlv 7290004131074 6.90\nLhm 7290000000017 9.90\nTotal 16.80');
+  attachCodes(r.items, found);
+  assert.deepEqual(r.items.map((x) => x.code), ['7290004131074', '7290000000017']);
+});
+
+test('receipt: a 13-digit barcode glued to the price is split', () => {
+  assert.deepEqual(parseReceipt('חלב תנ 3% 72900041310746.90').items.map((x) => [x.code, x.price]), [['7290004131074', 6.9]]);
+});

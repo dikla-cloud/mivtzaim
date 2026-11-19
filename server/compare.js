@@ -263,6 +263,16 @@ async function nameByCode(code, stores) {
   return null;
 }
 
+// כמה ברקודים בבת אחת (מוצרים מקבלה)
+async function namesByCodes(codes, stores) {
+  const out = {};
+  for (const { data } of await loadStores(stores)) {
+    if (!data) continue;
+    for (const c of codes) if (!out[c] && data.byCode.get(c)?.name) out[c] = data.byCode.get(c).name;
+  }
+  return out;
+}
+
 // רשתות עם מחירון מלא שסומנו בהגדרות ואין להן סניף ברשימה
 function missingChains(user, stores) {
   if (!Array.isArray(user.chains)) return []; // לא סומנו רשתות – לא מציגים רשימה ארוכה של כל הרשתות הרחוקות
@@ -541,4 +551,4 @@ const pinKey = (t) => String(t).split('|')[0].trim().replace(/\s+/g, ' ').toLowe
 
 const round = (n) => Math.round(n * 100) / 100;
 
-module.exports = { nameByCode, missingChains, setDepts, compare, options, search, facets, parseRule, nearbyStores, pick, candidates, commonCode, pinKey, lineCost, MAX_STORES };
+module.exports = { namesByCodes, nameByCode, missingChains, setDepts, compare, options, search, facets, parseRule, nearbyStores, pick, candidates, commonCode, pinKey, lineCost, MAX_STORES };

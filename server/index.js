@@ -238,6 +238,14 @@ function userInfo(x, u) {
   };
 }
 
+function myChainsOf(u) {
+  const chains = require('./providers/israel').chains;
+  const name = (id) => chains.find((c) => c.id === id)?.name;
+  const ids = [...(u.compareStores || []), ...(u.myStores || [])].map((s) => s.chain);
+  if (!ids.length && Array.isArray(u.chains)) ids.push(...u.chains);
+  return [...new Set(ids.map(name).filter(Boolean))].filter((n) => n !== 'רשת הדגמה' || process.env.DEMO);
+}
+
 const state = (u, lang = u.lang) => ({
   me: { name: u.name, admin: u.admin, household: db.householdOf(u).id, email: u.email || '' },
   emailLogin: mail.configured(),
@@ -253,6 +261,8 @@ const state = (u, lang = u.lang) => ({
   lastScan: u.lastScan, lastErrors: u.lastErrors, lastSources: (u.lastSources || []).map((x) => i18n.tr(lang, x)), lastReport: u.lastReport ? { ...u.lastReport, providers: (u.lastReport.providers || []).map((x) => ({ ...x, name: i18n.tr(lang, x.name) })) } : null,
   lang: u.lang || null,
   myStores: u.myStores || [],
+  // הרשתות שבחרת (בהשוואת עגלות, בסניפים לבדיקה, או בהגדרות) – לבחירה מהירה בקבלה
+  myChains: myChainsOf(u),
   // מוצרים שנבחרו להשוואה לכל פריט ב„חסר בבית” (משותף לבני הבית), ושמותיהם לתצוגה
   pins: db.householdOf(u).pins || {},
   pinNames: db.householdOf(u).pinNames || {},
@@ -493,7 +503,8 @@ const money2 = (v) => { const n = Number(v); return Number.isFinite(n) && n >= 0
 function cleanReceipt(b, old = {}) {
   const date = /^\d{4}-\d{2}-\d{2}$/.test(b?.date || '') ? b.date : old.date || new Date().toISOString().slice(0, 10);
   const items = (Array.isArray(b?.items) ? b.items : old.items || []).slice(0, 200)
-    .map((x) => ({ name: String(x?.name || '').trim().slice(0, 80), price: money2(x?.price), qty: Math.min(Math.max(Number(x?.qty) || 1, 0.01), 999) }))
+    .map((x) => ({ name: String(x?.name || '').trim().slice(0, 80), price: money2(x?.price), qty: Math.min(Math.max(Number(x?.qty) || 1, 0.01), 999),
+      ...(/^\d{7,14}$/.test(String(x?.code || '')) ? { code: String(x.code) } : {}) }))
     .filter((x) => x.name);
   return {
     date,
@@ -501,6 +512,8 @@ function cleanReceipt(b, old = {}) {
     total: money2(b?.total ?? old.total),
     discount: money2(b?.discount ?? old.discount),
     voucher: money2(b?.voucher ?? old.voucher),
+    // הנחה שקיבלת על השובר / תו הקנייה (קנית ב-90 ₪ שובר של 100 ₪ = 10%). ריק = שובר מתנה (100%)
+    voucherPct: (() => { const v = b?.voucherPct ?? old.voucherPct; const n = Number(v); return v === '' || v == null || !Number.isFinite(n) ? null : Math.min(Math.max(n, 0), 100); })(),
     note: String(b?.note ?? old.note ?? '').trim().slice(0, 200),
     items,
   };
@@ -508,6 +521,15 @@ function cleanReceipt(b, old = {}) {
 const receiptsOf = (req) => (db.householdOf(req.user).receipts ||= []);
 const receiptsState = (req) => ({ receipts: [...receiptsOf(req)].sort((a, b) => b.date.localeCompare(a.date) || b.created - a.created) });
 app.get('/api/receipts', (req, res) => res.json(receiptsState(req)));
+// שמות המוצרים לפי הברקודים שזוהו בקבלה – מקובצי המחירים של הסניפים שלך (השם בקבלה מזוהה רע, הברקוד מדויק)
+app.post('/api/receipts/names', async (req, res) => {
+  const codes = [...new Set((Array.isArray(req.body?.codes) ? req.body.codes : []).map(String).filter((c) => /^\d{7,14}$/.test(c)))].slice(0, 200);
+  const u = req.user;
+  const stores = [...(u.compareStores || []), ...(u.myStores || [])].slice(0, 6);
+  if (!codes.length || !stores.length) return res.json({ names: {}, stores: stores.length });
+  const names = await Promise.race([compare.namesByCodes(codes, stores).catch(() => ({})), new Promise((r) => setTimeout(() => r({}), 25000))]);
+  res.json({ names, stores: stores.length });
+});
 app.post('/api/receipts', (req, res) => {
   const r = cleanReceipt(req.body);
   if (!r.total && !r.items.length) return res.status(400).json({ error: T(req, 'חסר סכום לתשלום') });

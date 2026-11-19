@@ -304,12 +304,12 @@
     </section>
 
     <section id="tab-receipts" hidden>
-      <h2 class="page-title">🧾 קבלות והוצאות</h2>
+      <h2 class="page-title"><svg class="line-ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span>קבלות והוצאות</span></h2>
       <p class="muted small">מצלמים את הקבלה מהקופה (או מעלים צילום מסך של קבלה דיגיטלית), והאפליקציה קוראת ממנה את הסכום, ההנחות והקופונים והמוצרים. הטקסט מזוהה בטלפון עצמו – הצילום לא נשלח לשום מקום. בודקים, מתקנים אם צריך, ושומרים. משותף לבני הבית.</p>
       <div class="row receipt-add">
-        <label class="primary file-btn">📸 צילום קבלה<input type="file" id="receiptCam" accept="image/*" capture="environment" hidden></label>
-        <label class="file-btn">🖼️ צילום מסך / מהגלריה<input type="file" id="receiptFile" accept="image/*" hidden></label>
-        <button type="button" id="receiptManual" class="linkish small">הוספה ידנית</button>
+        <label class="primary file-btn"><svg class="line-ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.5-2.5h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg><span>צילום קבלה</span><input type="file" id="receiptCam" accept="image/*" capture="environment" hidden></label>
+        <label class="file-btn"><svg class="line-ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="m21 16-5-5-9 9"/></svg><span>צילום מסך / מהגלריה</span><input type="file" id="receiptFile" accept="image/*" hidden></label>
+        <button type="button" id="receiptManual" class="linkish small"><svg class="line-ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg><span>הוספה ידנית</span></button>
       </div>
       <p id="receiptStatus" class="small loading-note" hidden></p>
 
@@ -332,7 +332,7 @@
 
       <h3 id="receiptsHead" hidden>הקבלות</h3>
       <ul id="receiptList" class="receipt-list"></ul>
-      <p id="receiptsEmpty" class="empty muted">עוד אין קבלות. צלמו את הקבלה מהקנייה הבאה 🧾</p>
+      <p id="receiptsEmpty" class="empty muted">עוד אין קבלות. צלמו את הקבלה מהקנייה הבאה.</p>
     </section>
 
     <section id="tab-settings" hidden>
@@ -546,23 +546,27 @@
   <dialog id="receiptDlg" class="receipt-dlg">
     <form id="receiptForm" method="dialog">
       <div class="sheet-head">
-        <h3 id="receiptDlgTitle">🧾 קבלה</h3>
+        <h3><svg class="line-ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span id="receiptDlgTitle">קבלה</span></h3>
         <button type="button" id="receiptClose" class="sheet-x" aria-label="סגירה">✕</button>
       </div>
       <p id="receiptReadNote" class="muted small" hidden>זה מה שזוהה בצילום – כדאי לבדוק את הסכומים מול הקבלה ולתקן אם צריך.</p>
       <div class="receipt-grid">
         <label>תאריך<input type="date" id="rcDate" required></label>
         <label>רשת / חנות<input id="rcStore" maxlength="60" list="rcStores"></label>
+        <div id="rcChains" class="rc-chains"></div>
         <label>סכום הקבלה (לתשלום) ₪<input type="number" id="rcTotal" min="0" step="0.01" inputmode="decimal" required></label>
         <label>מזה הנחות וקופונים ₪<input type="number" id="rcDiscount" min="0" step="0.01" inputmode="decimal"></label>
         <label>שולם בשובר / תו קנייה ₪<input type="number" id="rcVoucher" min="0" step="0.01" inputmode="decimal"></label>
+        <label>הנחה שקיבלת על השובר %<input type="number" id="rcVoucherPct" min="0" max="100" step="0.5" inputmode="decimal" placeholder="שובר מתנה = 100"></label>
+        <p class="muted small rc-pct-help">למשל: קנית ב-90 ₪ שובר של 100 ₪ – כתבו 10. בלי סכום שובר – האחוז חל על כל הקבלה.</p>
       </div>
       <datalist id="rcStores"></datalist>
       <p id="rcPaid" class="rc-paid"></p>
       <details id="rcItemsBox" class="rc-items">
         <summary>מוצרים בקבלה <span id="rcItemsCount" class="muted small"></span></summary>
         <ul id="rcItems"></ul>
-        <button type="button" id="rcAddItem" class="linkish small">➕ הוספת מוצר</button>
+        <button type="button" id="rcAddItem" class="linkish small"><svg class="line-ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>הוספת מוצר</span></button>
+        <button type="button" id="rcToList" class="rc-to-list" hidden></button>
       </details>
       <div class="row">
         <button class="primary" id="rcSave">שמירה</button>

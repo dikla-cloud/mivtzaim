@@ -104,6 +104,12 @@ test('receipts: saved per household, cleaned, edited and deleted; the tesseract 
     assert.deepEqual([r[0].store, r[0].total, r[0].discount, r[0].voucher, r[0].items.length, r[0].by, r[0].evil], ['שופרסל', 245.3, 12.5, 50, 1, 'דיקלה', undefined]);
     r = (await call('PUT', `/api/receipts/${r[0].id}`, { voucher: 0, date: 'bad' }, t)).receipts;
     assert.deepEqual([r[0].voucher, r[0].date, r[0].total], [0, '2026-11-10', 245.3]);
+    // הנחה על השובר באחוזים, וברקוד למוצר
+    r = (await call('PUT', `/api/receipts/${r[0].id}`, { voucher: 100, voucherPct: '12.5', items: [{ name: 'חלב', price: 6.9, code: '7290004131074' }, { name: 'לחם', price: 9, code: 'abc' }] }, t)).receipts;
+    assert.deepEqual([r[0].voucherPct, r[0].items[0].code, r[0].items[1].code], [12.5, '7290004131074', undefined]);
+    r = (await call('PUT', `/api/receipts/${r[0].id}`, { voucherPct: '' }, t)).receipts;
+    assert.equal(r[0].voucherPct, null);
+    assert.deepEqual((await call('POST', '/api/receipts/names', { codes: ['x'] }, t)).names, {});
     // משק בית אחר לא רואה
     const other = auth.newSession(db.get().users['רותי']);
     const mine = db.get().users['רותי'].household === db.get().users['דיקלה'].household;

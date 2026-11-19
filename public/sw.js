@@ -1,4 +1,4 @@
-const CACHE = 'mivtzaim-v88';
+const CACHE = 'mivtzaim-v89';
 const SHELL = ['./', 'index.html', 'style.css', 'i18n.js', 'foods.js', 'depts.js', 'receipt.js', 'app.js', 'icon.svg', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {

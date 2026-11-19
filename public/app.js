@@ -2081,7 +2081,7 @@ function renderCartByItem(r, ok) {
     if (amountOf(first?.l)) title.append(Object.assign(document.createElement('span'), { className: 'muted', textContent: ` ${amountOf(first.l)}` }));
     card.append(title);
     const last = RC.length ? lastPaidFor(item, first?.l?.name) : null;
-    if (last) card.append(Object.assign(document.createElement('div'), { className: 'muted small rc-last', textContent: t('🧾 בקנייה האחרונה: {price} ({store}, {date})', { price: money(last.price), store: last.store || '—', date: new Date(`${last.date}T12:00:00`).toLocaleDateString(LOCALE, { day: 'numeric', month: 'numeric' }) }) }));
+    if (last) card.append(Object.assign(document.createElement('div'), { className: 'muted small rc-last', textContent: t('בקנייה האחרונה: {price} ({store}, {date})', { price: money(last.price), store: last.store || '—', date: new Date(`${last.date}T12:00:00`).toLocaleDateString(LOCALE, { day: 'numeric', month: 'numeric' }) }) }));
     if (entries.every((e) => e.l.excluded)) {
       card.append(Object.assign(document.createElement('div'), { className: 'muted small', textContent: t('לא נמצא באף סניף') }));
       return card;
@@ -2385,7 +2385,7 @@ function setLang(l) {
 }
 
 // ---------- תפריט (☰): אודות, פרטיות, שפה, רענון ----------
-const APP_VERSION = '2026.11.16c';
+const APP_VERSION = '2026.11.19a';
 // במחשב התפריט פתוח תמיד בצד (CSS); בנייד – נפתח ב-☰
 const sideMenu = () => matchMedia('(min-width: 1000px)').matches;
 $('#menuBtn').addEventListener('click', () => { if (!sideMenu()) $('#menuDlg').showModal(); });
@@ -2494,7 +2494,16 @@ if ('ResizeObserver' in window) new ResizeObserver(() => document.documentElemen
 let RC = []; // הקבלות של משק הבית
 let rcEdit = null; // הקבלה שבעריכה: { id?, items }
 let rcRange = Number(store.get('spendRange')) || 6;
-const rcPaidOf = (r) => Math.max(0, (r.total || 0) - (r.voucher || 0));
+// כמה הקנייה באמת עלתה: שובר מתנה – לא מהכיס; שובר שנקנה בהנחה (90 ₪ על שובר של 100) – רק ההנחה נחסכת.
+// בלי סכום שובר ועם אחוז – האחוז חל על כל הקבלה (שילמת הכול בשוברים מוזלים)
+function rcRealCost(total, voucher, pct) {
+  total = Number(total) || 0; voucher = Number(voucher) || 0;
+  const p = pct == null || pct === '' ? (voucher ? 100 : 0) : Number(pct) || 0;
+  const base = voucher > 0 ? Math.min(voucher, total) : (pct == null || pct === '' ? 0 : total);
+  return Math.max(0, Math.round((total - (base * p) / 100) * 100) / 100);
+}
+const rcPaidOf = (r) => rcRealCost(r.total, r.voucher, r.voucherPct);
+const rcVoucherSave = (r) => Math.max(0, (r.total || 0) - rcPaidOf(r));
 async function loadReceipts() {
   try { RC = (await api('GET', '/api/receipts')).receipts || []; } catch { /* בלי חיבור */ }
   if (!$('#tab-receipts').hidden) renderReceipts();
@@ -2509,7 +2518,7 @@ async function ocrWorker(lang) {
   ocrWorkers[lang] ||= window.Tesseract.createWorker(lang, 1, {
     workerPath: '/vendor/tesseract/worker.min.js', corePath: '/vendor/tesseract/core', langPath: '/vendor/tesseract/lang', gzip: true,
     logger: (m) => ocrProgress?.(m),
-  }).then(async (w) => { await w.setParameters({ preserve_interword_spaces: '1' }); return w; });
+  });
   return ocrWorkers[lang];
 }
 // הכנה: גווני אפור ומתיחת ניגודיות – קבלות מודפסות בהיר על נייר דק
@@ -2529,11 +2538,12 @@ async function ocrReceipt(file) {
   const c = await receiptCanvas(file);
   const heb = (await (await ocrWorker('heb')).recognize(c)).data.text || '';
   const r = window.parseReceipt(heb);
-  if (!r.date || r.total == null) {
-    const eng = window.parseReceipt((await (await ocrWorker('eng')).recognize(c)).data.text || '');
-    r.date ||= eng.date;
-    if (r.total == null) Object.assign(r, { total: eng.total, discount: r.discount || eng.discount, voucher: r.voucher || eng.voucher });
-  }
+  // קריאה שנייה למספרים: ברקודים (המודל העברי מפספס מספרים ארוכים), ותאריך / סכום אם חסרו
+  const engText = (await (await ocrWorker('eng')).recognize(c)).data.text || '';
+  const eng = window.parseReceipt(engText);
+  r.date ||= eng.date;
+  if (r.total == null) Object.assign(r, { total: eng.total, discount: r.discount || eng.discount, voucher: r.voucher || eng.voucher });
+  window.attachCodes(r.items, window.codesWithPrices(engText));
   return r;
 }
 
@@ -2545,6 +2555,15 @@ async function readReceipt(file) {
   track('receipt_photo');
   try {
     const r = await ocrReceipt(file);
+    // השמות שזוהו בקבלה לרוב משובשים – לפי הברקוד לוקחים את השם מקובצי המחירים של הרשתות
+    const codes = r.items.filter((x) => x.code).map((x) => x.code);
+    if (codes.length) {
+      st.textContent = t('⏳ מחפש את שמות המוצרים לפי הברקוד…');
+      try {
+        const { names } = await api('POST', '/api/receipts/names', { codes });
+        for (const it of r.items) if (names[it.code]) { it.name = names[it.code]; it.named = true; }
+      } catch { /* נשארים השמות מהצילום */ }
+    }
     st.hidden = true;
     if (!r.total && !r.items.length) {
       st.hidden = false;
@@ -2563,26 +2582,34 @@ $('#receiptManual').addEventListener('click', () => openReceipt({ date: new Date
 
 // המחיר שמשלמים על אותו מוצר בקבלה הקודמת (לפני התאריך הזה) – להשוואה בין קניות
 const rcKey = (name) => String(name).replace(/[׳'"״.,]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
-function prevPrice(name, beforeDate, exceptId) {
-  const k = rcKey(name);
+function prevPrice(item, beforeDate, exceptId) {
+  const k = rcKey(item.name);
   let best = null;
   for (const r of RC) {
     if (r.id === exceptId || !(r.date < beforeDate)) continue;
-    const it = r.items.find((x) => rcKey(x.name) === k);
+    const it = r.items.find((x) => (item.code && x.code ? x.code === item.code : rcKey(x.name) === k));
     if (it && (!best || r.date > best.date)) best = { date: r.date, store: r.store, price: it.price / (it.qty || 1) };
   }
   return best;
 }
 
 function openReceipt(r, { read = false } = {}) {
-  rcEdit = { id: r.id || null, date: r.date, items: (r.items || []).map((x) => ({ ...x })) };
-  $('#receiptDlgTitle').textContent = r.id ? t('🧾 קבלה – {store}', { store: r.store || r.date }) : t('🧾 קבלה חדשה');
+  rcEdit = { id: r.id || null, date: r.date, items: (r.items || []).map((x) => ({ ...x, pick: Boolean(x.code) && !onList(x) })) };
+  $('#receiptDlgTitle').textContent = r.id ? t('קבלה – {store}', { store: r.store || r.date }) : t('קבלה חדשה');
   $('#receiptReadNote').hidden = !read;
   $('#rcDate').value = r.date || '';
   $('#rcStore').value = r.store || '';
   $('#rcTotal').value = r.total ?? '';
   $('#rcDiscount').value = r.discount || '';
   $('#rcVoucher').value = r.voucher || '';
+  $('#rcVoucherPct').value = r.voucherPct ?? '';
+  // הרשתות שבחרת – בלחיצה
+  $('#rcChains').replaceChildren(...[...new Set([...(S.myChains || []), ...RC.map((x) => x.store).filter(Boolean)])].slice(0, 12).map((name) => {
+    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'chip', textContent: name });
+    b.addEventListener('click', () => { $('#rcStore').value = name; renderRcChains(); });
+    return b;
+  }));
+  renderRcChains();
   $('#rcStores').replaceChildren(...[...new Set(RC.map((x) => x.store).filter(Boolean))].map((v) => Object.assign(document.createElement('option'), { value: v })));
   $('#rcDelete').hidden = !r.id;
   $('#rcItemsBox').open = read && rcEdit.items.length > 0;
@@ -2590,30 +2617,48 @@ function openReceipt(r, { read = false } = {}) {
   renderRcPaid();
   $('#receiptDlg').showModal();
 }
+function renderRcChains() {
+  const cur = $('#rcStore').value.trim();
+  $('#rcChains').querySelectorAll('.chip').forEach((b) => b.setAttribute('aria-pressed', b.textContent === cur));
+}
+$('#rcStore').addEventListener('input', renderRcChains);
 function renderRcPaid() {
   const total = Number($('#rcTotal').value) || 0;
   const voucher = Number($('#rcVoucher').value) || 0;
+  const pct = $('#rcVoucherPct').value;
   const disc = Number($('#rcDiscount').value) || 0;
-  const parts = [t('💳 עלה לך בפועל: {paid}', { paid: money(Math.max(0, total - voucher)) })];
-  if (voucher) parts.push(t('({v} בשובר / תו)', { v: money(voucher) }));
+  const paid = rcRealCost(total, voucher, pct);
+  const parts = [t('עלה לך בפועל: {paid}', { paid: money(paid) })];
+  if (total - paid > 0.004) parts.push(t('(חסכת {v} בשובר / תו)', { v: money(total - paid) }));
   if (disc) parts.push(t('· חסכת {d} בהנחות וקופונים', { d: money(disc) }));
   $('#rcPaid').textContent = total ? parts.join(' ') : '';
 }
-for (const id of ['#rcTotal', '#rcVoucher', '#rcDiscount']) $(id).addEventListener('input', renderRcPaid);
+for (const id of ['#rcTotal', '#rcVoucher', '#rcVoucherPct', '#rcDiscount']) $(id).addEventListener('input', renderRcPaid);
+// מוצר מהקבלה שכבר ברשימה הקבועה: לפי הברקוד, או לפי השם כשאין ברקוד
+const onList = (it) => (S?.list || []).some((x) => (it.code ? codeOf(x.text) === it.code : plain(x.text) === plain(it.name)));
 function renderRcItems() {
   const date = $('#rcDate').value || rcEdit.date;
   $('#rcItemsCount').textContent = rcEdit.items.length ? `(${rcEdit.items.length})` : '';
   $('#rcItems').replaceChildren(...rcEdit.items.map((it, i) => {
     const li = document.createElement('li');
+    // סימון להוספה לרשימה הקבועה (או תגית אם המוצר כבר שם)
+    const already = onList(it);
+    const pick = Object.assign(document.createElement('input'), { type: 'checkbox', className: 'list-pick', checked: Boolean(it.pick) && !already, disabled: already });
+    pick.title = already ? t('כבר ברשימה הקבועה') : t('לסמן להוספה לרשימה הקבועה');
+    pick.setAttribute('aria-label', pick.title);
+    pick.addEventListener('change', () => { it.pick = pick.checked; renderRcListBtn(); });
     const name = Object.assign(document.createElement('input'), { value: it.name, maxLength: 80, ariaLabel: t('שם המוצר') });
     name.addEventListener('input', () => { it.name = name.value; });
     const price = Object.assign(document.createElement('input'), { type: 'number', min: 0, step: 0.01, inputMode: 'decimal', value: it.price ?? '', ariaLabel: t('מחיר') });
     price.addEventListener('input', () => { it.price = Number(price.value) || 0; });
     const del = Object.assign(document.createElement('button'), { type: 'button', textContent: '✕', title: t('מחיקה') });
     del.addEventListener('click', () => { rcEdit.items.splice(i, 1); renderRcItems(); });
-    li.append(name, price, del);
+    li.append(pick, name, price, del);
+    if (it.code || already) {
+      li.append(Object.assign(document.createElement('small'), { className: 'rc-code', textContent: [it.code ? t('ברקוד {code}', { code: it.code }) : '', it.named ? t('השם מקובצי המחירים') : '', already ? t('כבר ברשימה הקבועה') : ''].filter(Boolean).join(' · ') }));
+    }
     // השוואה לקנייה הקודמת של אותו מוצר
-    const prev = it.name && it.price ? prevPrice(it.name, date, rcEdit.id) : null;
+    const prev = it.name && it.price ? prevPrice(it, date, rcEdit.id) : null;
     if (prev) {
       const now = it.price / (it.qty || 1);
       const diff = Math.round((now - prev.price) * 100) / 100;
@@ -2624,15 +2669,37 @@ function renderRcItems() {
     }
     return li;
   }));
+  renderRcListBtn();
 }
+function renderRcListBtn() {
+  const n = rcEdit.items.filter((x) => x.pick && x.name.trim() && !onList(x)).length;
+  $('#rcToList').hidden = !n;
+  $('#rcToList').innerHTML = '<svg class="line-ico ico-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>';
+  $('#rcToList').append(Object.assign(document.createElement('span'), { textContent: t('הוספה לרשימה הקבועה ({n})', { n }) }));
+}
+// מוצרים מהקבלה לרשימה הקבועה – עם הברקוד, בלי כפילויות
+$('#rcToList').addEventListener('click', async () => {
+  const add = [];
+  for (const it of rcEdit.items) {
+    if (!it.pick || !it.name.trim() || onList(it) || add.some((x) => (it.code ? codeOf(x) === it.code : plain(x) === plain(it.name)))) continue;
+    add.push(withCode(it.name.replace(/[,|]/g, ' ').replace(/\s+/g, ' ').trim(), it.code));
+  }
+  if (!add.length) return;
+  try {
+    await saveList([...S.list.map((x) => x.text), ...add]);
+    for (const it of rcEdit.items) it.pick = false;
+    renderRcItems();
+    toast(add.length === 1 ? t('מוצר אחד נוסף לרשימה הקבועה') : t('{n} מוצרים נוספו לרשימה הקבועה', { n: add.length }));
+  } catch (ex) { alert(ex.message); }
+});
 $('#rcAddItem').addEventListener('click', () => { rcEdit.items.push({ name: '', price: 0, qty: 1 }); renderRcItems(); $('#rcItems li:last-child input')?.focus(); });
 $('#receiptClose').addEventListener('click', () => $('#receiptDlg').close());
 $('#receiptForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const body = {
     date: $('#rcDate').value, store: $('#rcStore').value.trim(),
-    total: Number($('#rcTotal').value) || 0, discount: Number($('#rcDiscount').value) || 0, voucher: Number($('#rcVoucher').value) || 0,
-    items: rcEdit.items.filter((x) => x.name.trim()),
+    total: Number($('#rcTotal').value) || 0, discount: Number($('#rcDiscount').value) || 0, voucher: Number($('#rcVoucher').value) || 0, voucherPct: $('#rcVoucherPct').value,
+    items: rcEdit.items.filter((x) => x.name.trim()).map(({ name, price, qty, code }) => ({ name, price, qty, code })),
   };
   try {
     RC = (await api(rcEdit.id ? 'PUT' : 'POST', rcEdit.id ? `/api/receipts/${rcEdit.id}` : '/api/receipts', body)).receipts;
@@ -2661,8 +2728,8 @@ function renderReceipts() {
     const sum = document.createElement('div');
     sum.className = 'rc-sum';
     sum.append(Object.assign(document.createElement('b'), { textContent: money(rcPaidOf(r)) }));
-    const save = (r.discount || 0) + (r.voucher || 0);
-    if (save) sum.append(Object.assign(document.createElement('small'), { className: 'rc-save', textContent: [r.discount ? t('הנחות {d}', { d: money(r.discount) }) : '', r.voucher ? t('שובר {v}', { v: money(r.voucher) }) : ''].filter(Boolean).join(' · ') }));
+    const vs = rcVoucherSave(r);
+    if (r.discount || vs) sum.append(Object.assign(document.createElement('small'), { className: 'rc-save', textContent: [r.discount ? t('הנחות {d}', { d: money(r.discount) }) : '', vs ? t('שובר {v}', { v: money(vs) }) : ''].filter(Boolean).join(' · ') }));
     li.append(main, sum);
     const open = () => openReceipt(r);
     li.addEventListener('click', open);
@@ -2686,7 +2753,7 @@ function renderSpend() {
   for (const r of RC) {
     const m = byKey[r.date.slice(0, 7)];
     if (!m) continue;
-    m.paid += rcPaidOf(r); m.disc += r.discount || 0; m.voucher += r.voucher || 0; m.n++;
+    m.paid += rcPaidOf(r); m.disc += r.discount || 0; m.voucher += rcVoucherSave(r); m.n++;
   }
   const sum = (f) => months.reduce((a, m) => a + m[f], 0);
   const active = months.filter((m) => m.n).length || 1;

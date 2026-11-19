@@ -54,7 +54,9 @@
 
   const round = (n) => Math.round(n * 100) / 100;
   // סימני כיוון (LRM/RLM) שהזיהוי מוסיף, ותווים שאינם טקסט
-  const clean = (s) => s.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').replace(/[|_*#=~<>{}[\]]+/g, ' ').replace(/\s+/g, ' ').trim();
+  // ברקוד של 13 ספרות שנדבק למחיר (״72900041310746.90״) – מפרידים
+  const unglue = (s) => s.replace(/(?<!\d)(\d{13})(\d{1,3}[.,]\d{2})(?!\d)/g, '$1 $2');
+  const clean = (s) => unglue(s).replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').replace(/[|_*#=~<>{}[\]]+/g, ' ').replace(/\s+/g, ' ').trim();
 
   function parseReceipt(text) {
     const lines = String(text || '').split(/\r?\n/).map(clean).filter(Boolean);
@@ -85,7 +87,8 @@
         .replace(/(\d+(?:[.,]\d+)?)\s*[xX×*]/g, ' ')
         .replace(/^[\d\s.,:-]+|[\d\s.,:-]+$/g, ''));
       if (name.replace(/[^֐-׿a-z]/gi, '').length < 2 || last <= 0 || last > 5000) continue;
-      items.push({ name: name.slice(0, 80), price: round(last), qty });
+      const code = (line.match(/(?:^|\D)(\d{7,14})(?!\d)/) || [])[1];
+      items.push({ name: name.slice(0, 80), price: round(last), qty, ...(code ? { code } : {}) });
     }
     const itemsSum = round(items.reduce((a, x) => a + x.price, 0));
     if (total == null) total = subtotalMax ?? (itemsSum ? round(itemsSum - discount) : null);
@@ -99,7 +102,28 @@
     };
   }
 
-  const api = { parseReceipt, amounts, parseDate, parseChain };
+  // ברקודים מהקריאה ״המספרית״ (המודל העברי מפספס מספרים ארוכים): לכל שורה עם ברקוד – הברקוד והמחיר שבסופה
+  function codesWithPrices(text) {
+    const out = [];
+    for (const line of String(text || '').split(/\r?\n/).map(clean)) {
+      const code = (line.match(/(?:^|\D)(\d{7,14})(?!\d)/) || [])[1];
+      const am = amounts(line);
+      if (code && am.length) out.push({ code, price: round(Math.abs(am[am.length - 1].value)) });
+    }
+    return out;
+  }
+  // שיבוץ הברקודים למוצרים לפי המחיר, בסדר הופעה
+  function attachCodes(items, found) {
+    const left = [...found];
+    for (const it of items) {
+      if (it.code) continue;
+      const i = left.findIndex((f) => Math.abs(f.price - it.price) < 0.005);
+      if (i >= 0) { it.code = left[i].code; left.splice(i, 1); }
+    }
+    return items;
+  }
+
+  const api = { codesWithPrices, attachCodes, parseReceipt, amounts, parseDate, parseChain };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else Object.assign(root, api);
 })(typeof window !== 'undefined' ? window : globalThis);
